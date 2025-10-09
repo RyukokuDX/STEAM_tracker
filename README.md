@@ -39,10 +39,12 @@
 
 ```
 STEAM_tracker/
-├── docs/                    # プロジェクトドキュメント
-│   ├── GITHUB_GUIDE.md     # Git/GitHub運用ガイド
-│   └── REQUIREMENTS.md      # 要件定義書
-└── README.md               # 本ファイル
+├── docs/                                     # プロジェクトドキュメント
+│   ├── GITHUB_GUIDE.md                       # Git/GitHub運用ガイド
+│   ├── COMMIT_MESSAGE_SPECIFICATION.md       # コミットメッセージの仕様
+│   ├── PULLREQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
+│   └── REQUIREMENTS.md                       # 要件定義書
+└── README.md                                 # 本ファイル
 ```
 
 ## 環境構築
