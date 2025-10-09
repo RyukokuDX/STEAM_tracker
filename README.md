@@ -44,9 +44,11 @@ STEAM_tracker/
 │   ├── COMMIT_MESSAGE_SPECIFICATION.md       # コミットメッセージの仕様
 │   ├── PULLREQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
 │   └── REQUIREMENTS.md                       # 要件定義書
+├── .gitignore                                # Gitの管理から除外するファイル/フォルダを指定
+├── LICENSE                                   # ライセンス
 └── README.md                                 # 本ファイル
 ```
-
+g
 ## 環境構築
 
 ### 1. リポジトリのクローン
@@ -65,6 +67,12 @@ clasp login
 ```
 
 ### 3. 設定ファイルの作成（必要に応じて）
+必須環境変数（例: .env）
+- SHEET_ID=（Google Sheets の ID）
+- LINE_CHANNEL_ACCESS_TOKEN=（LINE チャネルアクセストークン）
+- LINE_CHANNEL_SECRET=（LINE チャネルシークレット）
+- GMAIL_API_ENABLED=true（メール送信が AppScript 経由で必要な場合）
+- OPTIONAL: SERVICE_ACCOUNT_CREDENTIALS (CI で使用するサービスアカウント JSON のパスか内容)
 
 Google SheetsのIDやLINEのアクセストークンなど、秘密情報を管理する場合：
 
