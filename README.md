@@ -58,7 +58,6 @@ STEAM_tracker/
 ├── LICENSE                                   # ライセンス
 └── README.md                                 # 本ファイル
 ```
-g
 ## 環境構築
 
 ### 1. リポジトリのクローン
