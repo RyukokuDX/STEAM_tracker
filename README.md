@@ -54,24 +54,7 @@ git clone https://github.com/RyukokuDX/STEAM_tracker.git
 cd STEAM_tracker
 ```
 
-### 2. 依存パッケージのインストール
-
-#### GAS管理者の場合
-
-```bash
-npm init -y
-npm install @google/clasp -g
-npm install @types/google-apps-script
-```
-
-#### その他のメンバー
-
-```bash
-npm install @google/clasp -g
-npm install
-```
-
-### 3. claspでのログイン
+### 2. claspでのログイン
 
 Google Apps Scriptにアクセスするため、claspでログインします。
 
@@ -79,7 +62,7 @@ Google Apps Scriptにアクセスするため、claspでログインします。
 clasp login
 ```
 
-### 4. 設定ファイルの作成（必要に応じて）
+### 3. 設定ファイルの作成（必要に応じて）
 
 Google SheetsのIDやLINEのアクセストークンなど、秘密情報を管理する場合：
 
@@ -87,7 +70,7 @@ Google SheetsのIDやLINEのアクセストークンなど、秘密情報を管�
 
 > **Note:** 現在このプロジェクトでは設定ファイルが必須かどうか確認中です。
 
-### 5. GASプロジェクトへの反映
+### 4. GASプロジェクトへの反映
 
 #### ローカルの変更をGoogle環境へ反映 (push)
 
