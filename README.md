@@ -6,6 +6,21 @@
 
 利用者がQRコードから簡単に物品を登録し、設定した撤去予定日（明け渡し日）に基づき自動でリマインダーを送信します。これにより、所有者を明確化し、スペースの公平かつ効率的な利用を促進することを目的とします。
 
+## ドキュメント
+このプロジェクトに関する詳細なドキュメントは、すべてdocsフォルダに格納されています。
+
+-   **[GitHub利用ガイド](./docs/GITHUB_GUIDE.md)**
+
+    -   本プロジェクトにおけるGitおよびGitHubの運用ルールについて説明しています。
+
+-   **[プロジェクト要件定義書](./docs/REQUIREMENTS.md)**
+
+    -   プロジェクトの目的、要件、仕様などを定義したドキュメントです。
+
+-   **[clasp ガイド](./docs/CLASP_GUIDE.md)**
+
+    -   clasp を使った Google Apps Script のローカル開発・ビルド・デプロイ手順をまとめたドキュメントです。
+
 ## 主な機能
 
 -   **利用者向け機能**
@@ -24,32 +39,73 @@
 -   **Admin Interface**: LINE Messaging API, AppSheet
 -   **Development Tool**: clasp, Git, GitHub
 
+## プロジェクト構造
+
+```
+STEAM_tracker/
+├── docs/                                     # プロジェクトドキュメント
+|   ├── CLASP_GUIDE.md                        # claspガイド
+│   ├── GITHUB_GUIDE.md                       # Git/GitHub運用ガイド
+│   ├── COMMIT_MESSAGE_SPECIFICATION.md       # コミットメッセージの仕様
+│   ├── PULLREQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
+│   |── REQUIREMENTS.md                       # 要件定義書
+|   └── SPECIFICATIONS.md                     # 要件仕様書
+│ 
+├── GAS/
+|   ├── code.gs
+├── .claspignore                              # GASにアップしたくないファイル/フォルダを指定
+├── .gitignore                                # Gitの管理から除外するファイル/フォルダを指定
+├── LICENSE                                   # ライセンス
+└── README.md                                 # 本ファイル
+```
 ## 環境構築
 
-1.  **リポジトリのクローン**
-    ```bash
-    git clone [リポジトリのURL]
-    cd [プロジェクト名]
-    ```
+### 1. リポジトリのクローン
 
-2.  **依存パッケージのインストール**
-    ```bash
-    npm install
-    ```
+```bash
+git clone https://github.com/RyukokuDX/STEAM_tracker.git
+cd STEAM_tracker
+```
 
-3.  **claspでのログイン**
-    ```bash
-    clasp login
-    ```
+### 2. claspでのログイン
 
-4.  **設定ファイルの作成**
-    -   Google SheetsのIDやLINEのアクセストークンなど、秘密情報を管理します。
-    -   `.env.sample` ファイルをコピーして `.env` ファイルを作成し、必要な情報を追記してください。
+Google Apps Scriptにアクセスするため、claspでログインします。
 
-5.  **GASプロジェクトへの反映**
-    ```bash
-    clasp push
-    ```
+```bash
+clasp login
+```
+
+詳しい使い方（インストール、認証方法、ビルド→push、CI 設定例など）は [claspガイド](./docs/CLASP_GUIDE.md) を参照してください。
+
+### 3. 設定ファイルの作成（必要に応じて）
+必須環境変数（例: .env）
+- SHEET_ID=（Google Sheets の ID）
+- LINE_CHANNEL_ACCESS_TOKEN=（LINE チャネルアクセストークン）
+- LINE_CHANNEL_SECRET=（LINE チャネルシークレット）
+- GMAIL_API_ENABLED=true（メール送信が AppScript 経由で必要な場合）
+- OPTIONAL: SERVICE_ACCOUNT_CREDENTIALS (CI で使用するサービスアカウント JSON のパスか内容)
+
+Google SheetsのIDやLINEのアクセストークンなど、秘密情報を管理する場合：
+
+-   `.env.sample` ファイルをコピーして `.env` ファイルを作成し、必要な情報を追記してください。
+
+> **Note:** 現在このプロジェクトでは設定ファイルが必須かどうか確認中です。
+
+### 4. GASプロジェクトへの反映
+
+#### ローカルの変更をGoogle環境へ反映 (push)
+
+```bash
+clasp push
+```
+
+#### Google環境の変更をローカルへ反映 (pull)
+
+```bash
+clasp pull
+```
+
+> **⚠️ 重要:** `clasp pull` コマンドはローカルの未保存の変更を上書きします。実行前に `git status` で状態を確認し、必要であれば `git stash` で変更を退避させてください。
 
 ## 開発ルール
 
@@ -59,6 +115,17 @@
     -   機能追加や修正は `develop` から `feature/` ブランチを切って行います。
 -   `develop` ブランチへのマージは、必ずGitHub上でPull Requestを作成し、チームメンバーのレビューを必須とします。
 
+## 貢献
+
+プロジェクトへの貢献を歓迎します！以下の手順でお願いします：
+
+1.  `develop` ブランチから `feature/` ブランチを作成
+2.  変更を加えてコミット
+3.  GitHub上でPull Requestを作成
+4.  チームメンバーのレビューを待つ
+
+詳細は [GitHub利用ガイド](./docs/GITHUB_GUIDE.md) を参照してください。
+
 ## ライセンス
 
-[ここにはライセンスを記述します。よくわからなければ MIT License などが一般的です。]
+本プロジェクトは [MIT License](./LICENSE) のもとで公開されています。
