@@ -17,6 +17,10 @@
 
     -   プロジェクトの目的、要件、仕様などを定義したドキュメントです。
 
+-   **[clasp ガイド](./docs/CLASP_GUIDE.md)**
+
+    -   clasp を使った Google Apps Script のローカル開発・ビルド・デプロイ手順をまとめたドキュメントです。
+
 ## 主な機能
 
 -   **利用者向け機能**
@@ -40,13 +44,20 @@
 ```
 STEAM_tracker/
 ├── docs/                                     # プロジェクトドキュメント
+|   ├── CLASP_GUIDE.md                        # claspガイド
 │   ├── GITHUB_GUIDE.md                       # Git/GitHub運用ガイド
 │   ├── COMMIT_MESSAGE_SPECIFICATION.md       # コミットメッセージの仕様
 │   ├── PULLREQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
-│   └── REQUIREMENTS.md                       # 要件定義書
+│   |── REQUIREMENTS.md                       # 要件定義書
+|   └── SPECIFICATIONS.md                     # 要件仕様書
+│ 
+├── GAS/
+|   ├── code.gs
+├── .claspignore                              # GASにアップしたくないファイル/フォルダを指定
+├── .gitignore                                # Gitの管理から除外するファイル/フォルダを指定
+├── LICENSE                                   # ライセンス
 └── README.md                                 # 本ファイル
 ```
-
 ## 環境構築
 
 ### 1. リポジトリのクローン
@@ -64,7 +75,15 @@ Google Apps Scriptにアクセスするため、claspでログインします。
 clasp login
 ```
 
+詳しい使い方（インストール、認証方法、ビルド→push、CI 設定例など）は [claspガイド](./docs/CLASP_GUIDE.md) を参照してください。
+
 ### 3. 設定ファイルの作成（必要に応じて）
+必須環境変数（例: .env）
+- SHEET_ID=（Google Sheets の ID）
+- LINE_CHANNEL_ACCESS_TOKEN=（LINE チャネルアクセストークン）
+- LINE_CHANNEL_SECRET=（LINE チャネルシークレット）
+- GMAIL_API_ENABLED=true（メール送信が AppScript 経由で必要な場合）
+- OPTIONAL: SERVICE_ACCOUNT_CREDENTIALS (CI で使用するサービスアカウント JSON のパスか内容)
 
 Google SheetsのIDやLINEのアクセストークンなど、秘密情報を管理する場合：
 
