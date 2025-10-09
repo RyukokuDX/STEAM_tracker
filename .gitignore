@@ -1,0 +1,81 @@
+# ## Node.js / npm ##
+# ===================
+# NPМの依存パッケージが格納されるフォルダ。`npm install`で再生成可能。
+node_modules/
+
+# NPMが生成するデバッグログファイル
+npm-debug.log*
+yarn-error.log
+pnpm-debug.log
+
+
+# ## 秘密情報 (Credentials) ##
+# ==============================
+# APIキーやパスワードなど、絶対にGitで共有してはいけない情報を記述するファイル。
+.env
+.env
+.env.*
+
+# ただし `.env.sample` はテンプレートとしてリポジトリに含めることが多いので許可
+!.env.sample
+
+# サービスアカウント / 認証情報 (CI 用など)
+service-account.json
+sa.json
+credentials.json
+*.key.json
+
+# clasp の認証ファイル（ユーザーごとのトークンが入るためコミットしない）
+.clasprc.json
+.clasprc
+
+
+# ## OS固有のファイル ##
+# ====================
+# Macのシステムファイル
+.DS_Store
+
+# Windowsのサムネイルキャッシュ
+Thumbs.db
+
+
+# ## エディタの設定ファイル（必要に応じて） ##
+# ========================================
+# VS Codeのワークスペース設定など
+# .vscode/
+.vscode/
+
+# JetBrains
+.idea/
+
+# エディタ/ツールのキャッシュ
+.cache/
+.parcel-cache/
+
+# ビルド出力（プロジェクトの方針でコミットする場合は削除してください）
+dist/
+build/
+
+# テスト・カバレッジ
+coverage/
+.nyc_output/
+
+# ログ
+npm-debug.log*
+yarn-error.log
+pnpm-debug.log
+*.log
+
+# 一時ファイル
+*.tmp
+*.temp
+*.bak
+
+# OS固有
+.DS_Store
+Thumbs.db
+
+# sourcemaps (不要であれば無視)
+*.map
+
+# 依存ロックファイルは通常コミットするため ignore しない
