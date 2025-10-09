@@ -39,6 +39,6 @@ git push
 ブランチでの作業が完了し、developブランチにマージしてほしい場合は、プルリクエストを作成してください。
 プルリクエストを作成するときは以下を参考にしてください
 
-[プルリクエストの手順書](/docs/PULLREQUESTS_SPECIFICATION.md)
+[プルリクエストの手順書](/docs/PULLREQUESTS_COMMENT_SPECIFICATION.md)
 
 
