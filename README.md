@@ -35,47 +35,56 @@
 -   **Admin Interface**: LINE Messaging API, AppSheet
 -   **Development Tool**: clasp, Git, GitHub
 
+## プロジェクト構造
+
+```
+STEAM_tracker/
+├── docs/                    # プロジェクトドキュメント
+│   ├── GITHUB_GUIDE.md     # Git/GitHub運用ガイド
+│   └── REQUIREMENTS.md      # 要件定義書
+└── README.md               # 本ファイル
+```
+
 ## 環境構築
 
-1.  **依存パッケージのインストール**
-    - GAS管理者のみ 
-    ```
-    npm init -y
-    npm install @google/clasp -g
-    npm install @types/google-apps-script
-    ```
-    - 他メンバー (package.jsonに従って)
-    ```
-    npm install @google/clasp -g
-    npm install
-    ```
+### 1. リポジトリのクローン
 
-2.  **claspでのログイン** 
-    ```
-    bash
-    clasp login
-    ```
+```bash
+git clone https://github.com/RyukokuDX/STEAM_tracker.git
+cd STEAM_tracker
+```
 
-3.  **リポジトリのクローン**
-    ```bash
-    git clone [リポジトリのURL]
-    cd [プロジェクト名]
-    ```
+### 2. claspでのログイン
 
-4.  **GASプロジェクトへの反映**
-    - ローカルの変更をGoogle環境へ反映 (push)
-    ```bash
-    clasp push
-    ```
-    - Google環境の変更をローカルへ反映 (pull)
-    ```bash
-    clasp pull
-    ```
-    ⚠️注意: このコマンドはローカルの未保存の変更を上書きするため、実行前にgit statusで状態を確認し、必要であればgit stashで変更を退避させてください。
+Google Apps Scriptにアクセスするため、claspでログインします。
 
-5.  **設定ファイルの作成(?)**
-    -   Google SheetsのIDやLINEのアクセストークンなど、秘密情報を管理します。
-    -   `.env.sample` ファイルをコピーして `.env` ファイルを作成し、必要な情報を追記してください。
+```bash
+clasp login
+```
+
+### 3. 設定ファイルの作成（必要に応じて）
+
+Google SheetsのIDやLINEのアクセストークンなど、秘密情報を管理する場合：
+
+-   `.env.sample` ファイルをコピーして `.env` ファイルを作成し、必要な情報を追記してください。
+
+> **Note:** 現在このプロジェクトでは設定ファイルが必須かどうか確認中です。
+
+### 4. GASプロジェクトへの反映
+
+#### ローカルの変更をGoogle環境へ反映 (push)
+
+```bash
+clasp push
+```
+
+#### Google環境の変更をローカルへ反映 (pull)
+
+```bash
+clasp pull
+```
+
+> **⚠️ 重要:** `clasp pull` コマンドはローカルの未保存の変更を上書きします。実行前に `git status` で状態を確認し、必要であれば `git stash` で変更を退避させてください。
 
 ## 開発ルール
 
@@ -85,6 +94,17 @@
     -   機能追加や修正は `develop` から `feature/` ブランチを切って行います。
 -   `develop` ブランチへのマージは、必ずGitHub上でPull Requestを作成し、チームメンバーのレビューを必須とします。
 
+## 貢献
+
+プロジェクトへの貢献を歓迎します！以下の手順でお願いします：
+
+1.  `develop` ブランチから `feature/` ブランチを作成
+2.  変更を加えてコミット
+3.  GitHub上でPull Requestを作成
+4.  チームメンバーのレビューを待つ
+
+詳細は [GitHub利用ガイド](./docs/GITHUB_GUIDE.md) を参照してください。
+
 ## ライセンス
 
-[ここにはライセンスを記述します。よくわからなければ MIT License などが一般的です。]
+本プロジェクトは [MIT License](./LICENSE) のもとで公開されています。
