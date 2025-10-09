@@ -23,7 +23,7 @@ git checkout -b mitani/feature/login
 5. 切りが良いタイミングや一日の作業の終わりのタイミングで**Commit**してください
     そのときコミットメッセージを書いてもらうのですがそれは以下のフォーマットでお願いします。
 
-    [コミットメッセージの仕様](/docs/COMMIT_SPECIFICATION.md)
+    [コミットメッセージの仕様](/docs/COMMIT_MESSAGE_SPECIFICATION.md)
 ```
 git commit -m "コミットメッセージ"
 ```
