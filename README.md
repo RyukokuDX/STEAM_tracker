@@ -58,26 +58,17 @@ STEAM_tracker/
 ├── LICENSE                                   # ライセンス
 └── README.md                                 # 本ファイル
 ```
+
 ## 環境構築
 
 ### 1. リポジトリのクローン
 
 ```bash
-git clone https://github.com/RyukokuDX/STEAM_tracker.git
+git clone git@github.com:RyukokuDX/STEAM_tracker.git
 cd STEAM_tracker
 ```
 
-### 2. claspでのログイン
-
-Google Apps Scriptにアクセスするため、claspでログインします。
-
-```bash
-clasp login
-```
-
-詳しい使い方（インストール、認証方法、ビルド→push、CI 設定例など）は [claspガイド](./docs/CLASP_GUIDE.md) を参照してください。
-
-### 3. 設定ファイルの作成（必要に応じて）
+### 2. 設定ファイルの作成（必要に応じて）
 必須環境変数（例: .env）
 - SHEET_ID=（Google Sheets の ID）
 - LINE_CHANNEL_ACCESS_TOKEN=（LINE チャネルアクセストークン）
@@ -91,7 +82,17 @@ Google SheetsのIDやLINEのアクセストークンなど、秘密情報を管�
 
 > **Note:** 現在このプロジェクトでは設定ファイルが必須かどうか確認中です。
 
-### 4. GASプロジェクトへの反映
+## GASプロジェクトへの反映
+
+### claspでのログイン
+
+Google Apps Scriptにアクセスするため、claspでログインします。
+
+```bash
+clasp login
+```
+
+詳しい使い方（インストール、認証方法、ビルド→push、CI 設定例など）は [claspガイド](./docs/CLASP_GUIDE.md) を参照してください。
 
 #### ローカルの変更をGoogle環境へ反映 (push)
 
