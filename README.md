@@ -58,6 +58,7 @@ STEAM_tracker/
 ├── LICENSE                                   # ライセンス
 └── README.md                                 # 本ファイル
 ```
+
 ## 環境構築
 
 ### 1. リポジトリのクローン
@@ -82,7 +83,8 @@ Google SheetsのIDやLINEのアクセストークンなど、秘密情報を管�
 > **Note:** 現在このプロジェクトでは設定ファイルが必須かどうか確認中です。
 
 ## GASプロジェクトへの反映
-#### claspでのログイン
+
+### claspでのログイン
 
 Google Apps Scriptにアクセスするため、claspでログインします。
 
@@ -91,7 +93,6 @@ clasp login
 ```
 
 詳しい使い方（インストール、認証方法、ビルド→push、CI 設定例など）は [claspガイド](./docs/CLASP_GUIDE.md) を参照してください。
-
 
 #### ローカルの変更をGoogle環境へ反映 (push)
 
