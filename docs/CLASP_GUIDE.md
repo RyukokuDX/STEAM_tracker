@@ -22,27 +22,62 @@ npm install --save-dev @google/clasp
 
 グローバルインストールを避ける場合は `npx clasp <command>` を利用できます。
 
+
 ### 2. 認証 / ログイン
 
-開発者個人でブラウザ認証を行う:
+clasp が Google アカウントにアクセスするための認証を行います。環境に応じて方法を選択してください。
+
+A. 通常の PC 環境（Windows, Mac）
+
+以下のコマンドを実行すると、自動でブラウザが起動します。画面の指示に従って Google アカウントを選択し、アクセスを許可してください。
+
+PowerShell
 
 ```powershell
 clasp login
 ```
 
-ヘッドレス環境やブラウザが使えない場合:
+B. WSL, SSH 接続サーバー等の特殊な環境
 
-```powershell
-clasp login --no-localhost
-```
+WSL (Windows Subsystem for Linux) や SSH で接続したサーバーなど、ターミナルからブラウザを直接・自動で開けない環境では、`--no-localhost` オプションを付けて手動で認証を行います。
 
-CI で自動デプロイする際はサービスアカウントを使った認証を推奨します（GCP でサービスアカウントを作成し、Apps Script API を有効化しておく）。サービスアカウント JSON を使用してログイン:
+【手順】
+
+1. コマンド実行:
+
+	PowerShell
+
+	```powershell
+	clasp login --no-localhost
+	```
+
+2. URL へアクセス:
+
+	ターミナルに表示された URL を手動でコピーし、ブラウザのアドレスバーに貼り付けてアクセスします。
+
+3. Google で認証・許可:
+
+	画面の指示に従い、アカウントを選択して clasp へのアクセスを許可します。
+
+4. 認証コードをコピー:
+
+	許可すると、ブラウザ画面に認証コードが表示されます。このコードをコピーしてください。
+
+5. ターミナルへ貼り付け:
+
+	コピーした認証コードを、元のターミナルに貼り付けて Enter キーを押します。
+
+C. CI/CD 環境（自動デプロイ）
+
+GitHub Actions などで自動デプロイを行う際は、機械用のサービスアカウントを使用します。（以降の ### 7. CI / 自動デプロイのヒントで詳述）
+
+PowerShell
 
 ```powershell
 clasp login --creds ./path/to/service-account.json
 ```
 
-注意: サービスアカウントに必要な権限（プロジェクトの Editor など）を付与すること。
+注意: サービスアカウントに必要な権限（Apps Script API の使用と対象プロジェクトへのアクセス権）を付与してください。
 
 ### 3. プロジェクトの作成 / 既存プロジェクトのリンク
 
@@ -152,6 +187,28 @@ clasp deploy --description "release v1.0"
 - .clasp.json の scriptId が間違っている: 正しい scriptId を指定して再 clone するか、手動で `.clasp.json` を修正。
 - push しても反映されない: `rootDir` が正しいか、`.claspignore` で必要ファイルを除外していないかを確認。
 - 実行時にスコープ不足エラー: GCP コンソールで該当 API を有効化し、必要な権限をスクリプトプロジェクトに付与する。
+
+#### 【Windows】PowerShellでnpmやclaspコマンドが実行できない
+Windowsのセキュリティ設定により、スクリプトの実行がブロックされることがあります。その場合は、PowerShellで以下のコマンドを実行して実行ポリシーを変更してください。
+
+現在のターミナルだけ許可する場合:
+```powershell
+Set-ExecutionPolicy RemoteSigned -Scope Process
+```
+現在のユーザーに対して常に許可する場合:
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+#### 【WSL】claspコマンドの動作が遅い
+WSL環境で直接claspを実行すると、Windowsとのファイル連携により動作が遅くなる場合があります。
+対策として、WSLからWindows側のclaspを呼び出すエイリアス（別名）を設定すると高速化が期待できます。~/.bashrcなどの設定ファイルに以下を追記してください。（<ユーザー名>はご自身のWindowsのユーザー名に置き換えてください）
+
+```powershell
+alias claspwin='powershell.exe -NoProfile -Command '\''$env:Path="C:\Program Files\nodejs;C:\Users\<ユーザー名>\AppData\Roaming\npm;" + $env:Path; clasp'\'''
+```
+設定後、ターミナルを再起動すればclaspの代わりにclaspwinというコマンドが使えます。（例: claspwin push）
+注: この方法を利用する場合、上記のPowerShell実行ポリシーの変更が必要になることがあります。
 
 ### 9. チェックリスト（導入時）
 
