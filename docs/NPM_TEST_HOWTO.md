@@ -133,44 +133,6 @@ npm test
 - トップレベル関数として定義（`var/let/const` に無名関数を代入しないほうが無難）
 - GAS API 利用時は必ずモックを拡張（未定義だと `xxx is not a function` になります）
 
-## 新しい関数を追加した際のテスト方法
-
-1) 関数を追加（例: `GAS/コード.js` または `GAS/code.gs` にトップレベル関数を定義）
-
-```javascript
-// 例: GAS/コード.js
-function helloName(name) {
-  return `Hello, ${name}!`;
-}
-```
-
-2) 必要なモックを追加（GAS API を使う場合のみ）
-- `GAS/tests/__mocks__/google-apps-script.js` に不足しているメソッドを追記
-- 例: `SpreadsheetApp.getActiveSpreadsheet()` を使うなら、その戻り値や `getSheetByName` などを追加
-
-3) テストファイルを作成
-- 場所: `GAS/__tests__/helloName.test.js`（命名は任意だが `*.test.js` 推奨）
-
-```javascript
-test('helloName は挨拶文を返す', () => {
-  // .gs/.js はテスト起動時に読み込まれ、トップレベル関数は global に載る
-  const fn = global.helloName || helloName;
-  expect(fn('GAS')).toBe('Hello, GAS!');
-});
-```
-
-4) 実行
-
-```bash
-cd GAS
-npm test
-```
-
-5) よくある注意点
-- `.gs` でも `.js` でもOK（テスト起動時に読み込まれます）
-- トップレベル関数として定義（`var/let/const` に無名関数を代入しないほうが無難）
-- GAS API 利用時は必ずモックを拡張（未定義だと `xxx is not a function` になります）
-
 ### WSL から PowerShell の npm を呼ぶ設定（ユーザー名を含めない例）
 
 `~/.bashrc` に次を追記し、ユーザーディレクトリは `$env:USERPROFILE` を使うか固定値（ユーザー名）を利用して下さい
@@ -192,5 +154,3 @@ claspwin -v
 npmwin -v
 npxwin -v
 ```
-
-
