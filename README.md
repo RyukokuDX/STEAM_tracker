@@ -53,7 +53,7 @@ STEAM_tracker/
 │ 
 ├── GAS/
 |   ├── code.gs
-├── .claspignore                              # GASにアップしたくないファイル/フォルダを指定
+    └── .claspignore                              # GASにアップしたくないファイル/フォルダを指定
 ├── .gitignore                                # Gitの管理から除外するファイル/フォルダを指定
 ├── LICENSE                                   # ライセンス
 └── README.md                                 # 本ファイル
