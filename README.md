@@ -15,7 +15,13 @@
 
 -   **[プロジェクト要件定義書](./docs/REQUIREMENTS.md)**
 
-    -   プロジェクトの目的、要件、仕様などを定義したドキュメントです。
+    -   プロジェクトの目的、ユースケース、業務要件を定義したドキュメントです。
+    -   「何を作るか」「誰が使うか」「どのような価値を提供するか」を明確にします。
+
+-   **[詳細仕様書](./docs/SPECIFICATIONS.md)**
+
+    -   技術的な実装仕様、データ構造、画面仕様を詳細に定義したドキュメントです。
+    -   「どのように実現するか」を具体的に説明します。開発時の参照ドキュメントとして使用します。
 
 -   **[clasp ガイド](./docs/CLASP_GUIDE.md)**
 
@@ -48,8 +54,8 @@ STEAM_tracker/
 │   ├── GITHUB_GUIDE.md                       # Git/GitHub運用ガイド
 │   ├── COMMIT_MESSAGE_SPECIFICATION.md       # コミットメッセージの仕様
 │   ├── PULLREQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
-│   |── REQUIREMENTS.md                       # 要件定義書
-|   └── SPECIFICATIONS.md                     # 要件仕様書
+│   |── REQUIREMENTS.md                       # 要件定義書（ビジネス要件）
+|   └── SPECIFICATIONS.md                     # 詳細仕様書（技術仕様）
 │ 
 ├── GAS/
 |   ├── code.gs
