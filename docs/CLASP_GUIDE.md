@@ -204,7 +204,7 @@ Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 WSL環境で直接claspを実行すると、Windowsとのファイル連携により動作が遅くなる場合があります。
 対策として、WSLからWindows側のclaspを呼び出すエイリアス（別名）を設定すると高速化が期待できます。~/.bashrcなどの設定ファイルに以下を追記してください。（<ユーザー名>はご自身のWindowsのユーザー名に置き換えてください）
 
-```powershell
+```bash
 alias claspwin='powershell.exe -NoProfile -Command '\''$env:Path="C:\Program Files\nodejs;C:\Users\<ユーザー名>\AppData\Roaming\npm;" + $env:Path; clasp'\'''
 ```
 設定後、ターミナルを再起動すればclaspの代わりにclaspwinというコマンドが使えます。（例: claspwin push）
