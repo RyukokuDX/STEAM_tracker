@@ -58,6 +58,7 @@ STEAM_tracker/
 ├── LICENSE                                   # ライセンス
 └── README.md                                 # 本ファイル
 ```
+
 ## 環境構築
 
 ### 1. リポジトリのクローン
@@ -94,7 +95,8 @@ cd STEAM_tracker
 > Googl Spread Sheetで使うIDやトークンは.envファイルに書かないでください 
 
 ## GASプロジェクトへの反映
-#### claspでのログイン
+
+### claspでのログイン
 
 Google Apps Scriptにアクセスするため、claspでログインします。
 
@@ -103,7 +105,6 @@ clasp login
 ```
 
 詳しい使い方（インストール、認証方法、ビルド→push、CI 設定例など）は [claspガイド](./docs/CLASP_GUIDE.md) を参照してください。
-
 
 #### ローカルの変更をGoogle環境へ反映 (push)
 
