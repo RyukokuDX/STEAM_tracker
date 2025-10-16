@@ -1,5 +1,11 @@
 # AppSheet 仕様書
 
+> スキーマバージョン: v1.0 （2025-10-16）
+>
+> `items` シートの列配置は次の通り（必ず `docs/FORM_REQUIREMENTS.md` と一致させてください）。
+>
+> A: Timestamp | B: email | C: name | D: organization | E: photo_file_id | F: handover_date | G: days_until_handover | H: status | I: admin_note
+
 このドキュメントは AppSheet を用いた管理者向けダッシュボード（管理画面）の仕様書です。対象は管理者が物品の一覧確認、検索、アーカイブ、延長承認などの操作を行うための AppSheet アプリとなります。
 
 ---
@@ -17,13 +23,13 @@
 `items` シート
 | 列 | カラム名 | 型 | 説明 |
 | ---: | --- | --- | --- |
-| A | id | TEXT (キー) | 一意のID（例: UUID） |
+| A | Timestamp | DATETIME | フォーム送信時刻（自動記録） |
 | B | email | TEXT | 登録者メール |
 | C | name | TEXT | 登録者氏名 |
 | D | organization | TEXT | 団体名 |
-| E | photo_file_id | TEXT | Drive ファイル ID / リンク |
-| F | handover_date | DATE | 明け渡し日 |
-| G | days_until_handover | NUMBER | 計算列（Sheets 側で算出） |
+| E | photo_file_id | TEXT | Drive ファイル ID / 共有リンク |
+| F | handover_date | DATE | 明け渡し日（YYYY-MM-DD） |
+| G | days_until_handover | NUMBER | 明け渡し日までの日数（計算列） |
 | H | status | TEXT | active / archived / pending |
 | I | admin_note | TEXT | 管理者備考 |
 

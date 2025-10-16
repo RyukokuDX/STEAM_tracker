@@ -1,5 +1,11 @@
 # 写真の明け渡し（撤去）フォーム — 実装仕様書
 
+> スキーマバージョン: v1.0 （2025-10-16）
+>
+> この仕様は以下のスプレッドシート列配置を前提としています（必ず `docs/APP_SHEET.md` の `items` 定義と一致させてください）。
+>
+> A: Timestamp | B: email | C: name | D: organization | E: photo_file_id | F: handover_date | G: days_until_handover | H: status | I: admin_note
+
 このドキュメントはフォーム実装者・テスター向けの仕様書です。フォームの入力項目、検証ルール、スプレッドシートへの記録仕様、通知トリガー、受け入れ基準（Acceptance Criteria）および簡易テストケースを定義します。
 
 ---
