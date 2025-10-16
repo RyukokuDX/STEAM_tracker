@@ -70,17 +70,29 @@ cd STEAM_tracker
 
 ### 2. 設定ファイルの作成（必要に応じて）
 必須環境変数（例: .env）
+
+-   `.env.sample` ファイルをコピーして `.env` ファイルを作成し、必要な情報を追記してください。
+
+> **Note:** 現在このプロジェクトでは設定ファイルが必須かどうか確認中です。
+
+#### Google SheetsのIDやLINEのアクセストークンなど、秘密情報を管理する場合
+スクリプトプロパティにGASで使うIDなどを追加してください
+
+手順：
+
+1. Google Sheetsから**スクリプトエディタ（Apps Script）**を開く。（拡張機能メニューなどから）
+
+2. GASプロジェクトのプロジェクト設定（歯車アイコン⚙️）を開く。
+
+3. 「スクリプト プロパティ」セクションで、「スクリプトプロパティを追加」を押し、「プロパティ」「値」の欄に以下のように追加して保存してください。
+
 - SHEET_ID=（Google Sheets の ID）
 - LINE_CHANNEL_ACCESS_TOKEN=（LINE チャネルアクセストークン）
 - LINE_CHANNEL_SECRET=（LINE チャネルシークレット）
 - GMAIL_API_ENABLED=true（メール送信が AppScript 経由で必要な場合）
 - OPTIONAL: SERVICE_ACCOUNT_CREDENTIALS (CI で使用するサービスアカウント JSON のパスか内容)
 
-Google SheetsのIDやLINEのアクセストークンなど、秘密情報を管理する場合：
-
--   `.env.sample` ファイルをコピーして `.env` ファイルを作成し、必要な情報を追記してください。
-
-> **Note:** 現在このプロジェクトでは設定ファイルが必須かどうか確認中です。
+> Google Spread Sheetで使うIDやトークンは.envファイルに書かないでください 
 
 ## GASプロジェクトへの反映
 
