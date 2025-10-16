@@ -50,6 +50,7 @@ STEAM_tracker/
 │   ├── COMMIT_MESSAGE_SPECIFICATION.md       # コミットメッセージの仕様
 │   ├── FORM_REQUIREMENTS                     # フォーム仕様書
 │   ├── GAS_REQUIREMENTS                      # GAS仕様書
+│   ├── COMMIT_MESSAGE_AS_CODE_GUIDE.md       # コミットメッセージ駆動開発のガイド
 │   ├── PULLREQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
 │   |── REQUIREMENTS.md                       # 要件定義書
 |   └── SPECIFICATIONS.md                     # 要件仕様書
