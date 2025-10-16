@@ -1,1 +1,97 @@
-test
+<!-- index.html -->
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>年度末制限フォーム</title>
+    <style>
+      body{font-family: Arial; max-width:720px;margin:24px;}
+      .field{margin-bottom:12px;}
+      .error{color:#b00020;}
+      .success{color:#0a7;}
+    </style>
+  </head>
+  <body>
+    <h1>年度末（3月20日）まで選べるフォーム</h1>
+
+    <div class="field">
+      <label for="name">名前</label>
+      <input id="name" type="text" />
+    </div>
+
+    <div class="field">
+      <label for="email">メール(将来的には手入力にはしない予定)</label>
+      <input id="email" type="email" />
+    </div>
+
+    <div class="field">
+      <label for="date">希望日（カレンダーで選択）</label>
+      <input id="date" type="date" />
+      <div id="hint"></div>
+    </div>
+
+    <div id="msg"></div>
+
+    <div style="margin-top:16px;">
+      <button id="submit">送信</button>
+    </div>
+
+    <script>
+      // doGet から埋め込まれたテンプレート変数を受け取る（サーバで設定済み）
+      const FISCAL_END = "<?= fiscalEndStr ?>"; // 例: "2026-03-20"
+      const TODAY = "<?= todayStr ?>";         // 例: "2025-10-16"
+
+      (function init(){
+        const dateInput = document.getElementById("date");
+        dateInput.setAttribute("min", TODAY);
+        dateInput.setAttribute("max", FISCAL_END);
+        document.getElementById("hint").textContent = `選択可能な範囲： ${TODAY} 〜 ${FISCAL_END}`;
+      })();
+
+      document.getElementById("submit").addEventListener("click", function(){
+        const name = document.getElementById("name").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const selected = document.getElementById("date").value; // "YYYY-MM-DD" か ""
+
+        const msgEl = document.getElementById("msg");
+        msgEl.className = "";
+        msgEl.textContent = "";
+
+        if(!selected){
+          msgEl.className = "error";
+          msgEl.textContent = "日付を選択してください。";
+          return;
+        }
+
+        const min = document.getElementById("date").min;
+        const max = document.getElementById("date").max;
+        if(selected < min || selected > max){
+          msgEl.className = "error";
+          msgEl.textContent = `選択した日付は許可範囲外です（${min}〜${max}）。`;
+          return;
+        }
+
+        const payload = { name, email, date: selected };
+
+        google.script.run.withSuccessHandler(function(res){
+          if(res && res.status === "ok"){
+            msgEl.className = "success";
+            msgEl.textContent = res.message || "送信完了しました。";
+            // フォームをリセット
+            document.getElementById("name").value = "";
+            document.getElementById("email").value = "";
+            document.getElementById("date").value = "";
+          } else {
+            msgEl.className = "error";
+            msgEl.textContent = res && res.message ? "エラー: " + res.message : "送信に失敗しました。";
+          }
+        }).withFailureHandler(function(err){
+          msgEl.className = "error";
+          msgEl.textContent = "サーバ接続に失敗しました。";
+          console.error(err);
+        }).submitForm(payload);
+      });
+    </script>
+  </body>
+</html>
