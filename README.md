@@ -92,7 +92,7 @@ cd STEAM_tracker
 - GMAIL_API_ENABLED=true（メール送信が AppScript 経由で必要な場合）
 - OPTIONAL: SERVICE_ACCOUNT_CREDENTIALS (CI で使用するサービスアカウント JSON のパスか内容)
 
-> Googl Spread Sheetで使うIDやトークンは.envファイルに書かないでください 
+> Google Spread Sheetで使うIDやトークンは.envファイルに書かないでください 
 
 ## GASプロジェクトへの反映
 
