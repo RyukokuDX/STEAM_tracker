@@ -44,9 +44,12 @@
 ```
 STEAM_tracker/
 ├── docs/                                     # プロジェクトドキュメント
+|   ├── APP_SHEET.md                          # アップシート仕様書
 |   ├── CLASP_GUIDE.md                        # claspガイド
 │   ├── GITHUB_GUIDE.md                       # Git/GitHub運用ガイド
 │   ├── COMMIT_MESSAGE_SPECIFICATION.md       # コミットメッセージの仕様
+│   ├── FORM_REQUIREMENTS                     # フォーム仕様書
+│   ├── GAS_REQUIREMENTS                      # GAS仕様書
 │   ├── PULLREQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
 │   |── REQUIREMENTS.md                       # 要件定義書
 |   └── SPECIFICATIONS.md                     # 要件仕様書
