@@ -47,6 +47,7 @@ STEAM_tracker/
 |   ├── CLASP_GUIDE.md                        # claspガイド
 │   ├── GITHUB_GUIDE.md                       # Git/GitHub運用ガイド
 │   ├── COMMIT_MESSAGE_SPECIFICATION.md       # コミットメッセージの仕様
+│   ├── COMMIT_MESSAGE_AS_CODE_GUIDE.md       # コミットメッセージ駆動開発のガイド
 │   ├── PULLREQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
 │   |── REQUIREMENTS.md                       # 要件定義書
 |   └── SPECIFICATIONS.md                     # 要件仕様書
