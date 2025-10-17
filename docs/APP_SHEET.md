@@ -28,7 +28,7 @@
 | C | name | TEXT | 登録者氏名 |
 | D | organization | TEXT | 団体名 |
 | E | photo_file_id | TEXT | Drive ファイル ID / 共有リンク |
-| F | handover_date | DATE | 明け渡し日（YYYY-MM-DD） |
+| F | handover_on | DATE | 明け渡し日（YYYY-MM-DD） |
 | G | days_until_handover | NUMBER | 明け渡し日までの日数（計算列） |
 | H | status | TEXT | active / archived / pending |
 | I | admin_note | TEXT | 管理者備考 |
