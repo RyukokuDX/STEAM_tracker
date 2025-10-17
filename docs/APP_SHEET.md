@@ -23,7 +23,7 @@
 `items` シート
 | 列 | カラム名 | 型 | 説明 |
 | ---: | --- | --- | --- |
-| A | Timestamp | DATETIME | フォーム送信時刻（自動記録） |
+| A | registered_at | DateTime | フォーム送信時刻（自動記録） |
 | B | email | TEXT | 登録者メール |
 | C | name | TEXT | 登録者氏名 |
 | D | organization | TEXT | 団体名 |
