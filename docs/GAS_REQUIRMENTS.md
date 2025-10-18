@@ -8,10 +8,9 @@
 
 GAS 側は主に次を担います。
 
-- Google Forms / Google Sheets との連携（申請データの受信・記録）
+- Forms / Google Spread Sheets との連携（申請データの受信・記録）
 - 画像ファイルの Drive への保存・リンク管理
 - 明け渡し日（撤去）のリマインダー送信（メール / LINE 連携）
-- 管理者用の操作（撤去完了のアーカイブ、延長許可/拒否）
 
 ---
 
@@ -25,7 +24,6 @@ GAS 側は主に次を担います。
 
 - drive-utils.gs
 	- saveFileToDrive(fileBlob, folderId): Drive にファイルを保存し、fileId を返す。
-	- getFileUrl(fileId): ファイルの共有リンクを返す（必要に応じて権限設定）。
 
 - sheet-utils.gs
 	- appendFormData(rowObject): スプレッドシートに行を追加する。返り値: 行番号。内部で日付フォーマットやID付与を行う。
@@ -93,10 +91,7 @@ GAS が必要とする OAuth スコープの例（実際のコードで使用す
 
 ## 9. デプロイ手順（簡易）
 
-1. ローカルで `npm run build`（tsc 等）を実行し、ビルド成果物を確認する。
-2. `npx clasp push` でコードを Apps Script に反映。
-3. Apps Script エディタでトリガーを確認し、必要なら `clasp deploy` でバージョンを作成する。
-
+**[clasp ガイド](CLASP_GUIDE.md)**
 ---
 
 ## 10. 監視と運用
