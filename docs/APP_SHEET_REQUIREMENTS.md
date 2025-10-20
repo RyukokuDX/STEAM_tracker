@@ -53,7 +53,7 @@
 
 ## 3. アクション（AppSheet アクション）
 
-- Archvive Item
+- Archive Item
   - タイプ: Data: add a row to another table (archives) + Data: set the values of some columns
   - 動作: items の status を `archived` に更新し、archives シートにアーカイブ情報を追加する。
 
