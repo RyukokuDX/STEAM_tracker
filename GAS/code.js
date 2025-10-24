@@ -1,5 +1,6 @@
 // Code.gs
 const SPREADSHEET_ID = "1In4qBOnN2vd-mFGkDe5BoTfLORlUssFHYTt1JG_QQ_E";
+const DOMAIN = 'mail.ryukoku.ac.jp'; // 許可するドメイン（末尾）
 
 /**
  * 指定日時（Dateオブジェクト）を基に、その"年度末"を返す。
@@ -28,6 +29,12 @@ function getFiscalYearEnd(todayDate) {
 
 // doGet で fiscalEnd をテンプレートに渡してクライアント側で max を設定できるようにする
 function doGet(e) {
+  const email = Session.getActiveUser().getEmail();
+  if (!email || !email.endsWith('@' + DOMAIN)) {
+    return HtmlService.createHtmlOutput('アクセス拒否：ドメイン外または未サインイン')
+      .setTitle('アクセス拒否');
+  }
+
   const tpl = HtmlService.createTemplateFromFile('index');
   const now = new Date();
   // Apps Script のタイムゾーンで評価したい場合は Utilities.formatDate を使って文字列で渡す
@@ -35,7 +42,14 @@ function doGet(e) {
   const fiscalEndDate = getFiscalYearEnd(now);
   tpl.fiscalEndStr = Utilities.formatDate(fiscalEndDate, tz, "yyyy-MM-dd"); // 例 "2026-03-20"
   tpl.todayStr = Utilities.formatDate(now, tz, "yyyy-MM-dd");
-  return tpl.evaluate().setTitle("年度末制限フォーム");
+
+  // ここで domain もテンプレートに渡す（テンプレート中で JS 評価しないようにするため）
+  tpl.email = email;
+  tpl.domain = DOMAIN;
+
+
+  return tpl.evaluate()
+    .setTitle("年度末制限フォーム");
 }
 
 /**
@@ -43,9 +57,15 @@ function doGet(e) {
  */
 function submitForm(payload) {
   try {
+    const serverEmail = Session.getActiveUser().getEmail();
+    if (!serverEmail || !serverEmail.endsWith('@' + DOMAIN)) {
+      throw new Error("アクセス拒否：サインインまたはドメイン確認に失敗しました。");
+    }
+
     if (!payload || !payload.date) {
       throw new Error("日付が指定されていません。");
     }
+
     const tz = Session.getScriptTimeZone();
     const now = new Date();
     const todayStr = Utilities.formatDate(now, tz, "yyyy-MM-dd");
@@ -53,7 +73,6 @@ function submitForm(payload) {
     // サーバ側で年度末を計算し、比較する
     const fiscalEnd = getFiscalYearEnd(now);
     const fiscalEndStr = Utilities.formatDate(fiscalEnd, tz, "yyyy-MM-dd");
-
     const selected = payload.date; // "YYYY-MM-DD"
 
     if (selected < todayStr) {
@@ -69,7 +88,7 @@ function submitForm(payload) {
     if (sh.getLastRow() === 0) {
       sh.appendRow(["タイムスタンプ", "名前", "email", "selectedDate"]);
     }
-    sh.appendRow([new Date(), payload.name || "", payload.email || "", selected]);
+    sh.appendRow([new Date(), payload.name || "", serverEmail || "", selected]);
 
     return { status: "ok", message: "送信完了（年度末: " + fiscalEndStr + "）" };
   } catch (err) {
