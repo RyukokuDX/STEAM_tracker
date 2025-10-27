@@ -23,6 +23,19 @@ credentials.json
 .DS_Store
 Thumbs.db
 
+# テスト関連を除外
+tests/
+__tests__/
+jest.config.js
+jest.config.cjs
+jest.config.ts
+jest.config.*
+
+# 明示的に無視する追加ファイル
+jest.config.js
+tests/__mocks__/google-apps-script.js
+tests/setup-gas.js
+
 # ソースマップやログなどの一時ファイル
 *.map
 *.log

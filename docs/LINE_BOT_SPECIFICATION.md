@@ -5,7 +5,7 @@
 
 ## 2. 主な機能
 
-1. handoverDayRemind（スプレッドシート上の日付を確認し、一致する日付であればメッセージ送信）
+1. handoverDayRemind（スプレッドシート上の日付を確認し、リマインドする日付であればメッセージを送信）
 2. registerNotify（物品登録の通知）
 3. extendRequestNotify （延長申請の通知、申請受信時に該当フォームへ誘導する）
 4. sendLineMessage（LINE Messaging APIでメッセージを送信）
