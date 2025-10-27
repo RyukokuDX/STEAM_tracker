@@ -1,59 +1,61 @@
 // Code.gs
-const SPREADSHEET_ID = "1In4qBOnN2vd-mFGkDe5BoTfLORlUssFHYTt1JG_QQ_E";
-const DOMAIN = 'mail.ryukoku.ac.jp'; // 許可するドメイン（末尾）
+const SPREADSHEET_ID = "1kGzhtCne-zbaGDMzWf1SdX3IH0EVtodszGXN3prP7C4";
+const DOMAIN = 'mail.ryukoku.ac.jp';
 
-/**
- * 指定日時（Dateオブジェクト）を基に、その"年度末"を返す。
- * ここでは年度末を毎年「3月20日」と定義する。
- * 返すのは Date オブジェクト（該当年の 3月20日 の 00:00:00）。
- * ロジック：今年の 3/20 を作って、もし today > thisMar20 なら来年の 3/20 を返す。
- */
 function getFiscalYearEnd(todayDate) {
-  // todayDate は Date
   const year = todayDate.getFullYear();
-  // 月は 0 ベース → 2 は 3月
-  const thisYearMar20 = new Date(year, 2, 20); // yyyy-03-20 00:00:00
-  // 比較：日付の時刻部分も影響するので、日付のみ比較したい場合は時刻を正規化する
+  const thisYearMar20 = new Date(year, 2, 20);
   const normalize = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const t = normalize(todayDate);
   const m = normalize(thisYearMar20);
-
-  if (t > m) {
-    // 今日が今年の3/20 より後 → 次の年の 3/20 を返す
-    return new Date(year + 1, 2, 20);
-  } else {
-    // 今日が 3/20 以前（含む） → 今年の 3/20 を返す
-    return m;
-  }
+  if (t > m) return new Date(year + 1, 2, 20);
+  return m;
 }
 
-// doGet で fiscalEnd をテンプレートに渡してクライアント側で max を設定できるようにする
+// include 用（今回は index.html に全文を入れているので使わないが残す）
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
 function doGet(e) {
   const email = Session.getActiveUser().getEmail();
   if (!email || !email.endsWith('@' + DOMAIN)) {
     return HtmlService.createHtmlOutput('アクセス拒否：ドメイン外または未サインイン')
       .setTitle('アクセス拒否');
   }
-
   const tpl = HtmlService.createTemplateFromFile('index');
   const now = new Date();
-  // Apps Script のタイムゾーンで評価したい場合は Utilities.formatDate を使って文字列で渡す
   const tz = Session.getScriptTimeZone();
-  const fiscalEndDate = getFiscalYearEnd(now);
-  tpl.fiscalEndStr = Utilities.formatDate(fiscalEndDate, tz, "yyyy-MM-dd"); // 例 "2026-03-20"
+  tpl.fiscalEndStr = Utilities.formatDate(getFiscalYearEnd(now), tz, "yyyy-MM-dd");
   tpl.todayStr = Utilities.formatDate(now, tz, "yyyy-MM-dd");
-
-  // ここで domain もテンプレートに渡す（テンプレート中で JS 評価しないようにするため）
   tpl.email = email;
   tpl.domain = DOMAIN;
-
-
-  return tpl.evaluate()
-    .setTitle("年度末制限フォーム");
+  return tpl.evaluate().setTitle("年度末制限フォーム").setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
 }
 
 /**
- * payload.date は "YYYY-MM-DD" 形式の文字列を想定している
+ * 利用規約への同意を記録する（consent_log シートを作る）
+ */
+function logConsent() {
+  const serverEmail = Session.getActiveUser().getEmail();
+  if (!serverEmail || !serverEmail.endsWith('@' + DOMAIN)) {
+    return { status: 'error', message: 'サインインまたはドメイン確認に失敗しました。' };
+  }
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sh = ss.getSheetByName("consent_log") || ss.insertSheet("consent_log");
+    if (sh.getLastRow() === 0) {
+      sh.appendRow(["timestamp", "email", "note"]);
+    }
+    sh.appendRow([new Date(), serverEmail, "利用規約（画面同意）"]);
+    return { status: 'ok' };
+  } catch (err) {
+    return { status: 'error', message: String(err) };
+  }
+}
+
+/**
+ * フォーム送信（既存の submitForm）
  */
 function submitForm(payload) {
   try {
@@ -61,34 +63,23 @@ function submitForm(payload) {
     if (!serverEmail || !serverEmail.endsWith('@' + DOMAIN)) {
       throw new Error("アクセス拒否：サインインまたはドメイン確認に失敗しました。");
     }
-
-    if (!payload || !payload.date) {
-      throw new Error("日付が指定されていません。");
-    }
+    if (!payload || !payload.date) throw new Error("日付が指定されていません。");
 
     const tz = Session.getScriptTimeZone();
     const now = new Date();
     const todayStr = Utilities.formatDate(now, tz, "yyyy-MM-dd");
+    const fiscalEndStr = Utilities.formatDate(getFiscalYearEnd(now), tz, "yyyy-MM-dd");
+    const selected = payload.date;
 
-    // サーバ側で年度末を計算し、比較する
-    const fiscalEnd = getFiscalYearEnd(now);
-    const fiscalEndStr = Utilities.formatDate(fiscalEnd, tz, "yyyy-MM-dd");
-    const selected = payload.date; // "YYYY-MM-DD"
+    if (selected < todayStr) throw new Error("過去の日付は選べません。");
+    if (selected > fiscalEndStr) throw new Error("選択した日付は年度末（" + fiscalEndStr + "）を超えています。");
 
-    if (selected < todayStr) {
-      throw new Error("過去の日付は選べません。");
-    }
-    if (selected > fiscalEndStr) {
-      throw new Error("選択した日付は年度末（" + fiscalEndStr + "）を超えています。");
-    }
-
-    // 検証を通ったらスプレッドシートに書き込む
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sh = ss.getSheetByName("responses") || ss.insertSheet("responses");
     if (sh.getLastRow() === 0) {
       sh.appendRow(["タイムスタンプ", "名前", "email", "selectedDate"]);
     }
-    sh.appendRow([new Date(), payload.name || "", serverEmail || "", selected]);
+    sh.appendRow([new Date(), payload.name || "", serverEmail, selected]);
 
     return { status: "ok", message: "送信完了（年度末: " + fiscalEndStr + "）" };
   } catch (err) {
