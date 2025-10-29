@@ -1,14 +1,14 @@
-const SHEET_ID = SpreadsheetApp.openById("1U3enu3ETOh_seroYmpO95p2yjW2RSUC7WRLyDk1rhs8");
-const SHEET = SHEET_ID.getSheetByName("シート1");
-const ACCESS_TOKEN = '';
-const USER_ID = '';
+const SPREAD_SHEET = SpreadsheetApp.openById("1U3enu3ETOh_seroYmpO95p2yjW2RSUC7WRLyDk1rhs8");
+const SHEET = SPREAD_SHEET.getSheetByName("管理シート");
+const ACCESS_TOKEN = 'Wl7oj84NxBzYNRy0YWLn2bw36m10IWrHR3GmguKTM/QwBpnDakpP7leNgh0cWurBE+joXlj0T/ClOQ/ZJxzs/R2HvdM1d0W1JdqG/pQCC/kylvdqJcOC6vKr1JJXjnOO18XlBB9aLagFd0T+iiSfswdB04t89/1O/w1cDnyilFU=';
+const USER_ID = 'Uc96692787f41d9a314b78aff7a7c3c42';
 
 // 列要素
 const RESISTERED_AT = 0;        // フォーム送信時刻（自動記録）
 const EMAIL = 1;                // 登録者メール
 const NAME = 2;                 // 登録者氏名
 const ORGANIZATION = 3;         // 団体名
-const PHOTO_FILE_ID = 4         // Drive ファイル ID
+const PHOTO_FILE_ID = 4;        // Drive ファイル ID
 const HANDOVER_ON = 5;          // 明け渡し日（YYYY-MM-DD）
 const DAYS_UNTIL_HANDOVER = 6;  // 明け渡し日までの日数（計算列） 
 const STATUS = 7;               // active / archived / pending
@@ -27,23 +27,23 @@ function handoverDayRemind() {
     const handoverDay = data[i][DAYS_UNTIL_HANDOVER];
 
     // 明け渡し日の判定
-    if (handoverDay > 3) continue;
-    else if (handoverDay == 3) 
+    if (handoverDay > 3 || handoverDay === 2 || handoverDay === 1) continue;
+    else if (handoverDay === 3) 
     {
       const text = "[リマインド]" + organ + "の" + name + "さんの明け渡し日まであと3日です。";
       Logger.log(text);
-      //sendLineMessage(USER_ID, text);
+      sendLineMessage(USER_ID, text);
     } 
-    else if (handoverDay == 0)
+    else if (handoverDay === 0)
     {
       const text = "[リマインド]" + organ + "の" + name + "さんの明け渡し当日です。";
       Logger.log(text);
-      //sendLineMessage(USER_ID, text);
+      sendLineMessage(USER_ID, text);
     }
-    else 
-    {
-      Logger.log("例外が発生しました。  "); 
-      return 1;
+    else
+    { 
+      const text = i + "行目で例外が発生しました。";
+      Logger.log(text); 
     }
   }
 }
@@ -70,9 +70,7 @@ function extendRequestNotify()
                 + "こちらのフォームから延長を承認してください。\n"
                 + "（フォームのURL添付）";
   sendLineMessage(USER_ID, text);
-}
-
-// 
+} 
 
 // LINE Messaging APIでメッセージを送信
 function sendLineMessage(to, text) {
