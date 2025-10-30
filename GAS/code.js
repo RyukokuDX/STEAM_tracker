@@ -22,23 +22,33 @@ function handoverDayRemind() {
   for (let i = 1; i < data.length; i++) 
   {
     // メッセージに使用する要素
+    const email = data[i][EMAIL];
     const name = data[i][NAME];
     const organ = data[i][ORGANIZATION];
     const handoverDay = data[i][DAYS_UNTIL_HANDOVER];
+
+    let isSuccess = 0; // メール送信成功フラグ
 
     // 明け渡し日の判定
     if (handoverDay > 3 || handoverDay === 2 || handoverDay === 1) continue;
     else if (handoverDay === 3) 
     {
       const text = "[リマインド]" + organ + "の" + name + "さんの明け渡し日まであと3日です。";
+      const subject = "STEAMコモンズ 明け渡し3日前リマインド通知";
+      const body = name + "さん\n明け渡し3日前となりました。";
       Logger.log(text);
-      sendLineMessage(USER_ID, text);
+
+      isSuccess = sendEmail(email, subject, body);
+      sendLineMessage(USER_ID, text, isSuccess);
     } 
     else if (handoverDay === 0)
     {
       const text = "[リマインド]" + organ + "の" + name + "さんの明け渡し当日です。";
+      const subject = "STEAMコモンズ 明け渡し当日リマインド通知";
+      const body = name + "さん\n明け渡し当日となりました。";
       Logger.log(text);
-      sendLineMessage(USER_ID, text);
+      isSuccess = sendEmail(email, subject, body);
+      sendLineMessage(USER_ID, text, isSuccess);
     }
     else
     { 
@@ -72,9 +82,27 @@ function extendRequestNotify()
   sendLineMessage(USER_ID, text);
 } 
 
+// メールを送信
+function sendEmail(to, subject, body) {
+  try {
+    if (!to || !subject || !body) {
+      throw new Error("送信先、件名、本文のいずれかが空です。");
+    }
+    GmailApp.sendEmail(to, subject, body);
+    Logger.log(`メール送信成功: ${to}`);
+    return 0; 
+  } catch (error) {
+    Logger.log(`メール送信失敗: ${to}\n理由: ${error.message}`);
+    return 1;
+  }
+}
+
 // LINE Messaging APIでメッセージを送信
-function sendLineMessage(to, text) {
+function sendLineMessage(to, text, isSuccess) {
   const url = 'https://api.line.me/v2/bot/message/push';
+  if (isSuccess === 1) {
+    text += "\n（メール送信に失敗しました。）";
+  }
 
   const payload = {
     to: to,
