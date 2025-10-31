@@ -53,7 +53,7 @@ STEAM_tracker/
 │   ├── PULLREQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
 │   |── REQUIREMENTS.md                       # 要件定義書
 |   |── SPECIFICATIONS.md                     # 要件仕様書
-|   └── SPREAD_SHEET_REQUAIEWMAWNATS.md       # スプレッドシート仕様書
+|   └── SPREAD_SHEET_REQUIREMENTS.md          # スプレッドシート仕様書
 │ 
 ├── GAS/
 |   ├── code.gs
