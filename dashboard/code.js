@@ -20,7 +20,7 @@ function doGet() {
   tpl.data = getSheetData();
   tpl.sheetName = sn;
   tpl.registered = registered;
-  tpl.mail = email;
+  tpl.email = email;
   tpl.photo = DriveLinkColum;
   tpl.handover = handover;
   tpl.days = days_until_handover;
