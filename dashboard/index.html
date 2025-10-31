@@ -2,33 +2,62 @@
 <html>
   <head>
     <base target="_top">
+    <style>
+      table {
+        border-collapse: collapse; /* 枠線の重なりをなくす */
+        width: 100%;
+        margin-top: 20px;
+      }
+      th, td {
+        border: 1px solid #555; /* 枠線を表示 */
+        padding: 8px; /* 余白を追加して見やすく */
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2; /* ヘッダー部分をグレーに */
+      }
+      tr:nth-child(even) {
+        background-color: #fafafa; /* 偶数行に薄い色を付ける */
+      }
+    </style>
   </head>
   <body>
-    <h1>スプレッドシート：シート1</h1>
-
+    <h1>スプレッドシート：<?!= sheetName ?></h1>
     <? if (!data || data.length === 0) { ?>
       <p>データがありません</p>
     <? } else { ?>
       <table>
         <thead>
           <tr>
-            <?
-              const header = data[0];
-              for (let j = 0; j < header.length; j++) {
+            <? 
+              var header = data[0];
+              for (var j = 0; j < header.length; j++) {
             ?>
-              <th><?= header[j] !== null && header[j] !== undefined ? header[j] : "" ?></th>
+              <? if (j+1 === registered) { ?>
+                <!-- 列の省略 -->
+              <? } else if (j+1 === email) { ?>
+                <!-- 列の省略 -->
+              <? } else if (j+1 === days) { ?>
+                <!-- 列の省略 -->
+              <? } else { ?>
+                <th><?!= header[j] != null ? header[j] : "" ?></th>
+              <? } ?>
             <? } ?>
           </tr>
         </thead>
         <tbody>
-          <?
-            for (let i = 1; i < data.length; i++) {
-          ?>
+          <? for (var i = 1; i < data.length; i++) { ?>
             <tr>
-              <?
-                for (let j = 0; j < data[i].length; j++) {
-              ?>
-                <td><?= data[i][j] !== null && data[i][j] !== undefined ? data[i][j] : "" ?></td>
+              <? for (var j = 0; j < data[i].length; j++) { ?>
+                <? if (j+1 === registered) { ?>
+                <!-- 列の省略 -->
+                <? } else if (j+1 === email) { ?>
+                <!-- 列の省略 -->
+                <? } else if (j+1 === days) { ?>
+                <!-- 列の省略 -->
+                <? }else { ?>
+                  <td><?!= data[i][j] != null ? data[i][j] : "" ?></td>
+                <? } ?>
               <? } ?>
             </tr>
           <? } ?>
