@@ -14,6 +14,8 @@ const DAYS_UNTIL_HANDOVER = 6;  // 明け渡し日までの日数（計算列）
 const STATUS = 7;               // active / archived / pending
 const ADMIN_NOTE = 8;           // 管理者備考
 
+const FORM_URL = "";            // フォームURL
+
 // スプレッドシート上の日付を確認し、一致する日付であればメッセージ送信1
 function handoverDayRemind() {
   const data = SHEET.getDataRange().getValues();
@@ -31,14 +33,13 @@ function handoverDayRemind() {
     let mailFailLog = ""; // メール送信失敗時のログ
 
     // 明け渡し日の判定
-    if (handoverDay > 3 || handoverDay === 2 || handoverDay === 1) continue;
+    if (handoverDay !== 3 && handoverDay !== 0) continue;
     else if (handoverDay === 3) 
     {
-      const text = "[リマインド]" + organ + "の" + name + "さんの明け渡し日まであと3日です。";
-      const subject = "STEAMコモンズ 明け渡し3日前リマインド通知";
-      const body = name + "さん。物品の明け渡し3日前となりました。\n"
-                    + "3日以内に物品の撤去または延長申請を行ってください。\n"
-                    + "（フォームのURL添付）";
+      const text = `[リマインド]${organ}の${name}さんの明け渡し日まであと3日です。`;
+      const subject = `STEAMコモンズ 明け渡し3日前リマインド通知`;
+      const body = `${name}さん。物品の明け渡し3日前となりました。\n3日以内に物品の撤去または延長申請を行ってください。\n${FORM_URL}`;
+      
       Logger.log(text);
 
       mailFailLog = sendEmail(email, subject, body);
@@ -46,11 +47,9 @@ function handoverDayRemind() {
     } 
     else if (handoverDay === 0)
     {
-      const text = "[リマインド]" + organ + "の" + name + "さんの明け渡し当日です。";
-      const subject = "STEAMコモンズ 明け渡し当日リマインド通知";
-      const body = name + "さん。明け渡し当日となりました。\n"
-                    + "本日中に物品の撤去または延長申請を行ってください。\n"
-                    + "（フォームのURL添付）";
+      const text = `[リマインド]${organ}の${name}さんの明け渡し当日です。`;
+      const subject = `STEAMコモンズ 明け渡し当日リマインド通知`;
+      const body = `${name}さん。明け渡し当日となりました。\n本日中に物品の撤去または延長申請を行ってください。\n${FORM_URL}`;
       Logger.log(text);
       mailFailLog = sendEmail(email, subject, body);
       sendLineMessage(USER_ID, text, mailFailLog);
@@ -70,7 +69,7 @@ function registerNotify()
   const name = "";
   const organ = "";
   
-  const text = "[物品登録]" + organ + "の" + name + "さんが物品を登録しました。";
+  const text = `[物品登録]${organ}の${name}さんが物品を登録しました。`;
   sendLineMessage(USER_ID, text);
 }
 
@@ -81,9 +80,7 @@ function extendRequestNotify()
   const name = "";
   const organ = "";
 
-  const text = "[延長申請]" + organ + "の" + name + "さんが延長を申請しました。\n "
-                + "こちらのフォームから延長を承認してください。\n"
-                + "（フォームのURL添付）";
+  const text = `[延長申請]${organ}の${name}さんが延長を申請しました。\n こちらのフォームから延長を承認してください。\n${FORM_URL}`;
   sendLineMessage(USER_ID, text);
 } 
 
@@ -94,7 +91,7 @@ function archiveCompletedItems() {
   for (let i = 0; i < data.length; i++) {
     const status = data[i][STATUS];
     if (status === "archived") {
-      Logger.log(`アーカイブ処理対象: ${i + 1}行目`);
+      Logger.log(`アーカイブ処理対象: ${i + 1}行目`)
     }
   }
 }
@@ -115,7 +112,7 @@ function sendEmail(to, subject, body) {
 }
 
 // LINE Messaging APIでメッセージを送信
-function sendLineMessage(to, text, mailFailLog) {
+function sendLineMessage(to, text, mailFailLog = 0) {
   const url = 'https://api.line.me/v2/bot/message/push';
   if (mailFailLog !== 0) {
     text += "\n（メール送信に失敗しました。" + mailFailLog + ")";
