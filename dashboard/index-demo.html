@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      table {
+        border-collapse: collapse;  
+        width: 100%;
+        margin-top: 20px;
+      }
+      th, td {
+        border: 1px solid #555;  
+        padding: 8px;  
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;  
+      }
+      tr:nth-child(even) {
+        background-color: #fafafa;  
+      }
+      .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+        margin-top: 10px;
+      }
+      .button-left {
+        display: flex;
+        gap: 8px;
+      }
+      .button-left button {
+        padding: 8px 16px;
+        font-size: 14px;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #2196F3;
+        color: white;
+        border-color: #2196F3;
+      }
+      .button-left button:hover {
+        background-color: #0b7dda;
+      }
+      .button-group {
+        display: flex;
+        gap: 8px;
+      }
+      .button-group button {
+        padding: 8px 16px;
+        font-size: 14px;
+        cursor: pointer;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background-color: #fff;
+      }
+      .button-group button:hover {
+        background-color: #f5f5f5;
+      }
+      .button-group button:first-child {
+        background-color: #4CAF50;
+        color: white;
+        border-color: #4CAF50;
+      }
+      .button-group button:first-child:hover {
+        background-color: #45a049;
+      }
+      .button-group button:nth-child(2) {
+        background-color: #ff9800;
+        color: white;
+        border-color: #ff9800;
+      }
+      .button-group button:nth-child(2):hover {
+        background-color: #e68900;
+      }
+      .button-group button:last-child {
+        background-color: #f44336;
+        color: white;
+        border-color: #f44336;
+      }
+      .button-group button:last-child:hover {
+        background-color: #da190b;
+      }
+      td[data-email] {
+        position: relative;
+        cursor: pointer;
+      }
+      td[data-email]:hover::after {
+        content: attr(data-email);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #333;
+        color: white;
+        padding: 6px 10px;
+        border-radius: 4px;
+        white-space: nowrap;
+        z-index: 1000;
+        margin-bottom: 5px;
+        font-size: 12px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      }
+      td[data-email]:hover::before {
+        content: '';
+        position: absolute;
+        bottom: 95%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: #333;
+        z-index: 1000;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>スプレッドシート：管理シート</h1>
+    <div class="header-container">
+      <div class="button-left">
+        <button>アーカイブへ</button>
+      </div>
+      <div class="button-group">
+        <button>完了</button>
+        <button>破棄</button>
+        <button>削除</button>
+      </div>
+    </div>
+          <table>
+        <thead>
+          <tr>
+            <th>check</th>
+                                          
+                                                        
+                                                        <th>name</th>
+                                                        <th>organization</th>
+                                                        <th>photo_file_id</th>
+                                                        <th>handover_on</th>
+                                                        
+                                                        <th>status</th>
+                                                        <th>admin_note</th>
+                                    </tr>
+        </thead>
+        <tbody>
+                      <tr>
+                        <td><input type="checkbox"></td>
+                                              
+                                                              
+                                                                <td data-email="test1@demo.x">shimizu</td>
+                                                                <td></td>
+                                                                                                        <td><img src="https://lh3.googleusercontent.com/d/1ANaus1eEaja6__46RNVoC6sFP-XjRSYE" style="width:40px; height:40px; border-radius:50%;"></td>
+                                                                                  <td></td>
+                                                              
+                                                                <td></td>
+                                                                <td></td>
+                                          </tr>
+                      <tr>
+                        <td><input type="checkbox"></td>
+                                              
+                                                              
+                                                                <td data-email="test1@demo.x">shimizu</td>
+                                                                <td></td>
+                                                                                    <td></td>
+                                                                                  <td></td>
+                                                              
+                                                                <td></td>
+                                                                <td></td>
+                                          </tr>
+                      <tr>
+                        <td><input type="checkbox"></td>
+                                              
+                                                              
+                                                                <td data-email="test1@demo.x">shimizu</td>
+                                                                <td></td>
+                                                                                    <td></td>
+                                                                                  <td></td>
+                                                              
+                                                                <td></td>
+                                                                <td></td>
+                                          </tr>
+                      <tr>
+                        <td><input type="checkbox"></td>
+                                              
+                                                              
+                                                                <td data-email="test2">toyoshima</td>
+                                                                <td>rdx</td>
+                                                                                    <td></td>
+                                                                                  <td>Sat Nov 01 2025 00:00:00 GMT+0900 (GMT+09:00)</td>
+                                                              
+                                                                <td></td>
+                                                                <td></td>
+                                          </tr>
+                  </tbody>
+      </table>
+      </body>
+</html>
+
