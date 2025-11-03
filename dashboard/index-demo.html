@@ -94,12 +94,8 @@
         transform: translateX(-50%);
         background-color: #333;
         color: white;
-        padding: 6px 10px;
         border-radius: 4px;
-        white-space: nowrap;
         z-index: 1000;
-        margin-bottom: 5px;
-        font-size: 12px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
       }
       td[data-email]:hover::before {
@@ -112,6 +108,37 @@
         border-top-color: #333;
         z-index: 1000;
       }
+
+      /* --- Enlarge popup (tooltip) for name cells --- */
+      td[data-email]:hover::after,
+      td[data-email]:focus-visible::after {
+        font-size: 25px;       /* bigger text */
+        line-height: 1.5;
+        padding: 10px 14px;    /* larger padding */
+        max-width: 900px;      /* wrap instead of super wide */
+        white-space: normal;   /* allow wrapping */
+      }
+
+      td[data-email]:hover::before,
+      td[data-email]:focus-visible::before {
+        border-width: 7px;               /* bigger arrow */
+        bottom: calc;      /* adjust arrow position */
+      }
+
+      /* チェックボックスを手軽に拡大 */
+      table input[type="checkbox"] {
+        transform: scale(2.2);      /* 大きさ調整 */
+        transform-origin: center;
+        margin: 5px 6px 2px 6px;    /* 余白の微調整 */
+      }
+      
+      /* 任意：先頭列の幅を少し広げてはみ出し防止 */
+      thead th:first-child,
+      tbody td:first-child {
+        min-width: 56px;
+        text-align: center;
+      }
+
     </style>
   </head>
   <body>
@@ -126,72 +153,57 @@
         <button>削除</button>
       </div>
     </div>
-          <table>
-        <thead>
-          <tr>
-            <th>check</th>
-                                          
-                                                        
-                                                        <th>name</th>
-                                                        <th>organization</th>
-                                                        <th>photo_file_id</th>
-                                                        <th>handover_on</th>
-                                                        
-                                                        <th>status</th>
-                                                        <th>admin_note</th>
-                                    </tr>
-        </thead>
-        <tbody>
-                      <tr>
-                        <td><input type="checkbox"></td>
-                                              
-                                                              
-                                                                <td data-email="test1@demo.x">shimizu</td>
-                                                                <td></td>
-                                                                                                        <td><img src="https://lh3.googleusercontent.com/d/1ANaus1eEaja6__46RNVoC6sFP-XjRSYE" style="width:40px; height:40px; border-radius:50%;"></td>
-                                                                                  <td></td>
-                                                              
-                                                                <td></td>
-                                                                <td></td>
-                                          </tr>
-                      <tr>
-                        <td><input type="checkbox"></td>
-                                              
-                                                              
-                                                                <td data-email="test1@demo.x">shimizu</td>
-                                                                <td></td>
-                                                                                    <td></td>
-                                                                                  <td></td>
-                                                              
-                                                                <td></td>
-                                                                <td></td>
-                                          </tr>
-                      <tr>
-                        <td><input type="checkbox"></td>
-                                              
-                                                              
-                                                                <td data-email="test1@demo.x">shimizu</td>
-                                                                <td></td>
-                                                                                    <td></td>
-                                                                                  <td></td>
-                                                              
-                                                                <td></td>
-                                                                <td></td>
-                                          </tr>
-                      <tr>
-                        <td><input type="checkbox"></td>
-                                              
-                                                              
-                                                                <td data-email="test2">toyoshima</td>
-                                                                <td>rdx</td>
-                                                                                    <td></td>
-                                                                                  <td>Sat Nov 01 2025 00:00:00 GMT+0900 (GMT+09:00)</td>
-                                                              
-                                                                <td></td>
-                                                                <td></td>
-                                          </tr>
-                  </tbody>
-      </table>
-      </body>
+    <table>
+      <thead>
+        <tr>
+          <th>check</th>
+          <th>name</th>
+          <th>organization</th>
+          <th>photo_file_id</th>
+          <th>handover_on</th>
+          <th>status</th>
+          <th>admin_note</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input type="checkbox"></td>
+          <td data-email="test1@demo.x">shimizu</td>
+          <td></td>
+          <td><img src="https://lh3.googleusercontent.com/d/1ANaus1eEaja6__46RNVoC6sFP-XjRSYE" style="width:40px; height:40px; border-radius:50%;"></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox"></td>
+          <td data-email="test1@demo.x">shimizu</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox"></td>
+          <td data-email="test1@demo.x">shimizu</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        <tr>
+          <td><input type="checkbox"></td>                                      
+          <td data-email="test2">toyoshima</td>
+          <td>rdx</td>
+          <td></td>
+          <td>Sat Nov 01 2025 00:00:00 GMT+0900 (GMT+09:00)</td>                                                           
+          <td></td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
 </html>
 
