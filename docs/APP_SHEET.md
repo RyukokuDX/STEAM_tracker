@@ -4,7 +4,7 @@
 >
 > `items` シートの列配置は次の通り（必ず `docs/FORM_REQUIREMENTS.md` と一致させてください）。
 >
-> A: Timestamp | B: email | C: name | D: organization | E: photo_file_id | F: handover_date | G: days_until_handover | H: status | I: admin_note
+> A: registered_at | B: email | C: name | D: organization | E: photo_file_id | F: handover_on | G: days_until_handover | H: status | I: admin_note
 
 このドキュメントは AppSheet を用いた管理者向けダッシュボード（管理画面）の仕様書です。対象は管理者が物品の一覧確認、検索、アーカイブ、延長承認などの操作を行うための AppSheet アプリとなります。
 
