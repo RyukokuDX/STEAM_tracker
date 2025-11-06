@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<<<<<<< HEAD
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
@@ -327,8 +326,18 @@
     <div style="font-weight:700; margin-bottom:8px;">物品登録フォーム</div>
 
     <div class="field">
-      <label for="name">名前</label>
+      <label for="name">氏名</label>
       <input id="name" type="text" autocomplete="name" />
+    </div>
+
+    <div class="field">
+      <label for="organization">団体名（任意）</label>
+      <input id="organization" type="text" autocomplete="organization" />
+    </div>
+
+    <div class="field">
+      <label for="photoFile">写真を添付</label>
+      <input id="photoFile" type="file" accept="image/*" />
     </div>
 
     <div class="field">
@@ -408,13 +417,20 @@
       const name = document.getElementById('name').value.trim();
       const email = document.getElementById('email').value.trim();
       const selected = document.getElementById('date').value;
+      const submitBtn = document.getElementById('submit');
       const msgEl = document.getElementById('msg');
       msgEl.className = '';
       msgEl.textContent = '';
 
       if (!selected){
         msgEl.className = 'error';
-        msgEl.textContent = '日付を選択してください。';
+        msgEl.textContent = '明け渡し日を選択してください。';
+        return;
+      }
+
+      if (!name){
+        msgEl.className = 'error';
+        msgEl.textContent = '氏名は必須です。';
         return;
       }
 
@@ -426,33 +442,99 @@
         return;
       }
 
-      const payload = { name, email, date: selected };
-      google.script.run
-        .withSuccessHandler(function(res){
-          if (res && res.status === 'ok'){
-            msgEl.className = 'success';
-            msgEl.textContent = res.message || '送信完了しました。';
-            document.getElementById('name').value = '';
-            document.getElementById('date').value = '';
-          } else {
+  // 送信ボタンの無効化は必須チェックのあとで行う（必須項目エラー時に元に戻すため）
+
+      const payload = {
+        name,
+        email,
+        organization: document.getElementById('organization').value.trim(),
+        photo: '', // will fill with fileId after upload if a file is selected
+        date: selected
+      };
+
+      const fileInput = document.getElementById('photoFile');
+
+      // クライアント側で写真必須チェック
+      if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        msgEl.className = 'error';
+        msgEl.textContent = '写真の添付は必須です。';
+        return;
+      }
+
+      // 配置：ここでボタンを無効化して送信操作を保護
+      const originalSubmitText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = '送信中...';
+
+      function doSubmit(finalPayload) {
+        google.script.run
+          .withSuccessHandler(function(res){
+            if (res && res.status === 'ok'){
+              msgEl.className = 'success';
+              msgEl.textContent = '送信完了';
+              document.getElementById('name').value = '';
+              document.getElementById('date').value = '';
+              document.getElementById('organization').value = '';
+              if (fileInput) fileInput.value = '';
+              submitBtn.textContent = '送信完了';
+              submitBtn.disabled = true;
+            } else {
+              msgEl.className = 'error';
+              msgEl.textContent = res && res.message ? 'エラー: ' + res.message : '送信に失敗しました。';
+              submitBtn.disabled = false;
+              submitBtn.textContent = originalSubmitText || '送信';
+            }
+          })
+          .withFailureHandler(function(err){
             msgEl.className = 'error';
-            msgEl.textContent = res && res.message ? 'エラー: ' + res.message : '送信に失敗しました。';
-          }
-        })
-        .withFailureHandler(function(err){
+            msgEl.textContent = 'サーバ接続に失敗しました。';
+            console.error(err);
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalSubmitText || '送信';
+          })
+          .submitForm(finalPayload);
+      }
+
+      if (fileInput && fileInput.files && fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const dataUrl = e.target.result;
+          // Upload the photo first, get back fileId
+          google.script.run
+            .withSuccessHandler(function(res){
+              if (res && res.status === 'ok'){
+                payload.photo = res.id;
+                doSubmit(payload);
+              } else {
+                msgEl.className = 'error';
+                msgEl.textContent = '画像アップロードに失敗しました: ' + (res && res.message ? res.message : '不明なエラー');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalSubmitText || '送信';
+              }
+            })
+            .withFailureHandler(function(err){
+              msgEl.className = 'error';
+              msgEl.textContent = '画像アップロードでサーバ接続に失敗しました。';
+              console.error(err);
+              submitBtn.disabled = false;
+              submitBtn.textContent = originalSubmitText || '送信';
+            })
+            .uploadPhoto(dataUrl, file.name);
+        };
+        reader.onerror = function(err){
           msgEl.className = 'error';
-          msgEl.textContent = 'サーバ接続に失敗しました。';
+          msgEl.textContent = 'ファイルの読み込みに失敗しました。';
           console.error(err);
-        })
-        .submitForm(payload);
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalSubmitText || '送信';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // No file selected, submit directly
+        doSubmit(payload);
+      }
     });
   </script>
 </body>
 </html>
-=======
-<html>
-    <head>
-        
-    </head>
-</html>
->>>>>>> develop

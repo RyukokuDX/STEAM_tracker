@@ -1,230 +1,304 @@
-<<<<<<< HEAD
 // Code.gs
-const SPREADSHEET_ID = "1kGzhtCne-zbaGDMzWf1SdX3IH0EVtodszGXN3prP7C4";
+const SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
+if (!SPREADSHEET_ID) {
+  throw new Error(
+    "SPREADSHEET_ID script property is not set. Please set it in the Apps Script dashboard under Project Settings > Script Properties."
+  );
+}
 const DOMAIN = 'mail.ryukoku.ac.jp';
+const LOCK_TIMEOUT_MS = 30000; // 30秒
+const MAX_NAME_LENGTH = 50;    // 名前の最大文字数
 
+/**
+ * 年度末日を取得 (3月31日を基準とする)
+ * - 3/31を含む（当日も年度末とみなす）
+ * - 3/31を過ぎていたら翌年の3/31を返す
+ */
 function getFiscalYearEnd(todayDate) {
   const year = todayDate.getFullYear();
-  const thisYearMar20 = new Date(year, 2, 20);
+  const thisYearMar31 = new Date(year, 2, 31); // monthは0-based (3月は2)
   const normalize = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const t = normalize(todayDate);
-  const m = normalize(thisYearMar20);
-  if (t > m) return new Date(year + 1, 2, 20);
+  const m = normalize(thisYearMar31);
+  // 3/31を含むため t > m を使用
+  if (t > m) return new Date(year + 1, 2, 31);
   return m;
 }
 
-// include 用（今回は index.html に全文を入れているので使わないが残す）
-function include(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+/**
+ * メールアドレスを取得し、ドメインをチェック
+ * @returns {Object} {email: string, error: string}
+ */
+function getVerifiedEmail() {
+  try {
+    const email = Session.getActiveUser().getEmail();
+    if (!email) {
+      Logger.log("[認証エラー] メールアドレスの取得に失敗");
+      return {
+        error: "認証に失敗しました。ブラウザを再読み込みして再度サインインしてください。"
+      };
+    }
+    if (!email.endsWith('@' + DOMAIN)) {
+      Logger.log(`[認証エラー] 無効なドメイン: ${email}`);
+      return {
+        error: `このフォームは ${DOMAIN} ドメインのみ利用できます。`
+      };
+    }
+    return { email };
+  } catch (err) {
+    Logger.log(`[認証エラー] 例外発生: ${err}`);
+    return {
+      error: "認証中にエラーが発生しました。ブラウザを再読み込みしてお試しください。"
+    };
+  }
 }
 
+/**
+ * フォームを表示
+ * X-Frame-Options: SAMEORIGIN で埋め込み制限（セキュリティ対策）
+ */
 function doGet(e) {
-  const email = Session.getActiveUser().getEmail();
-  if (!email || !email.endsWith('@' + DOMAIN)) {
-    return HtmlService.createHtmlOutput('アクセス拒否：ドメイン外または未サインイン')
+  const auth = getVerifiedEmail();
+  if (auth.error) {
+    return HtmlService.createHtmlOutput(auth.error)
       .setTitle('アクセス拒否');
   }
+
   const tpl = HtmlService.createTemplateFromFile('index');
   const now = new Date();
   const tz = Session.getScriptTimeZone();
   tpl.fiscalEndStr = Utilities.formatDate(getFiscalYearEnd(now), tz, "yyyy-MM-dd");
   tpl.todayStr = Utilities.formatDate(now, tz, "yyyy-MM-dd");
-  tpl.email = email;
+  tpl.email = auth.email;
   tpl.domain = DOMAIN;
-  return tpl.evaluate().setTitle("年度末制限フォーム").setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
+  
+  // Avoid calling setXFrameOptionsMode because some GAS runtimes may not
+  // expose the XFrameOptionsMode enum (leading to a null 'mode' error).
+  // If you need to change framing behavior, set it in the Apps Script
+  // deployment settings or use the explicit ALLOWALL value if available.
+  return tpl.evaluate()
+    .setTitle("年度末制限フォーム");
 }
 
 /**
- * 利用規約への同意を記録する（consent_log シートを作る）
+ * 日付文字列のバリデーション
+ * @returns {Object} {date: Date, error: string}
+ */
+function validateDate(dateStr) {
+  if (!dateStr) return { error: "日付が指定されていません" };
+  
+  // YYYY-MM-DD 形式であることを確認
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return { error: "日付の形式が不正です (YYYY-MM-DD)" };
+  }
+
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) {
+    return { error: "無効な日付です" };
+  }
+
+  // 時刻部分を切り捨て（normalize）
+  return { 
+    date: new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  };
+}
+
+/**
+ * 利用規約への同意を記録（排他制御付き）
  */
 function logConsent() {
-  const serverEmail = Session.getActiveUser().getEmail();
-  if (!serverEmail || !serverEmail.endsWith('@' + DOMAIN)) {
-    return { status: 'error', message: 'サインインまたはドメイン確認に失敗しました。' };
+  const auth = getVerifiedEmail();
+  if (auth.error) {
+    return { status: 'error', message: auth.error };
   }
+
+  const lock = LockService.getScriptLock();
+  let locked = false;
   try {
+    if (!lock.tryLock(LOCK_TIMEOUT_MS)) {
+      Logger.log("[同意ログ] ロック取得タイムアウト");
+      throw new Error("サーバーが混み合っています。しばらく待ってから再度お試しください。");
+    }
+    locked = true;
+
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sh = ss.getSheetByName("consent_log") || ss.insertSheet("consent_log");
+    
+    // ヘッダーチェックと追加を排他制御
     if (sh.getLastRow() === 0) {
       sh.appendRow(["timestamp", "email", "note"]);
     }
-    sh.appendRow([new Date(), serverEmail, "利用規約（画面同意）"]);
+    sh.appendRow([new Date(), auth.email, "利用規約（画面同意）"]);
+    
+    Logger.log(`[同意ログ] 記録完了: ${auth.email}`);
     return { status: 'ok' };
+
   } catch (err) {
-    return { status: 'error', message: String(err) };
+    Logger.log(`[同意ログ] エラー: ${err}`);
+    return { 
+      status: 'error',
+      message: err.message || "記録中にエラーが発生しました"
+    };
+
+  } finally {
+    if (locked) lock.releaseLock();
   }
 }
 
 /**
- * フォーム送信（既存の submitForm）
+ * フォーム送信（排他制御、厳格なバリデーション付き）
  */
 function submitForm(payload) {
+  if (!payload) {
+    return { 
+      status: "error",
+      message: "送信データが空です"
+    };
+  }
+
+  const auth = getVerifiedEmail();
+  if (auth.error) {
+    return { 
+      status: "error",
+      message: auth.error
+    };
+  }
+
+  // 名前の必須チェックと文字数制限
+  if (!payload.name || payload.name.trim().length === 0) {
+    return {
+      status: "error",
+      message: "名前は必須です"
+    };
+  }
+  if (payload.name.length > MAX_NAME_LENGTH) {
+    return {
+      status: "error",
+      message: `名前は${MAX_NAME_LENGTH}文字以内で入力してください`
+    };
+  }
+
+  // 日付の厳格なバリデーション
+  const dateResult = validateDate(payload.date);
+  if (dateResult.error) {
+    return {
+      status: "error",
+      message: dateResult.error
+    };
+  }
+
+  // 写真は必須
+  if (!payload.photo || String(payload.photo).trim() === '') {
+    Logger.log('[submitForm] 写真ファイルIDが指定されていません');
+    return { status: 'error', message: '写真は必須です。' };
+  }
+
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);  // 時刻部分を切り捨て
+
+  const fiscalEnd = getFiscalYearEnd(now);
+  if (dateResult.date < now) {
+    return {
+      status: "error",
+      message: "過去の日付は選択できません"
+    };
+  }
+  if (dateResult.date > fiscalEnd) {
+    return {
+      status: "error",
+      message: `選択した日付は年度末（${Utilities.formatDate(fiscalEnd, Session.getScriptTimeZone(), "yyyy-MM-dd")}）を超えています`
+    };
+  }
+
+  const lock = LockService.getScriptLock();
+  let locked = false;
   try {
-    const serverEmail = Session.getActiveUser().getEmail();
-    if (!serverEmail || !serverEmail.endsWith('@' + DOMAIN)) {
-      throw new Error("アクセス拒否：サインインまたはドメイン確認に失敗しました。");
+    if (!lock.tryLock(LOCK_TIMEOUT_MS)) {
+      Logger.log("[フォーム送信] ロック取得タイムアウト");
+      throw new Error("サーバーが混み合っています。しばらく待ってから再度お試しください。");
     }
-    if (!payload || !payload.date) throw new Error("日付が指定されていません。");
-
-    const tz = Session.getScriptTimeZone();
-    const now = new Date();
-    const todayStr = Utilities.formatDate(now, tz, "yyyy-MM-dd");
-    const fiscalEndStr = Utilities.formatDate(getFiscalYearEnd(now), tz, "yyyy-MM-dd");
-    const selected = payload.date;
-
-    if (selected < todayStr) throw new Error("過去の日付は選べません。");
-    if (selected > fiscalEndStr) throw new Error("選択した日付は年度末（" + fiscalEndStr + "）を超えています。");
+    locked = true;
 
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sh = ss.getSheetByName("responses") || ss.insertSheet("responses");
+    // Save into the 管理シート to match existing spreadsheet layout
+    const shName = "管理シート";
+    const sh = ss.getSheetByName(shName) || ss.insertSheet(shName);
+
+    // ヘッダーチェックと追加を排他制御
     if (sh.getLastRow() === 0) {
-      sh.appendRow(["タイムスタンプ", "名前", "email", "selectedDate"]);
+      sh.appendRow([
+        "タイムスタンプ",
+        "メールアドレス",
+        "氏名",
+        "団体名",
+        "写真",
+        "明け渡し日",
+        "残り日数",
+        "状態",
+        "備考欄"
+      ]);
     }
-    sh.appendRow([new Date(), payload.name || "", serverEmail, selected]);
 
-    return { status: "ok", message: "送信完了（年度末: " + fiscalEndStr + "）" };
+    const tz = Session.getScriptTimeZone();
+    sh.appendRow([
+      new Date(),
+      auth.email,
+      payload.name.trim(),
+      payload.organization || "",
+      payload.photo || "",
+      Utilities.formatDate(dateResult.date, tz, "yyyy/MM/dd"),
+      "",
+      "",
+      ""
+    ]);
+
+    Logger.log(`[フォーム送信] 成功: ${auth.email}, date=${payload.date}`);
+    return {
+      status: "ok",
+      message: `送信完了（年度末: ${Utilities.formatDate(fiscalEnd, tz, "yyyy-MM-dd")}）`
+    };
+
   } catch (err) {
-    return { status: "error", message: err.message || String(err) };
-=======
-const SPREAD_SHEET = SpreadsheetApp.openById("1U3enu3ETOh_seroYmpO95p2yjW2RSUC7WRLyDk1rhs8");
-const SHEET = SPREAD_SHEET.getSheetByName("管理シート");
-const ACCESS_TOKEN = 'Wl7oj84NxBzYNRy0YWLn2bw36m10IWrHR3GmguKTM/QwBpnDakpP7leNgh0cWurBE+joXlj0T/ClOQ/ZJxzs/R2HvdM1d0W1JdqG/pQCC/kylvdqJcOC6vKr1JJXjnOO18XlBB9aLagFd0T+iiSfswdB04t89/1O/w1cDnyilFU=';
-const USER_ID = 'Uc96692787f41d9a314b78aff7a7c3c42';
+    Logger.log(`[フォーム送信] エラー: ${err}`);
+    return {
+      status: "error",
+      message: err.message || "送信中にエラーが発生しました"
+    };
 
-// 列要素
-const RESISTERED_AT = 0;        // フォーム送信時刻（自動記録）
-const EMAIL = 1;                // 登録者メール
-const NAME = 2;                 // 登録者氏名
-const ORGANIZATION = 3;         // 団体名
-const PHOTO_FILE_ID = 4;        // Drive ファイル ID
-const HANDOVER_ON = 5;          // 明け渡し日（YYYY-MM-DD）
-const DAYS_UNTIL_HANDOVER = 6;  // 明け渡し日までの日数（計算列） 
-const STATUS = 7;               // active / archived / pending
-const ADMIN_NOTE = 8;           // 管理者備考
-
-const FORM_URL = "";            // フォームURL
-
-// スプレッドシート上の日付を確認し、一致する日付であればメッセージ送信1
-function handoverDayRemind() {
-  const data = SHEET.getDataRange().getValues();
-
-  // 登録者全員のデータ確認
-  for (let i = 1; i < data.length; i++) 
-  {
-    // メッセージに使用する要素
-    const email = data[i][EMAIL];
-    const name = data[i][NAME];
-    const organ = data[i][ORGANIZATION];
-    const handover = data[i][HANDOVER_ON];
-    const handoverDay = data[i][DAYS_UNTIL_HANDOVER];
-
-    let mailFailLog = ""; // メール送信失敗時のログ
-
-    // 明け渡し日の判定
-    if (handoverDay !== 3 && handoverDay !== 0) continue;
-    else if (handoverDay === 3) 
-    {
-      const text = `[リマインド]${organ}の${name}さんの明け渡し日まであと3日です。`;
-      const subject = `STEAMコモンズ 明け渡し3日前リマインド通知`;
-      const body = `${name}さん。物品の明け渡し3日前となりました。\n3日以内に物品の撤去または延長申請を行ってください。\n${FORM_URL}`;
-      
-      Logger.log(text);
-
-      mailFailLog = sendEmail(email, subject, body);
-      sendLineMessage(USER_ID, text, mailFailLog);
-    } 
-    else if (handoverDay === 0)
-    {
-      const text = `[リマインド]${organ}の${name}さんの明け渡し当日です。`;
-      const subject = `STEAMコモンズ 明け渡し当日リマインド通知`;
-      const body = `${name}さん。明け渡し当日となりました。\n本日中に物品の撤去または延長申請を行ってください。\n${FORM_URL}`;
-      Logger.log(text);
-      mailFailLog = sendEmail(email, subject, body);
-      sendLineMessage(USER_ID, text, mailFailLog);
-    }
-    else
-    { 
-      const text = i + "行目で例外が発生しました。";
-      Logger.log(text); 
-    }
+  } finally {
+    if (locked) lock.releaseLock();
   }
 }
 
-// 物品登録の通知
-function registerNotify()
-{
-  // メッセージに使用する要素
-  const name = "";
-  const organ = "";
-  
-  const text = `[物品登録]${organ}の${name}さんが物品を登録しました。`;
-  sendLineMessage(USER_ID, text);
-}
-
-// 延長申請の通知
-function extendRequestNotify()
-{
-  // メッセージに使用する要素
-  const name = "";
-  const organ = "";
-
-  const text = `[延長申請]${organ}の${name}さんが延長を申請しました。\n こちらのフォームから延長を承認してください。\n${FORM_URL}`;
-  sendLineMessage(USER_ID, text);
-} 
-
-// archived状態の行をアーカイブ処理
-function archiveCompletedItems() {
-  const data = SHEET.getDataRange().getValues();
-
-  for (let i = 0; i < data.length; i++) {
-    const status = data[i][STATUS];
-    if (status === "archived") {
-      Logger.log(`アーカイブ処理対象: ${i + 1}行目`)
-    }
-  }
-}
-
-// メールを送信
-function sendEmail(to, subject, body) {
+/**
+ * Upload a base64 data URL image to a specified Drive folder and return the file ID.
+ * @param {string} dataUrl - data:[<mediatype>][;base64],<data>
+ * @param {string} filename - original filename (optional)
+ */
+function uploadPhoto(dataUrl, filename) {
   try {
-    if (!to || !subject || !body) {
-      throw new Error("送信先、件名、本文のいずれかが空です。");
+    if (!dataUrl || typeof dataUrl !== 'string') {
+      throw new Error('アップロードするデータがありません');
     }
-    GmailApp.sendEmail(to, subject, body);
-    Logger.log(`メール送信成功: ${to}`);
-    return 0; 
-  } catch (error) {
-    Logger.log(`メール送信失敗: ${to}\n理由: ${error.message}`);
-    return error.message;
-  }
-}
 
-// LINE Messaging APIでメッセージを送信
-function sendLineMessage(to, text, mailFailLog = 0) {
-  const url = 'https://api.line.me/v2/bot/message/push';
-  if (mailFailLog !== 0) {
-    text += "\n（メール送信に失敗しました。" + mailFailLog + ")";
-  }
+    // Parse data URL
+    const m = dataUrl.match(/^data:(.+);base64,(.*)$/);
+    if (!m) throw new Error('無効なデータURLです');
+    const contentType = m[1];
+    const b64 = m[2];
+    const bytes = Utilities.base64Decode(b64);
+    const blobName = filename || ('photo_' + new Date().getTime());
+    const blob = Utilities.newBlob(bytes, contentType, blobName);
 
-  const payload = {
-    to: to,
-    messages: [{ type: 'text', text: text }]
-  };
+    // Target folder (指定されたフォルダに保存)
+    const folderId = '13eYmubAX8o8jsinZe2MpAXQfXHELmxKA';
+    const folder = DriveApp.getFolderById(folderId);
+    const file = folder.createFile(blob);
 
-  const options = {
-    method: 'post',
-    headers: {
-      'Content-Type': 'application/json; charset=UTF-8',
-      'Authorization': 'Bearer ' + ACCESS_TOKEN
-    },
-    payload: JSON.stringify(payload)
-  };
-
-  try {
-    const response = UrlFetchApp.fetch(url, options);
-    Logger.log('送信成功: ' + response.getContentText());
-  } catch (e) {
-    Logger.log('送信失敗: ' + e);
->>>>>>> develop
+    Logger.log(`[uploadPhoto] saved fileId=${file.getId()} name=${file.getName()}`);
+    return { status: 'ok', id: file.getId() };
+  } catch (err) {
+    Logger.log(`[uploadPhoto] エラー: ${err}`);
+    return { status: 'error', message: String(err) };
   }
 }
