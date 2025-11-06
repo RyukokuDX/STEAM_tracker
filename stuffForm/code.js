@@ -103,47 +103,6 @@ function validateDate(dateStr) {
   };
 }
 
-/**
- * 利用規約への同意を記録（排他制御付き）
- */
-function logConsent() {
-  const auth = getVerifiedEmail();
-  if (auth.error) {
-    return { status: 'error', message: auth.error };
-  }
-
-  const lock = LockService.getScriptLock();
-  let locked = false;
-  try {
-    if (!lock.tryLock(LOCK_TIMEOUT_MS)) {
-      Logger.log("[同意ログ] ロック取得タイムアウト");
-      throw new Error("サーバーが混み合っています。しばらく待ってから再度お試しください。");
-    }
-    locked = true;
-
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sh = ss.getSheetByName("consent_log") || ss.insertSheet("consent_log");
-    
-    // ヘッダーチェックと追加を排他制御
-    if (sh.getLastRow() === 0) {
-      sh.appendRow(["timestamp", "email", "note"]);
-    }
-    sh.appendRow([new Date(), auth.email, "利用規約（画面同意）"]);
-    
-    Logger.log(`[同意ログ] 記録完了: ${auth.email}`);
-    return { status: 'ok' };
-
-  } catch (err) {
-    Logger.log(`[同意ログ] エラー: ${err}`);
-    return { 
-      status: 'error',
-      message: err.message || "記録中にエラーが発生しました"
-    };
-
-  } finally {
-    if (locked) lock.releaseLock();
-  }
-}
 
 /**
  * フォーム送信（排他制御、厳格なバリデーション付き）

@@ -395,20 +395,10 @@
 
       agreeBtn.addEventListener('click', function(){
         if (agreeBtn.disabled) return;
+        formCard.classList.add('enabled');
+        agreeBtn.textContent = '同意済み — フォームを使用できます';
         agreeBtn.disabled = true;
-        agreeBtn.textContent = '同意中...';
-        google.script.run.withSuccessHandler(function(res){
-          if (res && res.status === 'ok'){
-            formCard.classList.add('enabled');
-            agreeBtn.textContent = '同意済み — フォームを使用できます';
-            agreeBtn.disabled = true;
-            setTimeout(()=>{ formCard.scrollIntoView({behavior:'smooth', block:'start'}); }, 120);
-          } else {
-            alert('同意の記録に失敗しました: ' + (res && res.message ? res.message : '不明なエラー'));
-            agreeBtn.disabled = false;
-            agreeBtn.textContent = '同意してフォームに進む';
-          }
-        }).logConsent();
+        formCard.scrollIntoView({behavior:'smooth', block:'start'});
       });
     })();
 
