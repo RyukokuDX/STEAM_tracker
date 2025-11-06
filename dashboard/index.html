@@ -162,6 +162,7 @@
                   <td data-email="<?!= data[i][email - 1] ?>"><?!= data[i][j] != null ? data[i][j] : "" ?></td>
                 <? } else if (j+1 === photo) { ?>
                   <? if (data[i][j] != null && data[i][j] !== "") { ?>
+
                     <? var imgUrl = "https://lh3.googleusercontent.com/d/" + data[i][j]; ?>
                     <td><img src="<?!= imgUrl ?>" style="width:40px; height:40px; border-radius:50%;"></td>
                   <? } else { ?>

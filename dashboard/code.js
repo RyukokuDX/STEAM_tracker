@@ -5,6 +5,7 @@ if (!SPREADSHEET_ID) {
     "SPREADSHEET_ID script property is not set. Please set it in the Apps Script dashboard under Project Settings > Script Properties."
   );
 }
+
 const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
 const sn = "管理シート";
 
@@ -20,6 +21,7 @@ function getSheetData() {
   if (!sh) {
     throw new Error(`Sheet "${sn}" not found in spreadsheet.`);
   }
+
   return sh.getDataRange().getValues();
 }
 
