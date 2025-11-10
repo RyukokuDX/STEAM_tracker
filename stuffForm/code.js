@@ -250,7 +250,12 @@ function uploadPhoto(dataUrl, filename) {
     const blob = Utilities.newBlob(bytes, contentType, blobName);
 
     // Target folder (指定されたフォルダに保存)
-    const folderId = '11vltOriD3mBWCUL2SRgEHVhCXN25sh8-';
+    const folderId = PropertiesService.getScriptProperties().getProperty('driveFolder_ID');
+    if (!folderId) {
+      throw new Error(
+        "driveFolder_ID script property is not set. Please set it in the Apps Script dashboard under Project Settings > Script Properties."
+      );
+    }
     const folder = DriveApp.getFolderById(folderId);
     const file = folder.createFile(blob);
 
