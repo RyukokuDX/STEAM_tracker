@@ -1,11 +1,14 @@
 # TODO
 
-This document will be split into three separate GAS specification documents:
-- Spreadsheet GAS
-- Form GAS
-- View GAS
+このドキュメントは、以下の3つの独立したGAS仕様書に分割されます。
 
-Please refer to this document as a template for each specification until the split is complete.
+Spreadsheet GAS
+
+Form GAS
+
+View GAS
+
+分割が完了するまで、このドキュメントを各仕様書のテンプレートとして参照してください。
 # GAS 要件・実装仕様書
 
 このドキュメントは本プロジェクトで使用する Google Apps Script (GAS) の実装仕様をまとめたものです。実装者・運用者が参照することを想定しています。
