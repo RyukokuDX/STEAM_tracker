@@ -250,7 +250,7 @@ function uploadPhoto(dataUrl, filename) {
     const blob = Utilities.newBlob(bytes, contentType, blobName);
 
     // Target folder (指定されたフォルダに保存)
-    const folderId = '13eYmubAX8o8jsinZe2MpAXQfXHELmxKA';
+    const folderId = '11vltOriD3mBWCUL2SRgEHVhCXN25sh8-';
     const folder = DriveApp.getFolderById(folderId);
     const file = folder.createFile(blob);
 
