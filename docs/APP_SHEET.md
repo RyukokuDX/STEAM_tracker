@@ -24,21 +24,21 @@
 | 列 | カラム名 | 型 | 説明 |
 | ---: | --- | --- | --- |
 | A | registered_at | DateTime | フォーム送信時刻（自動記録） |
-| B | email | TEXT | 登録者メール |
-| C | name | TEXT | 登録者氏名 |
-| D | organization | TEXT | 団体名 |
-| E | photo_file_id | TEXT | Drive ファイル ID / 共有リンク |
+| B | email | Text | 登録者メール |
+| C | name | Text | 登録者氏名 |
+| D | organization | Text | 団体名 |
+| E | photo_file_id | Text | Drive ファイル ID / 共有リンク |
 | F | handover_on | DATE | 明け渡し日（YYYY-MM-DD） |
 | G | days_until_handover | NUMBER | 明け渡し日までの日数（計算列） |
-| H | status | TEXT | active / archived / pending |
-| I | admin_note | TEXT | 管理者備考 |
+| H | status | Text | active / archived / pending |
+| I | admin_note | Text | 管理者備考 |
 
 `archives` シート
 | 列 | カラム名 | 型 | 説明 |
 | ---: | --- | --- | --- |
-| A | id | TEXT (キー) | 元 item の id |
+| A | id | Text (キー) | 元 item の id |
 | B | archived_at | DATETIME | アーカイブ日時 |
-| C | reason | TEXT | アーカイブ理由 |
+| C | reason | Text | アーカイブ理由 |
 
 `users` シート（任意: 管理者認証や表示名に利用）
 | id | email | role | display_name |
@@ -123,4 +123,4 @@
 ---
 
 作成者: STEAM_tracker チーム
-更新日: 2025-10-16
+更新日: 2025-11-10
