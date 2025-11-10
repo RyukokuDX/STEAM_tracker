@@ -77,7 +77,7 @@ function doGet(e) {
   // If you need to change framing behavior, set it in the Apps Script
   // deployment settings or use the explicit ALLOWALL value if available.
   return tpl.evaluate()
-    .setTitle("年度末制限フォーム");
+    .setTitle("物品登録フォーム");
 }
 
 /**
