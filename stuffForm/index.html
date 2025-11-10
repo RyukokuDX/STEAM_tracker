@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>物品登録フォーム（利用規約確認）</title>
+  <style>
+    :root{
+      --primary: #6b8a7a;
+      --bg: #f8f7f4;
+      --input: #eae8e1;
+      --text: #37423d;
+      --muted: #707d78;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    /* --- Title with two round SVG icons (restored) --- */
+    h1 {
+      position: relative;
+      padding-top: 100px; /* space for icons */
+      font-size: 22px;
+      font-weight: bold;
+      margin: 0 0 24px 0;
+      text-align: center;
+      color: var(--text);
+    }
+
+    h1::before,
+    h1::after {
+      content: "";
+      display: block;
+      width: 64px;
+      height: 64px;
+      background-color: var(--input);
+      border-radius: 50%;
+      position: absolute;
+      top: 0;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 50%;
+    }
+
+    /* left icon (user) */
+    h1::before {
+      left: calc(50% - 8px - 64px);
+      background-image: url(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23707d78' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'%3E%3C/path%3E%3Ccircle cx='12' cy='7' r='4'%3E%3C/circle%3E%3C/svg%3E"
+      );
+    }
+
+    /* right icon (form) */
+    h1::after {
+      left: calc(50% + 8px);
+      background-image: url(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23707d78' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'%3E%3C/path%3E%3Cpolyline points='14 2 14 8 20 8'%3E%3C/polyline%3E%3Cline x1='16' y1='13' x2='8' y2='13'%3E%3C/line%3E%3Cline x1='16' y1='17' x2='8' y2='17'%3E%3C/line%3E%3Cpolyline points='10 9 9 9 8 9'%3E%3C/polyline%3E%3C/svg%3E"
+      );
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .header {
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .terms-box {
+      margin-top: 10px;
+      border-radius: 8px;
+      padding: 12px;
+      background: #fafafa;
+      border: 1px solid #eee;
+      height: 52vh;
+      min-height: 240px;
+      overflow: auto;
+    }
+
+    .controls {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    label {
+      font-size: 14px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    select, input[type="checkbox"] {
+      font-size: 15px;
+    }
+
+    #agreeBtn {
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    #agreeBtn[disabled] {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .form {
+      transition: opacity .25s;
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .form.enabled {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .field {
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .field label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="date"] {
+      width: 100%;
+      border: none;
+      background: var(--input);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 15px;
+      color: var(--text);
+      box-sizing: border-box;
+    }
+
+    button#submit {
+      width: 100%;
+      padding: 12px;
+      border-radius: 50px;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #msg.error {
+      color: #721c24;
+      background: #f8d7da;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+
+    #msg.success {
+      color: #155724;
+      background: #d4edda;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    @media (min-width: 700px) {
+      body { padding: 28px; }
+      .terms-box { height: 48vh; min-height: 380px; }
+      .card { padding: 18px; }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>物品登録フォーム</h1>
+
+  <div class="card">
+    <div class="header">
+      <div>利用規約の確認（同意が必要です）</div>
+      <div class="small">施行日: 2025-01-01</div>
+    </div>
+
+    <div id="termsBox" class="terms-box" aria-label="利用規約全文">
+      <!-- 規約全文（省略なし） -->
+      <section id="termsText">
+        <h1 style="display:none">スチームコモンズ 物品管理システム 利用規約（草案）</h1>
+        <p>施行日: 2025-01-01 / 最終改定日: 2025-01-01</p>
+
+        <h3>1. 目的</h3>
+        <ul>
+          <li>本規約は、「スチームコモンズ」（以下「本施設」という。）における放置物品問題を円滑に解決することを目的とするものである。</li>
+          <li>本規約の目的は、ユーザーが快適かつ公平に作業スペースを利用できる環境を維持することである。</li>
+          <li>本サービスは、「スチームコモンズ 物品管理システム」の名称で提供されるものである。</li>
+          <li>本規約は、本サービスの提供条件およびユーザーと本施設との間の権利義務関係を定めるものである。</li>
+          <li>ユーザーは、本サービスを利用するにあたり、本規約の全文を確認しなければならない。</li>
+        </ul>
+        <p>ユーザーは、本規約に承諾の上、本サービスの利用を申し込むものとし、本サービスの申し込みをした場合、本規約を承諾したものとみなします。</p>
+
+        <h3>2. 定義</h3>
+        <p>「本サービス」とは、本施設が「スチームコモンズ 物品管理システム」の名称で提供する、物品の登録および管理に関する一切のサービスおよびそれを提供するための情報システムをいう。</p>
+        <p>「ユーザー」とは、本規約に同意の上、本サービスの利用登録をした個人をいう。</p>
+        <p>「登録物品」とは、ユーザーが本サービスを利用して、所有者情報および明け渡し日を登録した私物を指す。</p>
+        <p>「管理者」とは、本施設の運営を担当し、本サービスの管理権限を有する者を指す。</p>
+        <p>「QRコード」とは、物品登録フォームにアクセスするために、本施設が提供する個別の識別コードを指す。</p>
+        <p>「明け渡し日」とは、ユーザーが登録物品を本施設から撤去する最終期限の日を指す。</p>
+
+        <h3>3. システムの利用</h3>
+        <p>本施設内に私物を設置するユーザーは、本規約に同意の上、所定の方法で本サービスに物品を登録しなければならない。</p>
+        <p>物品の登録は、本施設内に掲示されたQRコードを読み取り、表示されるフォームに必要事項（氏名、連絡先メールアドレス、物品の情報、写真、明け渡し日など）を入力することで完了する。なお、登録できる物品は第7条（禁止事項）の定めに従うものとする。</p>
+        <p>ユーザーは、本条第2項に定める写真について、登録物品が施設内のどこに置かれているかが明確に判別できるよう、周囲の状況も含めて撮影するものとする。</p>
+        <p>前各項の定めにかかわらず、管理者は、登録申請された物品が施設の利用目的にそぐわない、スペースを過度に占有する、その他管理上不適切であると判断した場合、当該物品の登録を承認しない（受け付けない）ことができる。</p>
+        <p>前項に基づき管理者が登録を承認しなかった場合、ユーザーは当該物品を速やかに本施設から撤去しなければならない。これによってユーザーに生じた損害について、管理者は一切の責任を負わない。</p>
+        <p>ユーザーは、登録情報が正確であることを保証するものとする。登録情報に変更があった場合は、速やかに更新しなければならない。</p>
+
+        <h3>4. 個人情報の取り扱い</h3>
+        <p>管理者は、本サービスの運営にあたり取得したユーザーの個人情報（氏名、メールアドレス等）を、本サービスの管理・運営（リマインダー通知、緊急時の連絡等）の目的でのみ利用する。</p>
+        <p>法令に基づく場合を除き、ユーザーの同意なく個人情報を第三者に開示または提供することはない。</p>
+        <p>取得した個人情報は、登録物品の管理期間終了後1年間保管し、その後速やかに削除する。個人情報の漏洩、滅失、毀損等を防止するため、適切な安全管理措置を講じる。ユーザーは、個人情報の開示、訂正、利用停止、削除を希望する場合、管理者（メールアドレス）まで連絡するものとする。</p>
+
+        <h3>5. 登録物品の管理</h3>
+        <p>ユーザーは、自らの責任において登録物品を管理するものとする。</p>
+        <p>ユーザーは、設定した明け渡し日までに、登録物品を本施設から撤去する義務を負う。</p>
+        <p>本サービスは、明け渡し日の到来前に、登録されたメールアドレス宛にリマインダー通知を自動送信する。ユーザーは、この通知を受信できるよう、メール設定を適切に行うものとする。なお、リマインダー通知は明け渡し日の3日前および当日に、登録されたメールアドレス宛に自動送信される。</p>
+        <p>ユーザーは、やむを得ない事情がある場合、明け渡し日の延長を申請することができる。延長申請は所定のフォームから行い、管理者が承認または否認する。管理者が延長申請を承認した場合、明け渡し日を延長する。否認の場合は、ユーザーは速やかに物品を撤去しなければならない。</p>
+        <p>物品の設置期間は原則として年度末（3月31日）までとする。年度末が近づいた場合、管理者は全ユーザーに一斉通知を行い、明け渡し日を周知する。年度末までに撤去されない物品は、管理者が任意に処分できるものとする。</p>
+        <p>撤去完了または管理者による処分が確認された物品の登録データは、管理シートからアーカイブ用シートに移動し、過去の記録として保管する。アーカイブ後は主要情報のみを保持し、個人情報は速やかに削除する。</p>
+
+        <h3>6. 明け渡し日を超過した物品の取り扱い</h3>
+        <p>明け渡し日を超過しても撤去されない登録物品について、管理者は、当該物品の所有権がユーザーによって放棄されたものとみなし、ユーザーへの事前の通知なく、任意に移動、保管、または処分（廃棄、再利用を含む）することができる。</p>
+        <p>前項の措置に関し、ユーザーは一切の異議を申し立てることができず、管理者はユーザーおよび第三者に対して何らの責任も負わないものとする。</p>
+
+        <h3>7. 禁止事項</h3>
+        <p>ユーザーは、本サービスの利用にあたり、以下の各号に定める行為を行ってはなりません。</p>
+        <ul>
+          <li>虚偽の情報を登録する行為</li>
+          <li>他人の情報を無断で使用して登録する行為</li>
+          <li>本サービスの運営を妨害する行為</li>
+          <li>本施設内に危険物、違法物、その他管理者が不適切と判断する物品を設置する行為</li>
+          <li>その他、法令または公序良俗に反する行為</li>
+        </ul>
+
+        <h3>8. 免責事項</h3>
+        <p>本サービスの障害、メンテナンス、通信回線の異常、その他やむを得ない事情により、予告なく本サービスの提供を中断または停止する場合がある。</p>
+        <p>本サービスの利用または利用不能によってユーザーに生じた損害について、管理者に故意または重過失がある場合を除き、一切の責任を負わないものとする。</p>
+
+        <h3>8-1. エラー・障害時の対応</h3>
+        <ul>
+          <li>システム障害、通信エラー、その他予期せぬ事象が発生した場合、管理者は速やかに復旧対応を行うものである。</li>
+          <li>登録・通知・アーカイブ等の処理に失敗した場合、管理者はユーザーに状況を通知し、必要な対応を協議するものである。</li>
+          <li>ユーザーは、エラー発生時に管理者の指示に従うものとする。</li>
+        </ul>
+
+        <h3>9. 規約の変更</h3>
+        <p>管理者は、必要に応じて本規約を変更できるものとします。</p>
+        <p>規約を変更した場合、管理者は本施設内への掲示その他適切な方法でユーザーに通知します。通知後、ユーザーが本サービスを利用した場合は、変更後の規約に同意したものとみなします。</p>
+      </section>
+    </div>
+
+    <div class="controls">
+      <label style="margin-top:6px;">
+        <input id="confirm6" type="checkbox" />
+        私は「第6条（明け渡し日を超過した物品の取り扱い）」を読み、内容を理解しました（必須）
+      </label>
+
+      <div>
+        <div style="font-size:13px; color: var(--muted); margin-bottom:6px;">第6条に関する確認クイズ（必須）</div>
+        <select id="quiz" aria-label="第6条に関するクイズ">
+          <option value="">-- 選択してください --</option>
+          <option value="a">明け渡し日を超えた場合、管理者はユーザーに事前連絡して必ず保管する</option>
+          <option value="b">明け渡し日を超えた場合、管理者は当該物品を任意に移動・保管・処分できる</option>
+          <option value="c">明け渡し日を超えた場合、ユーザーは自動的に所有権が移転されるが処分は不可</option>
+        </select>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:6px;">
+        <button id="agreeBtn" disabled>同意してフォームに進む</button>
+      </div>
+
+      <div class="small">ヒント：第6条の本文をよく読んで正しい選択肢を選んでください。下までスクロールしてからチェックとクイズを完了してください。</div>
+    </div>
+  </div>
+
+  <!-- フォーム -->
+  <div id="formCard" class="card form">
+    <div style="font-weight:700; margin-bottom:8px;">物品登録フォーム</div>
+
+    <div class="field">
+      <label for="name">氏名</label>
+      <input id="name" type="text" autocomplete="name" />
+    </div>
+
+    <div class="field">
+      <label for="organization">団体名（任意）</label>
+      <input id="organization" type="text" autocomplete="organization" />
+    </div>
+
+    <div class="field">
+      <label for="photoFile">写真を添付</label>
+      <input id="photoFile" type="file" accept="image/*" />
+    </div>
+
+    <div class="field">
+      <label for="email">メール（自動入力・編集不可）</label>
+      <input id="email" type="email" value="<?= email ?>" readonly />
+      <div class="small">サインイン中のアカウントが自動入力されています（許可ドメイン: <?= domain ?>）。</div>
+    </div>
+
+    <div class="field">
+      <label for="date">明け渡し日</label>
+      <input id="date" type="date" />
+      <div id="hint" class="small"></div>
+    </div>
+
+    <div id="msg"></div>
+
+    <div style="margin-top:8px">
+      <button id="submit">送信</button>
+    </div>
+  </div>
+
+  <script>
+    const FISCAL_END = "<?= fiscalEndStr ?>";
+    const TODAY = "<?= todayStr ?>";
+
+    (function initDate(){
+      const d = document.getElementById('date');
+      d.setAttribute('min', TODAY);
+      d.setAttribute('max', FISCAL_END);
+      document.getElementById('hint').textContent = `選択可能な範囲： ${TODAY} 〜 ${FISCAL_END}`;
+    })();
+
+    // 同意ロジック（スクロール到達 + チェック + クイズ正答）
+    (function(){
+      const termsBox = document.getElementById('termsBox');
+      const confirm6 = document.getElementById('confirm6');
+      const quiz = document.getElementById('quiz');
+      const agreeBtn = document.getElementById('agreeBtn');
+      const formCard = document.getElementById('formCard');
+
+      function atBottom(el){
+        return el.scrollHeight - el.scrollTop <= el.clientHeight + 2;
+      }
+
+      function update(){
+        const scrolled = atBottom(termsBox);
+        const checked = confirm6.checked;
+        const quizOK = quiz.value === 'b';
+        agreeBtn.disabled = !(scrolled && checked && quizOK);
+      }
+
+      termsBox.addEventListener('scroll', update, { passive: true });
+      confirm6.addEventListener('change', update);
+      quiz.addEventListener('change', update);
+
+      agreeBtn.addEventListener('click', function(){
+        if (agreeBtn.disabled) return;
+        formCard.classList.add('enabled');
+        agreeBtn.textContent = '同意済み — フォームを使用できます';
+        agreeBtn.disabled = true;
+        formCard.scrollIntoView({behavior:'smooth', block:'start'});
+      });
+    })();
+
+    // フォーム送信
+    document.getElementById('submit').addEventListener('click', function(){
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const selected = document.getElementById('date').value;
+      const submitBtn = document.getElementById('submit');
+      const msgEl = document.getElementById('msg');
+      msgEl.className = '';
+      msgEl.textContent = '';
+
+      if (!selected){
+        msgEl.className = 'error';
+        msgEl.textContent = '明け渡し日を選択してください。';
+        return;
+      }
+
+      if (!name){
+        msgEl.className = 'error';
+        msgEl.textContent = '氏名は必須です。';
+        return;
+      }
+
+      const min = document.getElementById('date').min;
+      const max = document.getElementById('date').max;
+      if (selected < min || selected > max){
+        msgEl.className = 'error';
+        msgEl.textContent = `選択した日付は許可範囲外です（${min}〜${max}）。`;
+        return;
+      }
+
+  // 送信ボタンの無効化は必須チェックのあとで行う（必須項目エラー時に元に戻すため）
+
+      const payload = {
+        name,
+        email,
+        organization: document.getElementById('organization').value.trim(),
+        photo: '', // will fill with fileId after upload if a file is selected
+        date: selected
+      };
+
+      const fileInput = document.getElementById('photoFile');
+
+      // クライアント側で写真必須チェック
+      if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        msgEl.className = 'error';
+        msgEl.textContent = '写真の添付は必須です。';
+        return;
+      }
+
+      // 配置：ここでボタンを無効化して送信操作を保護
+      const originalSubmitText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = '送信中...';
+
+      function doSubmit(finalPayload) {
+        google.script.run
+          .withSuccessHandler(function(res){
+            if (res && res.status === 'ok'){
+              msgEl.className = 'success';
+              msgEl.textContent = '送信完了';
+              document.getElementById('name').value = '';
+              document.getElementById('date').value = '';
+              document.getElementById('organization').value = '';
+              if (fileInput) fileInput.value = '';
+              submitBtn.textContent = '送信完了';
+              submitBtn.disabled = true;
+            } else {
+              msgEl.className = 'error';
+              msgEl.textContent = res && res.message ? 'エラー: ' + res.message : '送信に失敗しました。';
+              submitBtn.disabled = false;
+              submitBtn.textContent = originalSubmitText || '送信';
+            }
+          })
+          .withFailureHandler(function(err){
+            msgEl.className = 'error';
+            msgEl.textContent = 'サーバ接続に失敗しました。';
+            console.error(err);
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalSubmitText || '送信';
+          })
+          .submitForm(finalPayload);
+      }
+
+      if (fileInput && fileInput.files && fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const dataUrl = e.target.result;
+          // Upload the photo first, get back fileId
+          google.script.run
+            .withSuccessHandler(function(res){
+              if (res && res.status === 'ok'){
+                payload.photo = res.id;
+                doSubmit(payload);
+              } else {
+                msgEl.className = 'error';
+                msgEl.textContent = '画像アップロードに失敗しました: ' + (res && res.message ? res.message : '不明なエラー');
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalSubmitText || '送信';
+              }
+            })
+            .withFailureHandler(function(err){
+              msgEl.className = 'error';
+              msgEl.textContent = '画像アップロードでサーバ接続に失敗しました。';
+              console.error(err);
+              submitBtn.disabled = false;
+              submitBtn.textContent = originalSubmitText || '送信';
+            })
+            .uploadPhoto(dataUrl, file.name);
+        };
+        reader.onerror = function(err){
+          msgEl.className = 'error';
+          msgEl.textContent = 'ファイルの読み込みに失敗しました。';
+          console.error(err);
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalSubmitText || '送信';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // No file selected, submit directly
+        doSubmit(payload);
+      }
+    });
+  </script>
+</body>
+</html>
