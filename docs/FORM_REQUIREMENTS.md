@@ -4,7 +4,7 @@
 >
 > この仕様は以下のスプレッドシート列配置を前提としています（必ず `docs/APP_SHEET.md` の `items` 定義と一致させてください）。
 >
-> A: Timestamp | B: email | C: name | D: organization | E: photo_file_id | F: handover_date | G: days_until_handover | H: status | I: admin_note
+> A: Timestamp | B: email | C: name | D: organization | E: photo_file_id | F: handover_on | G: days_until_handover | H: status | I: admin_note
 
 このドキュメントはフォーム実装者・テスター向けの仕様書です。フォームの入力項目、検証ルール、スプレッドシートへの記録仕様、通知トリガー、受け入れ基準（Acceptance Criteria）および簡易テストケースを定義します。
 
@@ -46,7 +46,7 @@
 | C | name | Text | 登録者氏名 |
 | D | organization | Text | 団体名 |
 | E | photo_file_id | Text | Drive ファイル ID |
-| F | handover_date | Date | 明け渡し日（YYYY-MM-DD） |
+| F | handover_on | Date | 明け渡し日（YYYY-MM-DD） |
 | G | days_until_handover | Number | 明け渡し日までの日数（計算列） |
 | H | status | Text | active / archived / pending |
 | I | admin_note | Text | 管理者備考 |
@@ -164,4 +164,4 @@ STEAM_tracker
 ---
 
 作成者: STEAM_tracker チーム
-更新日: 2025-11-01
+更新日: 2025-11-10
