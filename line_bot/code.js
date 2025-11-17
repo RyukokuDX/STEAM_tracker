@@ -1,7 +1,9 @@
-const SPREAD_SHEET = SpreadsheetApp.openById("1U3enu3ETOh_seroYmpO95p2yjW2RSUC7WRLyDk1rhs8");
+const SPREAD_SHEET = SpreadsheetApp.openById("1ImQWr-iBAL_DWBsQ_MgcONheBEjdHur7GhzhE2GVWs0");
 const SHEET = SPREAD_SHEET.getSheetByName("管理シート");
-const ACCESS_TOKEN = 'Wl7oj84NxBzYNRy0YWLn2bw36m10IWrHR3GmguKTM/QwBpnDakpP7leNgh0cWurBE+joXlj0T/ClOQ/ZJxzs/R2HvdM1d0W1JdqG/pQCC/kylvdqJcOC6vKr1JJXjnOO18XlBB9aLagFd0T+iiSfswdB04t89/1O/w1cDnyilFU=';
-const USER_ID = 'Uc96692787f41d9a314b78aff7a7c3c42';
+
+const scriptProperties = PropertiesService.getScriptProperties();
+const ACCESS_TOKEN = scriptProperties.getProperty('ACCESS_TOKEN');
+const USER_ID = scriptProperties.getProperty('USER_ID');
 
 // 列要素
 const RESISTERED_AT = 0;        // フォーム送信時刻（自動記録）
