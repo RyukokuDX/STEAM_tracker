@@ -24,6 +24,14 @@
       text-size-adjust: 100%;
     }
 
+    .title {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      font-size: 40px;
+      margin-bottom: 16px;
+    }
+
     body {
       font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
       max-width: 420px;
@@ -67,7 +75,7 @@
     h1::before {
       left: calc(50% - 8px - 64px);
       background-image: url("https://lh3.googleusercontent.com/d/1LL1NpqQoEwytkWkvYq4-9XmTBNRyEwsD=w256");
-      background-size: 110%;
+      background-size: 90px;
     }
 
     /* right icon (form) */
@@ -136,6 +144,8 @@
       font-size: 15px;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
+      width: 70%;
+      display: block;
     }
 
     #agreeBtn[disabled] {
@@ -292,6 +302,13 @@
       margin-top: 6px;
     }
 
+    .termsdate {
+      font-size: small;
+      color: var(--muted);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
     @media (min-width: 700px) {
       body { padding: 28px; }
       .terms-box { height: 48vh; min-height: 380px; }
@@ -309,11 +326,11 @@
 </head>
 
 <body>
-  <h1>物品登録フォーム</h1>
+  <h1 class="title">物品登録フォーム</h1>
 
   <div class="card">
     <div class="header">
-      <div>利用規約の確認</div> 
+      <div style="font-size: 30px;">利用規約の確認</div> 
       <div class="small">施行日: 2025-01-01</div>
     </div>
 
@@ -321,7 +338,7 @@
       <!-- 規約全文（省略なし） -->
       <section id="termsText">
         <h1 style="display:none">スチームコモンズ 物品管理システム 利用規約（草案）</h1>
-        <p>施行日: 2025-01-01 / 最終改定日: 2025-01-01</p>
+        <p class = "termsdate" style="font-size: small;">施行日: 2025-01-01 / 最終改定日: 2025-01-01</p>
 
         <h3>1. 目的</h3>
         <ul>
@@ -362,7 +379,7 @@
         <p>物品の設置期間は原則として年度末（3月31日）までとする。年度末が近づいた場合、管理者は全ユーザーに一斉通知を行い、明け渡し日を周知する。年度末までに撤去されない物品は、管理者が任意に処分できるものとする。</p>
         <p>撤去完了または管理者による処分が確認された物品の登録データは、管理シートからアーカイブ用シートに移動し、過去の記録として保管する。アーカイブ後は主要情報のみを保持し、個人情報は速やかに削除する。</p>
 
-        <h3>6. 明け渡し日を超過した物品の取り扱い</h3>
+        <h3>6. 明け渡し日が超過した物品の取り扱い</h3>
         <p>明け渡し日を超過しても撤去されない登録物品について、管理者は、当該物品の所有権がユーザーによって放棄されたものとみなし、ユーザーへの事前の通知なく、任意に移動、保管、または処分（廃棄、再利用を含む）することができる。</p>
         <p>前項の措置に関し、ユーザーは一切の異議を申し立てることができず、管理者はユーザーおよび第三者に対して何らの責任も負わないものとする。</p>
 
@@ -409,10 +426,9 @@
         </select>
       </div>
 
-      <div style="display:flex; justify-content:flex-end; margin-top:6px;">
-        <button id="agreeBtn" disabled>同意して進む
-          <div style="font-size:13px; color: white">⚠必須⚠</div>
-          
+      <div style="display:flex; justify-content:center; margin-top:6px; width: 100%;">
+        <button style="width: 80%; font-size: 25px;" id="agreeBtn" disabled>
+          同意して進む<div style="font-size:13px; color: white">⚠必須⚠</div>
         </button>
       </div>
 
