@@ -11,6 +11,9 @@
       --input: #eae8e1;
       --text: #37423d;
       --muted: #707d78;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-pill: 999px;
     }
 
     html, body {
@@ -45,19 +48,19 @@
       box-sizing: border-box;
     }
 
-    /* --- Title with two round jpg icons (restored) --- */
-    h1 {
+    /* --- Title with two round jpg icons (scoped) --- */
+    .hero-title {
       position: relative;
       padding-top: 100px; /* space for icons */
-      font-size: 22px;
+      font-size: 40px;
       font-weight: bold;
       margin: 0 0 24px 0;
       text-align: center;
       color: var(--text);
     }
 
-    h1::before,
-    h1::after {
+    .hero-title::before,
+    .hero-title::after {
       content: "";
       display: block;
       width: 64px;
@@ -72,14 +75,14 @@
     }
 
     /* left icon (user) */
-    h1::before {
+    .hero-title::before {
       left: calc(50% - 8px - 64px);
       background-image: url("https://lh3.googleusercontent.com/d/1LL1NpqQoEwytkWkvYq4-9XmTBNRyEwsD=w256");
       background-size: 90px;
     }
 
     /* right icon (form) */
-    h1::after {
+    .hero-title::after {
       left: calc(50% + 8px);
       background-image: url("https://lh3.googleusercontent.com/d/1XoekcUn2g8YLIi8iw3mPVNh6pd6-f8_E=w256");
       background-size: 100%;
@@ -87,7 +90,7 @@
 
     .card {
       background: #fff;
-      border-radius: 12px;
+      border-radius: var(--radius);
       padding: 14px;
       margin-bottom: 14px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.04);
@@ -105,7 +108,7 @@
 
     .terms-box {
       margin-top: 10px;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
       padding: 12px;
       background: #fafafa;
       border: 1px solid #eee;
@@ -134,24 +137,7 @@
       accent-color: var(--primary);
     }
 
-    #agreeBtn {
-      padding: 12px;
-      border-radius: 10px;
-      border: none;
-      background: var(--primary);
-      color: #fff;
-      font-weight: 700;
-      font-size: 15px;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
-      width: 70%;
-      display: block;
-    }
-
-    #agreeBtn[disabled] {
-      opacity: 0.5;
-      cursor: default;
-    }
+    /* agree button now uses .btn/.btn--primary */
 
     .form {
       transition: opacity .25s;
@@ -182,7 +168,7 @@
       display: block;
       border: none;
       background: var(--input);
-      border-radius: 12px;
+      border-radius: var(--radius);
       padding: 12px;
       font-size: 16px; /* iOSのフォーカス時ズーム回避 */
       line-height: 1.4;
@@ -195,7 +181,7 @@
     .custom-select {
       width: 100%;
       background: var(--input);
-      border-radius: 12px;
+      border-radius: var(--radius);
       padding: 12px;
       font-size: 16px;
       line-height: 1.4;
@@ -233,7 +219,7 @@
       overflow: auto;
       background: #fff;
       border: 1px solid #eee;
-      border-radius: 10px;
+      border-radius: var(--radius-sm);
       box-shadow: 0 8px 24px rgba(0,0,0,0.08);
       z-index: 1000;
       box-sizing: border-box;
@@ -259,7 +245,7 @@
       width: 100%;
       border: none;
       background: var(--input);
-      border-radius: 12px;
+      border-radius: var(--radius);
       padding: 12px;
       font-size: 16px; /* iOSのフォーカス時ズーム回避 */
       color: var(--text);
@@ -269,7 +255,7 @@
     button#submit {
       width: 100%;
       padding: 12px;
-      border-radius: 50px;
+      border-radius: var(--radius-pill);
       border: none;
       background: var(--primary);
       color: #fff;
@@ -278,6 +264,32 @@
       cursor: pointer;
       touch-action: manipulation;
       -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Common components */
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      display: block;
+      border-radius: var(--radius-pill);
+    }
+    .btn--primary { background: var(--primary); color: #fff; }
+    .btn[disabled] { opacity: 0.5; cursor: default; }
+
+    .form-control {
+      width: 100%;
+      border: none;
+      background: var(--input);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 16px; /* avoid iOS zoom */
+      color: var(--text);
+      box-sizing: border-box;
     }
 
     #msg.error {
@@ -301,6 +313,14 @@
       color: var(--muted);
       margin-top: 6px;
     }
+
+    /* Utilities */
+    .mt-6 { margin-top: 6px; }
+    .mt-8 { margin-top: 8px; }
+    .section-title { font-weight: 700; margin-bottom: 8px; }
+    .heading-lg { font-size: 30px; }
+    .note { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    .btn-sub { font-size: 13px; color: #fff; }
 
     .termsdate {
       font-size: small;
@@ -326,11 +346,11 @@
 </head>
 
 <body>
-  <h1 class="title">物品登録フォーム</h1>
+  <h1 class="hero-title">物品登録フォーム</h1>
 
   <div class="card">
-    <div class="header">
-      <div style="font-size: 30px;">利用規約の確認</div> 
+      <div class="header">
+        <div class="heading-lg">利用規約の確認</div> 
       <div class="small">施行日: 2025-01-01</div>
     </div>
 
@@ -338,7 +358,7 @@
       <!-- 規約全文（省略なし） -->
       <section id="termsText">
         <h1 style="display:none">スチームコモンズ 物品管理システム 利用規約（草案）</h1>
-        <p class = "termsdate" style="font-size: small;">施行日: 2025-01-01 / 最終改定日: 2025-01-01</p>
+        <p class = "termsdate">施行日: 2025-01-01 / 最終改定日: 2025-01-01</p>
 
         <h3>1. 目的</h3>
         <ul>
@@ -411,14 +431,14 @@
     </div>
 
     <div class="controls">
-      <label style="margin-top:6px;">
+      <label class="mt-6">
         <input id="confirm6" type="checkbox" />
         私は「第6条（明け渡し日を超過した物品の取り扱い）」を読み、内容を理解しました（必須）
       </label>
 
       <div>
-        <div style="font-size:13px; color: var(--muted); margin-bottom:6px;">第6条に関する確認クイズ（必須）</div>
-        <select id="quiz" aria-label="第6条に関するクイズ">
+        <div class="note">第6条に関する確認クイズ（必須）</div>
+        <select id="quiz" aria-label="第6条に関するクイズ" class="form-control">
           <option value="">-- 選択してください --</option>
           <option value="a">明け渡し日を超えた場合、管理者はユーザーに事前連絡して必ず保管する</option>
           <option value="b">明け渡し日を超えた場合、管理者は当該物品を任意に移動・保管・処分できる</option>
@@ -426,9 +446,9 @@
         </select>
       </div>
 
-      <div style="display:flex; justify-content:center; margin-top:6px; width: 100%;">
-        <button style="width: 80%; font-size: 25px;" id="agreeBtn" disabled>
-          同意して進む<div style="font-size:13px; color: white">⚠必須⚠</div>
+      <div class="mt-6">
+        <button id="agreeBtn" class="btn btn--primary" disabled>
+          同意して進む<div class="btn-sub">⚠必須⚠</div>
         </button>
       </div>
 
@@ -438,16 +458,16 @@
 
   <!-- フォーム -->
   <div id="formCard" class="card form">
-    <div style="font-weight:700; margin-bottom:8px;">物品登録フォーム</div>
+    <div class="section-title">物品登録フォーム</div>
 
     <div class="field">
       <label for="name">氏名</label>
-      <input id="name" type="text" autocomplete="name" />
+      <input id="name" type="text" autocomplete="name" class="form-control" />
     </div>
 
     <div class="field">
       <label for="organization">団体名（任意）</label>
-      <input id="organization" type="text" autocomplete="organization" />
+      <input id="organization" type="text" autocomplete="organization" class="form-control" />
     </div>
 
     <div class="field">
@@ -457,20 +477,20 @@
 
     <div class="field">
       <label for="email">メール（自動入力・編集不可）</label>
-      <input id="email" type="email" value="<?= email ?>" readonly />
+      <input id="email" type="email" value="<?= email ?>" readonly class="form-control" />
       <div class="small">サインイン中のアカウントが自動入力されています（許可ドメイン: <?= domain ?>）。</div>
     </div>
 
     <div class="field">
       <label for="date">明け渡し日</label>
-      <input id="date" type="date" />
+      <input id="date" type="date" class="form-control" />
       <div id="hint" class="small"></div>
     </div>
 
     <div id="msg" aria-live="polite"></div>
 
-    <div style="margin-top:8px">
-      <button id="submit">送信</button>
+    <div class="mt-8">
+      <button id="submit" class="btn btn--primary">送信</button>
     </div>
   </div>
 
