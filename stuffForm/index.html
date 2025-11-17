@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
   <title>物品登録フォーム（利用規約確認）</title>
   <style>
     :root{
@@ -20,6 +20,8 @@
       background: var(--bg);
       color: var(--text);
       -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
     }
 
     body {
@@ -27,6 +29,11 @@
       max-width: 420px;
       margin: 0 auto;
       padding: 20px;
+      /* iOS/Android ノッチの安全領域対応 */
+      padding-top: calc(16px + env(safe-area-inset-top));
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
       box-sizing: border-box;
     }
 
@@ -113,7 +120,8 @@
     }
 
     select, input[type="checkbox"] {
-      font-size: 15px;
+      font-size: 16px; /* iOSのフォーカス時ズーム回避 */
+      accent-color: var(--primary);
     }
 
     #agreeBtn {
@@ -125,6 +133,7 @@
       font-weight: 700;
       font-size: 15px;
       cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
 
     #agreeBtn[disabled] {
@@ -163,7 +172,7 @@
       background: var(--input);
       border-radius: 12px;
       padding: 12px;
-      font-size: 15px;
+      font-size: 16px; /* iOSのフォーカス時ズーム回避 */
       color: var(--text);
       box-sizing: border-box;
     }
@@ -178,6 +187,8 @@
       font-weight: 700;
       font-size: 16px;
       cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
 
     #msg.error {
@@ -206,6 +217,14 @@
       body { padding: 28px; }
       .terms-box { height: 48vh; min-height: 380px; }
       .card { padding: 18px; }
+    }
+
+    /* 対応ブラウザではアドレスバーの影響を受けにくいdvhを使用 */
+    @supports (height: 1dvh) {
+      .terms-box { height: 52dvh; }
+      @media (min-width: 700px) {
+        .terms-box { height: 48dvh; }
+      }
     }
   </style>
 </head>
@@ -350,7 +369,7 @@
       <div id="hint" class="small"></div>
     </div>
 
-    <div id="msg"></div>
+    <div id="msg" aria-live="polite"></div>
 
     <div style="margin-top:8px">
       <button id="submit">送信</button>
@@ -361,11 +380,51 @@
     const FISCAL_END = "<?= fiscalEndStr ?>";
     const TODAY = "<?= todayStr ?>";
 
+    // ピンチアウト/ダブルタップズーム抑止（必要に応じて外してください）
+    (function lockZoom(){
+      const opts = { passive: false };
+      // 2本指以上のタッチでのピンチを抑止
+      document.addEventListener('touchstart', function(e){
+        if (e.touches && e.touches.length > 1) e.preventDefault();
+      }, opts);
+      // iOS Safari固有のジェスチャーイベント
+      document.addEventListener('gesturestart', function(e){ e.preventDefault(); }, opts);
+      // ダブルタップによるズーム抑止
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', function(e){
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+          e.preventDefault();
+        }
+        lastTouchEnd = now;
+      }, opts);
+      // Ctrl+ホイールによるズーム抑止（Android Chrome等）
+      document.addEventListener('wheel', function(e){
+        if (e.ctrlKey) e.preventDefault();
+      }, opts);
+    })();
+
     (function initDate(){
       const d = document.getElementById('date');
       d.setAttribute('min', TODAY);
       d.setAttribute('max', FISCAL_END);
       document.getElementById('hint').textContent = `選択可能な範囲： ${TODAY} 〜 ${FISCAL_END}`;
+    })();
+
+    // モバイルのアドレスバー表示/DevTools開閉などの高さ変動に追従
+    (function adjustTermsBoxHeight(){
+      const el = document.getElementById('termsBox');
+      if (!el) return;
+      function setHeight(){
+        const vw = window.innerWidth || document.documentElement.clientWidth;
+        const vh = window.innerHeight || document.documentElement.clientHeight;
+        const ratio = vw >= 700 ? 0.48 : 0.52;
+        const h = Math.max(240, Math.round(vh * ratio));
+        el.style.height = h + 'px';
+      }
+      setHeight();
+      window.addEventListener('resize', setHeight);
+      window.addEventListener('orientationchange', setHeight);
     })();
 
     // 同意ロジック（スクロール到達 + チェック + クイズ正答）
@@ -390,6 +449,8 @@
       termsBox.addEventListener('scroll', update, { passive: true });
       confirm6.addEventListener('change', update);
       quiz.addEventListener('change', update);
+      // 画面サイズ変動（ソフトキーボード、アドレスバー、DevTools等）で再評価
+      window.addEventListener('resize', update, { passive: true });
 
       agreeBtn.addEventListener('click', function(){
         if (agreeBtn.disabled) return;
@@ -399,6 +460,36 @@
         formCard.scrollIntoView({behavior:'smooth', block:'start'});
       });
     })();
+
+    // 画像をクライアント側で適度に圧縮（GAS転送量を削減）
+    function processImage(dataUrl, maxDim = 1600, quality = 0.85){
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            let { width, height } = img;
+            if (width > height && width > maxDim){
+              height = Math.round(height * (maxDim / width));
+              width = maxDim;
+            } else if (height > width && height > maxDim){
+              width = Math.round(width * (maxDim / height));
+              height = maxDim;
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            const out = canvas.toDataURL('image/jpeg', quality);
+            resolve(out);
+          } catch(e){
+            console.warn('画像圧縮に失敗したため原本を送信します', e);
+            resolve(dataUrl);
+          }
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    }
 
     // フォーム送信
     document.getElementById('submit').addEventListener('click', function(){
@@ -488,27 +579,29 @@
         const reader = new FileReader();
         reader.onload = function(e) {
           const dataUrl = e.target.result;
-          // Upload the photo first, get back fileId
-          google.script.run
-            .withSuccessHandler(function(res){
-              if (res && res.status === 'ok'){
-                payload.photo = res.id;
-                doSubmit(payload);
-              } else {
+          processImage(dataUrl).then(function(comped){
+            // Upload the photo first, get back fileId
+            google.script.run
+              .withSuccessHandler(function(res){
+                if (res && res.status === 'ok'){
+                  payload.photo = res.id;
+                  doSubmit(payload);
+                } else {
+                  msgEl.className = 'error';
+                  msgEl.textContent = '画像アップロードに失敗しました: ' + (res && res.message ? res.message : '不明なエラー');
+                  submitBtn.disabled = false;
+                  submitBtn.textContent = originalSubmitText || '送信';
+                }
+              })
+              .withFailureHandler(function(err){
                 msgEl.className = 'error';
-                msgEl.textContent = '画像アップロードに失敗しました: ' + (res && res.message ? res.message : '不明なエラー');
+                msgEl.textContent = '画像アップロードでサーバ接続に失敗しました。';
+                console.error(err);
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalSubmitText || '送信';
-              }
-            })
-            .withFailureHandler(function(err){
-              msgEl.className = 'error';
-              msgEl.textContent = '画像アップロードでサーバ接続に失敗しました。';
-              console.error(err);
-              submitBtn.disabled = false;
-              submitBtn.textContent = originalSubmitText || '送信';
-            })
-            .uploadPhoto(dataUrl, file.name);
+              })
+              .uploadPhoto(dataUrl, file.name);
+          });
         };
         reader.onerror = function(err){
           msgEl.className = 'error';
