@@ -89,8 +89,10 @@
       font-size: 18px;
       font-weight: 700;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: center;
+      gap: 4px;
+      text-align: center;
     }
 
     .terms-box {
@@ -311,7 +313,7 @@
 
   <div class="card">
     <div class="header">
-      <div>利用規約の確認（同意が必要です）</div>
+      <div>利用規約の確認</div> 
       <div class="small">施行日: 2025-01-01</div>
     </div>
 
@@ -408,7 +410,10 @@
       </div>
 
       <div style="display:flex; justify-content:flex-end; margin-top:6px;">
-        <button id="agreeBtn" disabled>同意してフォームに進む</button>
+        <button id="agreeBtn" disabled>同意して進む
+          <div style="font-size:13px; color: white">⚠必須⚠</div>
+          
+        </button>
       </div>
 
       <div class="small">ヒント：第6条の本文をよく読んで正しい選択肢を選んでください。下までスクロールしてからチェックとクイズを完了してください。</div>
