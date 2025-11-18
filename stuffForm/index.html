@@ -6,7 +6,8 @@
   <title>物品登録フォーム（利用規約確認）</title>
   <style>
     :root{
-      --primary: #6b8a7a;
+      /* darken primary to meet WCAG AA with white text (≈5.9:1) */
+      --primary: #4f6a5c;
       --bg: #f8f7f4;
       --input: #eae8e1;
       --text: #37423d;
@@ -27,13 +28,6 @@
       text-size-adjust: 100%;
     }
 
-    .title {
-      text-align: center;
-      font-size: 24px;
-      font-weight: bold;
-      font-size: 40px;
-      margin-bottom: 16px;
-    }
 
     body {
       font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
@@ -51,7 +45,7 @@
     /* --- Title with two round jpg icons (scoped) --- */
     .hero-title {
       position: relative;
-      padding-top: 100px; /* space for icons */
+      padding-top: clamp(72px, 18vw, 110px); /* space for icons */
       font-size: 40px;
       font-weight: bold;
       margin: 0 0 24px 0;
@@ -63,22 +57,22 @@
     .hero-title::after {
       content: "";
       display: block;
-      width: 64px;
-      height: 64px;
+      width: clamp(48px, 12vw, 72px);
+      height: clamp(48px, 12vw, 72px);
       background-color: var(--input);
       border-radius: 50%;
       position: absolute;
       top: 0;
       background-repeat: no-repeat;
       background-position: center;
-      background-size: 50%;
+      background-size: clamp(60%, 12vw, 80%);
     }
 
     /* left icon (user) */
     .hero-title::before {
       left: calc(50% - 8px - 64px);
       background-image: url("https://lh3.googleusercontent.com/d/1LL1NpqQoEwytkWkvYq4-9XmTBNRyEwsD=w256");
-      background-size: 90px;
+      background-size: 120%
     }
 
     /* right icon (form) */
@@ -162,19 +156,7 @@
       display: block;
     }
 
-    /* セレクトのはみ出し防止＆入力と統一デザイン */
-    select {
-      width: 100%;
-      display: block;
-      border: none;
-      background: var(--input);
-      border-radius: var(--radius);
-      padding: 12px;
-      font-size: 16px; /* iOSのフォーカス時ズーム回避 */
-      line-height: 1.4;
-      color: var(--text);
-      box-sizing: border-box;
-    }
+    /* セレクトの見た目は .form-control に統一 */
 
     /* カスタムセレクト（ネイティブの幅暴走対策） */
     .select-wrap { position: relative; }
@@ -239,18 +221,7 @@
       background: #f2f4f3;
     }
 
-    input[type="text"],
-    input[type="email"],
-    input[type="date"] {
-      width: 100%;
-      border: none;
-      background: var(--input);
-      border-radius: var(--radius);
-      padding: 12px;
-      font-size: 16px; /* iOSのフォーカス時ズーム回避 */
-      color: var(--text);
-      box-sizing: border-box;
-    }
+    /* 入力の見た目は .form-control に統一 */
 
     button#submit {
       width: 100%;
@@ -285,7 +256,7 @@
       width: 100%;
       border: none;
       background: var(--input);
-      border-radius: 12px;
+      border-radius: var(--radius);
       padding: 12px;
       font-size: 16px; /* avoid iOS zoom */
       color: var(--text);
