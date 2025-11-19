@@ -18,7 +18,7 @@ const ADMIN_NOTE = 8;           // 管理者備考
 
 const FORM_URL = "";            // フォームURL
 
-// スプレッドシート上の日付を確認し、一致する日付であればメッセージ送信1
+// スプレッドシート上の日付を確認し、一致する日付であればメッセージ送信
 function handoverDayRemind() {
   const data = SHEET.getDataRange().getValues();
 
@@ -29,7 +29,6 @@ function handoverDayRemind() {
     const email = data[i][EMAIL];
     const name = data[i][NAME];
     const organ = data[i][ORGANIZATION];
-    const handover = data[i][HANDOVER_ON];
     const handoverDay = data[i][DAYS_UNTIL_HANDOVER];
 
     let mailFailLog = ""; // メール送信失敗時のログ
@@ -114,9 +113,9 @@ function sendEmail(to, subject, body) {
 }
 
 // LINE Messaging APIでメッセージを送信
-function sendLineMessage(to, text, mailFailLog = 0) {
+function sendLineMessage(to, text, mailFailLog = '') {
   const url = 'https://api.line.me/v2/bot/message/push';
-  if (mailFailLog !== 0) {
+  if (mailFailLog) {
     text += "\n（メール送信に失敗しました。" + mailFailLog + ")";
   }
 
