@@ -47,14 +47,18 @@ STEAM_tracker/
 |   ├── CLASP_GUIDE.md                        # claspガイド
 │   ├── GITHUB_GUIDE.md                       # Git/GitHub運用ガイド
 │   ├── COMMIT_MESSAGE_SPECIFICATION.md       # コミットメッセージの仕様
+│   ├── FORM_REQUIREMENTS.md                  # フォーム仕様書
+│   ├── GAS_REQUIREMENTS.md                   # GAS仕様書（あとで消す）
 │   ├── COMMIT_MESSAGE_AS_CODE_GUIDE.md       # コミットメッセージ駆動開発のガイド
-│   ├── PULLREQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
+│   ├── PULL_REQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
 │   |── REQUIREMENTS.md                       # 要件定義書
-|   └── SPECIFICATIONS.md                     # 要件仕様書
+|   |── APP_SHEET.md                          # フロントシート仕様書
+|   |── SPECIFICATIONS.md                     # 要件仕様書
+|   └── SPREAD_SHEET_REQUIREMENTS.md          # スプレッドシート仕様書
 │ 
 ├── GAS/
 |   ├── code.gs
-    └── .claspignore                              # GASにアップしたくないファイル/フォルダを指定
+|   └── .claspignore                          # GASにアップしたくないファイル/フォルダを指定
 ├── .gitignore                                # Gitの管理から除外するファイル/フォルダを指定
 ├── LICENSE                                   # ライセンス
 └── README.md                                 # 本ファイル
