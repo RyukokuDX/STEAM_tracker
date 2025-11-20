@@ -40,8 +40,24 @@
         --col-status-width: 5ch;
         --col-admin_note-width: 30ch;
       }
-      @media (max-width: 1280px) { :root { --col-name-width:16ch; --col-organization-width:12ch; --col-handover_on-width:10ch; --col-status-width:9ch; --col-admin_note-width:20ch; } }
-      @media (max-width: 960px) { :root { --col-name-width:14ch; --col-organization-width:10ch; --col-handover_on-width:20ch; --col-status-width:8ch; --col-admin_note-width:18ch; } }
+      @media (max-width: 1280px) {
+        :root {
+          --col-name-width: 16ch;
+          --col-organization-width: 12ch;
+          --col-handover_on-width: 10ch;
+          --col-status-width: 9ch;
+          --col-admin_note-width: 20ch;
+        }
+      }
+      @media (max-width: 960px) {
+        :root {
+          --col-name-width: 14ch;
+          --col-organization-width: 10ch;
+          --col-handover_on-width: 20ch;
+          --col-status-width: 8ch;
+          --col-admin_note-width: 18ch;
+        }
+      }
 
       html, body {
         background-color: var(--surface);
