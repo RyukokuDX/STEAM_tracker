@@ -543,20 +543,6 @@
     })();
 
     // モバイルのアドレスバー表示/DevTools開閉などの高さ変動に追従
-    (function adjustTermsBoxHeight(){
-      const el = document.getElementById('termsBox');
-      if (!el) return;
-      function setHeight(){
-        const vw = window.innerWidth || document.documentElement.clientWidth;
-        const vh = window.innerHeight || document.documentElement.clientHeight;
-        const ratio = vw >= 700 ? 0.48 : 0.52;
-        const h = Math.max(240, Math.round(vh * ratio));
-        el.style.height = h + 'px';
-      }
-      setHeight();
-      window.addEventListener('resize', setHeight);
-      window.addEventListener('orientationchange', setHeight);
-    })();
 
     // 同意ロジック（スクロール到達 + チェック + クイズ正答）
     (function(){
