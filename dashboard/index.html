@@ -88,18 +88,70 @@
       .button-left button {background-color:var(--primary);border-color:var(--primary);color:#fff;}
       .button-left button:hover {background-color:var(--primary-600);} .button-left button:active, .button-group button:active {transform:translateY(1px);} .button-left button:focus-visible, .button-group button:focus-visible {outline:3px solid var(--focus-ring);outline-offset:2px;}
       .button-group button {background-color:var(--card);color:var(--text);}
-      .button-group button:first-child {background-color: var(--success); color:#fff; border-color: var(--success);}
-      .button-group button:first-child:hover {background-color: var(--success-hover);} 
-      .button-group button:nth-child(2) {background-color: var(--warning); color:#fff; border-color: var(--warning);}
-      .button-group button:nth-child(2):hover {background-color: var(--warning-hover);} 
-      .button-group button:last-child {background-color: var(--danger); color:#fff; border-color: var(--danger);}
-      .button-group button:last-child:hover {background-color: var(--danger-hover);} 
+      .button-group button:first-child {
+        background-color: var(--success);
+        color: #fff;
+        border-color: var(--success);
+      }
+      .button-group button:first-child:hover {
+        background-color: var(--success-hover);
+      }
+      .button-group button:nth-child(2) {
+        background-color: var(--warning);
+        color: #fff;
+        border-color: var(--warning);
+      }
+      .button-group button:nth-child(2):hover {
+        background-color: var(--warning-hover);
+      }
+      .button-group button:last-child {
+        background-color: var(--danger);
+        color: #fff;
+        border-color: var(--danger);
+      }
+      .button-group button:last-child:hover {
+        background-color: var(--danger-hover);
+      }
 
-      table {border-collapse: collapse; width:100%; margin-top:20px; border-spacing:0; table-layout:auto; background:var(--card); border:2px solid var(--table-border); border-radius:var(--radius); overflow:hidden; box-shadow: var(--shadow-md);}
-      th, td {border:1px solid var(--border); padding:8px; text-align:left; letter-spacing:0; word-spacing:0; color: var(--text);}
-      th {background-color: var(--thead-bg); color: var(--primary-600); position: sticky; top:0; z-index:1; backdrop-filter: blur(6px);}
-      tr:nth-child(even) {background-color: var(--row-alt);} tbody tr:hover {background-color: var(--row-hover);} 
-      tbody tr:has(input[type="checkbox"]:checked) {background-color: var(--row-selected); outline:2px solid rgba(16,185,129,0.35); outline-offset:-2px;}
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
+        border-spacing: 0;
+        table-layout: auto;
+        background: var(--card);
+        border: 2px solid var(--table-border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+      }
+      th, td {
+        border: 1px solid var(--border);
+        padding: 8px;
+        text-align: left;
+        letter-spacing: 0;
+        word-spacing: 0;
+        color: var(--text);
+      }
+      th {
+        background-color: var(--thead-bg);
+        color: var(--primary-600);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        backdrop-filter: blur(6px);
+      }
+      tr:nth-child(even) {
+        background-color: var(--row-alt);
+      }
+      tbody tr:hover {
+        background-color: var(--row-hover);
+      }
+      tbody tr:has(input[type="checkbox"]:checked) {
+        background-color: var(--row-selected);
+        outline: 2px solid rgba(16,185,129,0.35);
+        outline-offset: -2px;
+      }
 
       /* Tooltip for email */
       td[data-email] {position:relative; cursor:pointer;}
