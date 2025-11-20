@@ -10,6 +10,14 @@ const LOCK_TIMEOUT_MS = 30000; // 30秒
 const MAX_NAME_LENGTH = 50;    // 名前の最大文字数
 
 /**
+ * テンプレートから他ファイル内容を取り込むためのユーティリティ
+ * 例: <style><?!= include('style'); ?></style>
+ */
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+/**
  * 年度末日を取得 (3月31日を基準とする)
  * - 3/31を含む（当日も年度末とみなす）
  * - 3/31を過ぎていたら翌年の3/31を返す
