@@ -1,6 +1,10 @@
 const SPREAD_SHEET = SpreadsheetApp.openById("1ImQWr-iBAL_DWBsQ_MgcONheBEjdHur7GhzhE2GVWs0");
 const SHEET = SPREAD_SHEET.getSheetByName("管理シート");
 
+const scriptProperties = PropertiesService.getScriptProperties();
+const ACCESS_TOKEN = scriptProperties.getProperty('ACCESS_TOKEN');
+const USER_ID = scriptProperties.getProperty('USER_ID');
+
 // 列要素
 const RESISTERED_AT = 0;        // フォーム送信時刻（自動記録）
 const EMAIL = 1;                // 登録者メール
@@ -42,4 +46,30 @@ function GetItemsByEmail(email) {
   }
   
   return results;
+}
+
+// LINE Messaging APIでメッセージを送信
+function sendLineMessage(to, text) {
+  const url = 'https://api.line.me/v2/bot/message/push';
+
+  const payload = {
+    to: to,
+    messages: [{ type: 'text', text: text }]
+  };
+
+  const options = {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer ' + ACCESS_TOKEN
+    },
+    payload: JSON.stringify(payload)
+  };
+
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    Logger.log('送信成功: ' + response.getContentText());
+  } catch (e) {
+    Logger.log('送信失敗: ' + e);
+  }
 }
