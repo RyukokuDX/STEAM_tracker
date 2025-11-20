@@ -477,30 +477,6 @@
     const FISCAL_END = "<?= fiscalEndStr ?>";
     const TODAY = "<?= todayStr ?>";
 
-
-    (function initDate(){
-      const d = document.getElementById('date');
-      d.setAttribute('min', TODAY);
-      d.setAttribute('max', FISCAL_END);
-      document.getElementById('hint').textContent = `選択可能な範囲： ${TODAY} 〜 ${FISCAL_END}`;
-    })();
-
-    // ネイティブ<select>のドロップダウン幅暴走対策：カスタムセレクト化
-    (function enhanceSelect(){
-      const sel = document.getElementById('quiz');
-      if (!sel) return;
-      // ラッパとカスタムUIを生成
-      const wrap = document.createElement('div');
-      wrap.className = 'select-wrap';
-      sel.parentNode.insertBefore(wrap, sel);
-      wrap.appendChild(sel);
-      // 非表示化（値は保持・イベントは発火させる）
-      sel.style.position = 'absolute';
-      sel.style.opacity = '0';
-      sel.style.pointerEvents = 'none';
-      sel.style.width = '0';
-      sel.style.height = '0';
-
       const btn = document.createElement('div');
       btn.className = 'custom-select';
       btn.setAttribute('role', 'button');
