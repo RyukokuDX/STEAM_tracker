@@ -53,7 +53,7 @@ GAS 側は主に次を担います。
 
 ## 3. データスキーマ（スプレッドシート）
 
-スプレッドシートの列は `docs/FORM_REQUIREMENTS.md` の仕様に合わせてください（Timestamp, email, name, organization, photo_file_id, handover_date, days_until_handover など）。
+スプレッドシートの列定義は `docs/SPREAD_SHEET_REQUIREMENTS.md` を唯一の正規仕様として参照してください（Timestamp, email, name, organization, photo_file_id, handover_date, days_until_handover など）。
 
 補足: 監査・運用のために `status`（active/archived）、`admin_note`、`last_updated_by` カラムを追加することを推奨します。
 
