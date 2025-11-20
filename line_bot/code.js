@@ -6,7 +6,7 @@ const ACCESS_TOKEN = scriptProperties.getProperty('ACCESS_TOKEN');
 const USER_ID = scriptProperties.getProperty('USER_ID');
 
 // 列要素
-const RESISTERED_AT = 0;        // フォーム送信時刻（自動記録）
+const REGISTERED_AT = 0;        // フォーム送信時刻（自動記録）
 const EMAIL = 1;                // 登録者メール
 const NAME = 2;                 // 登録者氏名
 const ORGANIZATION = 3;         // 団体名
