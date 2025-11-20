@@ -41,7 +41,12 @@
 | C | reason | Text | アーカイブ理由 |
 
 `users` シート（任意: 管理者認証や表示名に利用）
-| id | email | role | display_name |
+| 列 | カラム名 | 型 | 説明 |
+| ---: | --- | --- | --- |
+| A | id | Text | ユーザーID |
+| B | email | Text | メールアドレス |
+| C | role | Text | ロール (admin等) |
+| D | display_name | Text | 表示名 |
 
 ---
 
