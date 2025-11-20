@@ -263,6 +263,13 @@
       box-sizing: border-box;
     }
 
+    /* Add focus-visible styles for accessibility */
+    .btn:focus-visible,
+    .form-control:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
     #msg.error {
       color: #721c24;
       background: #f8d7da;
