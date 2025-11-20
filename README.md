@@ -52,6 +52,7 @@ STEAM_tracker/
 │   ├── COMMIT_MESSAGE_AS_CODE_GUIDE.md       # コミットメッセージ駆動開発のガイド
 │   ├── PULLREQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
 │   |── REQUIREMENTS.md                       # 要件定義書
+|   |── APP_SHEET.md                          # フロントシート仕様書
 |   |── SPECIFICATIONS.md                     # 要件仕様書
 |   └── SPREAD_SHEET_REQUIREMENTS.md          # スプレッドシート仕様書
 │ 
