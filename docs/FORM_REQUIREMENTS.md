@@ -2,9 +2,9 @@
 
 > スキーマバージョン: v1.0 （2025-10-16）
 >
-> この仕様は以下のスプレッドシート列配置を前提としています（必ず `docs/APP_SHEET.md` の `items` 定義と一致させてください）。
+> この仕様は `docs/APP_SHEET.md` の `items` 定義（スプレッドシート列配置）を参照しています。スキーマ定義は必ず `docs/APP_SHEET.md` のみで管理し、他のドキュメントでは参照のみ行ってください。
 >
-> A: Timestamp | B: email | C: name | D: organization | E: photo_file_id | F: handover_on | G: days_until_handover | H: status | I: admin_note
+> ※ スキーマ詳細は `docs/APP_SHEET.md` の「items」セクションを参照してください。
 
 このドキュメントはフォーム実装者・テスター向けの仕様書です。フォームの入力項目、検証ルール、スプレッドシートへの記録仕様、通知トリガー、受け入れ基準（Acceptance Criteria）および簡易テストケースを定義します。
 
