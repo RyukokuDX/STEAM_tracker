@@ -69,6 +69,8 @@ function doGet(e) {
   const auth = getVerifiedEmail();
   if (auth.error) {
     return HtmlService.createHtmlOutput(auth.error)
+      /*.addMetaTag()はエラー分の文章を適正なサイズで表示します*/
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover')
       .setTitle('アクセス拒否');
   }
 
@@ -85,6 +87,7 @@ function doGet(e) {
   // If you need to change framing behavior, set it in the Apps Script
   // deployment settings or use the explicit ALLOWALL value if available.
   return tpl.evaluate()
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover')
     .setTitle("年度末制限フォーム");
 }
 
