@@ -6,6 +6,12 @@
   --input: #eae8e1;     /* 入力欄背景色 / フィールドの下地 */
   --text: #37423d;      /* 通常テキスト色 / 高コントラスト本文 */
   --muted: #707d78;     /* 補足説明用の控えめな文字色 / サブテキスト */
+  /* surface 系: 背景レイヤーの抽象化（既存の #fff / #fafafa などを変数化） */
+  --surface: #ffffff;       /* 基本カードやポップアップの背景色 */
+  --surface-alt: #fafafa;   /* ほんのり差異をつける淡色背景 */
+  --border: #eee;           /* 枠線や区切り線の標準色 */
+  --hover-bg: #f2f4f3;      /* ホバー/選択強調用の淡い背景 */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04); /* 小さな影（カードなど） */
   --radius: 12px;       /* 標準角丸 / カード・入力等で共通 */
   --radius-sm: 8px;     /* 小さめ角丸 / メニューや小要素向け */
   --radius-pill: 999px; /* ピル型（丸み最大）/ 丸ボタンなど */
@@ -89,11 +95,11 @@ body { /* 画面中央の縦長フォームレイアウト。ノッチ安全領�
 /* クラス: .card
   白い背景の箱。フォームや規約文章などのまとまりを視覚的に区切るコンテナ。 */
 .card {
-  background: #fff;                            /* カード背景を白にして内容を浮き立たせる */
+  background: var(--surface);                  /* カード背景: 共通surface色 */
   border-radius: var(--radius);                /* 角を丸め柔らかい印象に */
   padding: 14px;                               /* 内側余白で内容に呼吸スペース */
   margin-bottom: 14px;                         /* 下に余白を取り次カードとの間隔確保 */
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);      /* ごく薄い影で段差を表現 */
+  box-shadow: var(--shadow-sm);                /* 小さな共通影 */
 }
 
 /* クラス: .header
@@ -114,8 +120,8 @@ body { /* 画面中央の縦長フォームレイアウト。ノッチ安全領�
   margin-top: 10px;                /* 上に少しスペースを確保 */
   border-radius: var(--radius-sm); /* 小さめ角丸で枠を柔らかく */
   padding: 12px;                   /* 内側余白で本文を読みやすく */
-  background: #fafafa;             /* ほんのりグレーで本文とのコントラスト生成 */
-  border: 1px solid #eee;          /* 薄い枠線で領域を明示 */
+  background: var(--surface-alt);  /* 淡色の代替surface背景 */
+  border: 1px solid var(--border); /* 標準の境界線色 */
   height: 52vh;                    /* 画面高の約半分を確保（モバイル向け） */
   min-height: 240px;               /* 極端に小さくならない最低高さ */
   overflow: auto;                  /* 長文をスクロール可能に */
@@ -235,8 +241,8 @@ select, input[type="checkbox"] {
   width: 100%;                            /* 同じ横幅で整列 */
   max-height: min(40vh, 280px);           /* 画面高に応じた最大高さ */
   overflow: auto;                         /* 選択肢が多い場合スクロール */
-  background: #fff;                       /* 白背景でカード風 */
-  border: 1px solid #eee;                 /* 薄い枠線 */
+  background: var(--surface);             /* surface背景 */
+  border: 1px solid var(--border);        /* 境界線 */
   border-radius: var(--radius-sm);        /* 小さめ角丸 */
   box-shadow: 0 8px 24px rgba(0,0,0,0.08);/* 下方向に広がる影で浮き上がり */
   z-index: 1000;                          /* 他要素より前面に */
@@ -258,7 +264,7 @@ select, input[type="checkbox"] {
 /* 組み合わせ: .select-option[aria-selected=true], .select-option:hover
   現在選択されている、またはカーソルが乗っている項目の強調背景。 */
 .select-option[aria-selected="true"], .select-option:hover{
-  background: #f2f4f3; /* 選択中/ホバー中の視覚強調色 */
+  background: var(--hover-bg); /* 選択中/ホバー中の視覚強調色（変数化） */
 }
 
 /* 入力の見た目は .form-control に統一。ファイル入力は近いスタイルを適用 */
