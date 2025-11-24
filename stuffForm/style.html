@@ -5,7 +5,8 @@
   --bg: #f8f7f4;        /* ページ背景色 / 全体のベーストーン */
   --input: #eae8e1;     /* 入力欄背景色 / フィールドの下地 */
   --text: #37423d;      /* 通常テキスト色 / 高コントラスト本文 */
-  --muted: #707d78;     /* 補足説明用の控えめな文字色 / サブテキスト */
+  /* コントラスト改善 */
+  --muted: #5b6661;     /* 旧: #707d78 より暗くし小サイズでの判読性向上 */
   /* surface 系: 背景レイヤーの抽象化（既存の #fff / #fafafa などを変数化） */
   --surface: #ffffff;       /* 基本カードやポップアップの背景色 */
   --surface-alt: #fafafa;   /* ほんのり差異をつける淡色背景 */
@@ -20,6 +21,13 @@
   --error-bg: #f8d7da;     /* エラー背景 / 赤系淡色 */
   --success-text: #155724; /* 成功テキスト / 成功メッセージ強調 */
   --success-bg: #d4edda;   /* 成功背景 / 緑系淡色 */
+  /* spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
 }
 
 html, body { /* ページ全体の基本設定・背景色・文字色 */
@@ -341,18 +349,15 @@ input[type="file"] {
 /* クラス: .small
   補足説明・ヒントなど小さい文字サイズ用。 */
 .small {
-  font-size: 12px;        /* 小さい文字サイズ */
-  color: var(--muted);     /* 控えめな色合い */
-  margin-top: 6px;         /* 上要素との微小な間隔 */
+  font-size: 13px;        /* 12px→13pxで可読性向上 */
+  color: var(--muted);
+  margin-top: var(--space-2);
 }
 
 /* Utilities = シンプルな余白・見出し強調クラス群 */
-/* ユーティリティ: .mt-6
-  要素の上に 6px の余白を追加。 */
-.mt-6 { margin-top: 6px; /* 上に6px余白付与 */ }
-/* ユーティリティ: .mt-8
-  要素の上に 8px の余白を追加。 */
-.mt-8 { margin-top: 8px; /* 上に8px余白付与 */ }
+/* ユーティリティ: .mt-6 / .mt-8 (spacing scaleへ統一) */
+.mt-6 { margin-top: var(--space-2); /* 旧6px→8px */ }
+.mt-8 { margin-top: var(--space-3); /* 旧8px→12px */ }
 /* クラス: .section-title
   セクションの見出し。太字＋下に余白。 */
 .section-title { font-weight: 700; margin-bottom: 8px; /* 太字＋下余白で見出し強調 */ }

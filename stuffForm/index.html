@@ -160,29 +160,27 @@
     const FISCAL_END = "<?= fiscalEndStr ?>";
     const TODAY = "<?= todayStr ?>";
 
-    // ピンチアウト/ダブルタップズーム抑止（必要に応じて外してください）
-    (function lockZoom(){
-      const opts = { passive: false };
-      // 2本指以上のタッチでのピンチを抑止
-      document.addEventListener('touchstart', function(e){
-        if (e.touches && e.touches.length > 1) e.preventDefault();
-      }, opts);
-      // iOS Safari固有のジェスチャーイベント
-      document.addEventListener('gesturestart', function(e){ e.preventDefault(); }, opts);
-      // ダブルタップによるズーム抑止
-      let lastTouchEnd = 0;
-      document.addEventListener('touchend', function(e){
-        const now = Date.now();
-        if (now - lastTouchEnd <= 300) {
-          e.preventDefault();
-        }
-        lastTouchEnd = now;
-      }, opts);
-      // Ctrl+ホイールによるズーム抑止（Android Chrome等）
-      document.addEventListener('wheel', function(e){
-        if (e.ctrlKey) e.preventDefault();
-      }, opts);
-    })();
+    // ズーム抑止はアクセシビリティ観点でデフォルト無効。
+    // 有効化したい場合は ENABLE_ZOOM_LOCK を true に変更。
+    const ENABLE_ZOOM_LOCK = false;
+    if (ENABLE_ZOOM_LOCK) {
+      (function lockZoom(){
+        const opts = { passive: false };
+        document.addEventListener('touchstart', function(e){
+          if (e.touches && e.touches.length > 1) e.preventDefault();
+        }, opts);
+        document.addEventListener('gesturestart', function(e){ e.preventDefault(); }, opts);
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e){
+          const now = Date.now();
+            if (now - lastTouchEnd <= 300) e.preventDefault();
+          lastTouchEnd = now;
+        }, opts);
+        document.addEventListener('wheel', function(e){
+          if (e.ctrlKey) e.preventDefault();
+        }, opts);
+      })();
+    }
 
     (function initDate(){
       const d = document.getElementById('date');
