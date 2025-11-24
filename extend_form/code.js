@@ -199,17 +199,58 @@ function sendLinePushObject(payload) {
   }
 }
 
-function approveRequest(id, newDate) {
+// 延長申請の許可
+function ApproveRequest(id, newDate) {
   Logger.log(`延長申請を許可: ${id} 行目、${newDate} まで`);
   SHEET.getRange(id + 1, HANDOVER_ON + 1).setValue(newDate);
 
-  // 管理者にLINE通知
+  // 申請者情報取得
+  const data = SHEET.getDataRange().getValues();
+  const email = data[id][EMAIL];
+  const name = data[id][NAME];
+  const organ = data[id][ORGANIZATION];
+
+  // 申請者にメール送信
+  const subject = `STEAMコモンズ 延長申請許可通知`;
+  const body = `${name}さん（${organ}）\n\n延長申請が許可されました。\n新しい明け渡し日: ${newDate}`;
+  sendEmail(email, subject, body);
+   
   sendLineMessage(USER_ID, `延長を ${newDate} まで許可しました。`);
 }
 
-function rejectRequest(id) {
+// 延長申請の却下
+function RejectRequest(id) {
   Logger.log(`延長申請を却下: ${id} 行目`);
+  SHEET.getRange(id + 1, HANDOVER_ON + 1).setValue(newDate);
+
+  // 申請者情報取得
+  const data = SHEET.getDataRange().getValues();
+  const email = data[id][EMAIL];
+  const name = data[id][NAME];
+  const organ = data[id][ORGANIZATION];
+
+  // 申請者にメール送信
+  const subject = `STEAMコモンズ 延長申請拒否通知`;
+  const body = `${name}さん（${organ}）\n\n延長申請が却下されました。\n`;
+  sendEmail(email, subject, body);
+
   sendLineMessage(USER_ID, `延長申請を却下しました。`);
+}
+
+// メールを送信
+function sendEmail(to, subject, body) {
+  //Logger.log(Session.getEffectiveUser().getEmail());
+  try {
+    if (!to || !subject || !body) {
+      throw new Error("送信先、件名、本文のいずれかが空です。");
+    }
+    GmailApp.sendEmail(to, subject, body);
+    Logger.log(`メール送信成功: ${to}`);
+    return { success: true, message: "" };
+  } catch (error) {
+    Logger.log(`メール送信失敗: ${to}\n理由: ${error.message}`);
+    return { success: false, message: error.message };
+  }
 }
 
 // LINE Webhook受信（ボタン押下イベント）
@@ -233,9 +274,9 @@ function doPost(e) {
 
         // 承認/却下
         if (params.action === 'approve' && params.id && params.date) {
-          approveRequest(Number(params.id), params.date);
+          ApproveRequest(Number(params.id), params.date);
         } else if (params.action === 'reject' && params.id) {
-          rejectRequest(Number(params.id));
+          RejectRequest(Number(params.id));
         }
       }
     });
