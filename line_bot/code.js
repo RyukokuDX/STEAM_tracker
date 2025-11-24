@@ -105,10 +105,10 @@ function sendEmail(to, subject, body) {
     }
     GmailApp.sendEmail(to, subject, body);
     Logger.log(`メール送信成功: ${to}`);
-    return 0; 
+    return { success: true, message: "" };
   } catch (error) {
     Logger.log(`メール送信失敗: ${to}\n理由: ${error.message}`);
-    return error.message;
+    return { success: false, message: error.message };
   }
 }
 
