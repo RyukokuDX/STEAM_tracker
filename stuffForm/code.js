@@ -69,7 +69,7 @@ function doGet(e) {
   const auth = getVerifiedEmail();
   if (auth.error) {
     return HtmlService.createHtmlOutput(auth.error)
-      /*.addMetaTag()はエラー分の文章を適正なサイズで表示します*/
+      /*.addMetaTag()はエラー文の文章を適正なサイズで表示します*/
       .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover')
       .setTitle('アクセス拒否');
   }
