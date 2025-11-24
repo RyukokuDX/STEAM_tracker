@@ -31,7 +31,7 @@ function handoverDayRemind() {
     const organ = data[i][ORGANIZATION];
     const handoverDay = data[i][DAYS_UNTIL_HANDOVER];
 
-    let mailFailLog = ""; // メール送信失敗時のログ
+    let mailFailLog = null; // メール送信失敗時のログ
 
     // 明け渡し日の判定
     if (handoverDay !== 3 && handoverDay !== 0) continue;
