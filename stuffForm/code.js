@@ -10,6 +10,14 @@ const LOCK_TIMEOUT_MS = 30000; // 30秒
 const MAX_NAME_LENGTH = 50;    // 名前の最大文字数
 
 /**
+ * テンプレートから他ファイル内容を取り込むためのユーティリティ
+ * 例: <style><?!= include('style'); ?></style>
+ */
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+/**
  * 年度末日を取得 (3月31日を基準とする)
  * - 3/31を含む（当日も年度末とみなす）
  * - 3/31を過ぎていたら翌年の3/31を返す
@@ -61,6 +69,8 @@ function doGet(e) {
   const auth = getVerifiedEmail();
   if (auth.error) {
     return HtmlService.createHtmlOutput(auth.error)
+      // モバイル端末でエラーメッセージを適切に表示するためのviewport設定を追加
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover')
       .setTitle('アクセス拒否');
   }
 
@@ -77,7 +87,8 @@ function doGet(e) {
   // If you need to change framing behavior, set it in the Apps Script
   // deployment settings or use the explicit ALLOWALL value if available.
   return tpl.evaluate()
-    .setTitle("物品登録フォーム");
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover')
+    .setTitle("年度末制限フォーム");
 }
 
 /**
