@@ -1,9 +1,11 @@
-const SPREAD_SHEET = SpreadsheetApp.openById("1ImQWr-iBAL_DWBsQ_MgcONheBEjdHur7GhzhE2GVWs0");
-const SHEET = SPREAD_SHEET.getSheetByName("管理シート");
-
 const scriptProperties = PropertiesService.getScriptProperties();
 const ACCESS_TOKEN = scriptProperties.getProperty('ACCESS_TOKEN');
 const USER_ID = scriptProperties.getProperty('USER_ID');
+const SPREAD_SHEET_ID = scriptProperties.getProperty('SPREAD_SHEET_ID');
+const SHEET_NAME_MANAGE = scriptProperties.getProperty('SHEET_NAME_MANAGE');
+
+const SPREAD_SHEET = SpreadsheetApp.openById(SPREAD_SHEET_ID);
+const SHEET = SPREAD_SHEET.getSheetByName(SHEET_NAME_MANAGE);
 
 // 列要素
 const RESISTERED_AT = 0;        // フォーム送信時刻（自動記録）
@@ -15,8 +17,6 @@ const HANDOVER_ON = 5;          // 明け渡し日（YYYY-MM-DD）
 const DAYS_UNTIL_HANDOVER = 6;  // 明け渡し日までの日数（計算列） 
 const STATUS = 7;               // active / archived / pending
 const ADMIN_NOTE = 8;           // 管理者備考
-
-const FORM_URL = "";            // フォームURL
 
 // === HTMLフォーム表示 ===
 function doGet() {
