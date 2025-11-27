@@ -221,7 +221,6 @@ function ApproveRequest(id, newDate) {
 // 延長申請の却下
 function RejectRequest(id) {
   Logger.log(`延長申請を却下: ${id} 行目`);
-  SHEET.getRange(id + 1, HANDOVER_ON + 1).setValue(newDate);
 
   // 申請者情報取得
   const data = SHEET.getDataRange().getValues();
