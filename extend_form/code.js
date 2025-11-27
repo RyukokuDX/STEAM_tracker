@@ -286,3 +286,8 @@ function doPost(e) {
     return ContentService.createTextOutput('Error');
   }
 }
+
+// 権限取得用
+function requestGmailPermission() {
+  GmailApp.sendEmail(Session.getActiveUser().getEmail(), "権限テスト", "これは権限確認用のテストです");
+}
