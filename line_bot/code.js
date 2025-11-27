@@ -77,7 +77,38 @@ function registerNotify() {
     const name = data[i][NAME];
     const organ = data[i][ORGANIZATION];
     const text = `[物品登録]${organ}の${name}さんが物品を登録しました。`;
-    sendLineMessage(USER_ID, text);
+
+    // 画像付きメッセージ送信
+    const payload = {
+      to: USER_ID,
+      messages: [
+        {
+          type: "flex",
+          altText: "物品登録通知",
+          contents: {
+            type: "bubble",
+            hero: {
+              type: "image",
+              url: "https://drive.google.com/uc?export=view&id=" + data[i][PHOTO_FILE_ID],
+              size: "full",
+              aspectRatio: "20:13",
+              aspectMode: "cover"
+            },
+            body: {
+              type: "box",
+              layout: "vertical",
+              contents: [
+                { type: "text", text: "物品登録", weight: "bold", size: "xl" },
+                { type: "text", text: `${data[i][NAME]}（${data[i][ORGANIZATION]}）`, size: "md", wrap: true }
+              ]
+            }
+          }
+        }
+      ]
+    };
+    sendLinePushObject(payload);
+
+    // sendLineMessage(USER_ID, text);
   }
 }
 
@@ -122,5 +153,26 @@ function sendLineMessage(to, text, mailFailLog = '') {
     Logger.log('送信成功: ' + response.getContentText());
   } catch (e) {
     Logger.log('送信失敗: ' + e);
+  }
+}
+
+// オブジェクト送信
+function sendLinePushObject(payload) {
+  const url = "https://api.line.me/v2/bot/message/push";
+  const options = {
+    method: "post",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + ACCESS_TOKEN
+    },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  try {
+    const res = UrlFetchApp.fetch(url, options);
+    Logger.log("送信成功: " + res.getContentText());
+  } catch (e) {
+    Logger.log("送信失敗: " + e);
   }
 }
