@@ -31,7 +31,7 @@ function handoverDayRemind() {
     const organ = data[i][ORGANIZATION];
     const handoverDay = data[i][DAYS_UNTIL_HANDOVER];
 
-    let mailFailLog = ""; // メール送信失敗時のログ
+    let mailFailLog = null; // メール送信失敗時のログ
 
     // 明け渡し日の判定
     if (handoverDay !== 3 && handoverDay !== 0) continue;
@@ -88,10 +88,10 @@ function sendEmail(to, subject, body) {
     }
     GmailApp.sendEmail(to, subject, body);
     Logger.log(`メール送信成功: ${to}`);
-    return 0; 
+    return { success: true, message: "" };
   } catch (error) {
     Logger.log(`メール送信失敗: ${to}\n理由: ${error.message}`);
-    return error.message;
+    return { success: false, message: error.message };
   }
 }
 
