@@ -1,10 +1,12 @@
-const SPREAD_SHEET = SpreadsheetApp.openById("1ImQWr-iBAL_DWBsQ_MgcONheBEjdHur7GhzhE2GVWs0");
-const SHEET = SPREAD_SHEET.getSheetByName("管理シート");
-
 const scriptProperties = PropertiesService.getScriptProperties();
 const ACCESS_TOKEN = scriptProperties.getProperty('ACCESS_TOKEN');
 const USER_ID = scriptProperties.getProperty('USER_ID');
 const FORM_URL = scriptProperties.getProperty('FORM_URL');
+const SPREAD_SHEET_ID = scriptProperties.getProperty('SPREAD_SHEET_ID');
+const SHEET_NAME_MANAGE = scriptProperties.getProperty('SHEET_NAME_MANAGE');
+
+const SPREAD_SHEET = SpreadsheetApp.openById(SPREAD_SHEET_ID);
+const SHEET = SPREAD_SHEET.getSheetByName(SHEET_NAME_MANAGE);
 
 // 列要素
 const REGISTERED_AT = 0;        // フォーム送信時刻（自動記録）
