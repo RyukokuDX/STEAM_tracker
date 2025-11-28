@@ -64,14 +64,14 @@ function registerNotify() {
   const data = SHEET.getDataRange().getValues();
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const ymd = Utilities.formatDate(yesterday, 'Asia/Tokyo', 'yyyy-MM-dd');
+  const yesterdayDate = Utilities.formatDate(yesterday, 'Asia/Tokyo', 'yyyy-MM-dd');
 
   for (let i = 1; i < data.length; i++) {
     const registeredAt = data[i][REGISTERED_AT];  // 登録日時
     if (!registeredAt) continue;
     // 日付部分だけ抽出
     const registeredDate = Utilities.formatDate(new Date(registeredAt), 'Asia/Tokyo', 'yyyy-MM-dd');
-    if (registeredDate !== ymd) continue;
+    if (registeredDate !== yesterdayDate) continue;
 
     Logger.log(`登録通知: ${i}行目`);
     const name = data[i][NAME];
