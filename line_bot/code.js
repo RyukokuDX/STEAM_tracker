@@ -59,7 +59,7 @@ function handoverDayRemind() {
   }
 }
 
-// 物品登録の通知
+// 前日に登録された物品についての通知
 function registerNotify() {
   const data = SHEET.getDataRange().getValues();
   const yesterday = new Date();
