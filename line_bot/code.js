@@ -76,7 +76,6 @@ function registerNotify() {
     Logger.log(`登録通知: ${i}行目`);
     const name = data[i][NAME];
     const organ = data[i][ORGANIZATION];
-    const text = `[物品登録]${organ}の${name}さんが物品を登録しました。`;
 
     // 画像付きメッセージ送信
     const payload = {
