@@ -200,7 +200,7 @@ function sendLinePushObject(payload) {
 }
 
 // 延長申請の許可
-function ApproveRequest(id, newDate) {
+function approveRequest(id, newDate) {
   Logger.log(`延長申請を許可: ${id} 行目、${newDate} まで`);
   SHEET.getRange(id + 1, HANDOVER_ON + 1).setValue(newDate);
 
