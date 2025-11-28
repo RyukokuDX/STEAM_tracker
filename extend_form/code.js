@@ -219,7 +219,7 @@ function approveRequest(id, newDate) {
 }
 
 // 延長申請の却下
-function RejectRequest(id) {
+function rejectRequest(id) {
   Logger.log(`延長申請を却下: ${id} 行目`);
 
   // 申請者情報取得
