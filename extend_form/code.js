@@ -41,7 +41,7 @@ function GetFiscalYearEnd(dateStr) {
 }
 
 // メールアドレスをもとに物品を取得
-function GetItemsByEmail(email) {
+function getItemsByEmail(email) {
   const data = SHEET.getDataRange().getValues();
   let results = [];
   
