@@ -108,7 +108,6 @@ function registerNotify() {
     sendLinePushObject(payload);
 
     // sendLineMessage(USER_ID, text);
-  }
 }
 
 // メールを送信
