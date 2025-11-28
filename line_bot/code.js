@@ -25,7 +25,7 @@ function handoverDayRemind() {
   const data = SHEET.getDataRange().getValues();
 
   // 登録者全員のデータ確認
-  for  ( let  i  =  1 ;  i  < データ.長さ;  i ++ )  {
+  for  ( let  i  =  1 ;  i  < data.length;  i ++ )  {
     // メッセージに使用する要素
     const email = data[i][EMAIL];
     const name = data[i][NAME];
