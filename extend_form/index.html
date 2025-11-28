@@ -113,7 +113,7 @@
 
     // 物品リスト表示
     function ShowForm(items) {
-      console.log(items);
+      // console.log(items);
       if (!items || items.length === 0) {
         alert('該当する物品が見つかりません');
         return;
@@ -144,8 +144,8 @@
       let results = [];
 
       dateInputs.forEach(input => {
-        console.log(`input`);
-        console.log(input);
+        // console.log(`input`);
+        // console.log(input);
         const id = input.id.replace('date-', '');
         const newDate = input.value;
 
@@ -161,8 +161,8 @@
         return;
       }
 
-      console.log(`pushed:`);
-      console.log(results);
+      // console.log(`pushed:`);
+      // console.log(results);
       
       google.script.run
         .withSuccessHandler(() => {
