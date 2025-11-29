@@ -12,6 +12,7 @@ service-account.json
 sa.json
 credentials.json
 *.key.json
+.clasp.json
 
 # clasp の認証ファイル（ユーザー固有・コミットしない）
 .clasprc
@@ -39,3 +40,4 @@ tests/setup-gas.js
 # ソースマップやログなどの一時ファイル
 *.map
 *.log
+
