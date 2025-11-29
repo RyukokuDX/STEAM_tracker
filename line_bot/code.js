@@ -1,10 +1,12 @@
-const SPREAD_SHEET = SpreadsheetApp.openById("1U3enu3ETOh_seroYmpO95p2yjW2RSUC7WRLyDk1rhs8");
+const SPREAD_SHEET = SpreadsheetApp.openById("1ImQWr-iBAL_DWBsQ_MgcONheBEjdHur7GhzhE2GVWs0");
 const SHEET = SPREAD_SHEET.getSheetByName("管理シート");
-const ACCESS_TOKEN = 'Wl7oj84NxBzYNRy0YWLn2bw36m10IWrHR3GmguKTM/QwBpnDakpP7leNgh0cWurBE+joXlj0T/ClOQ/ZJxzs/R2HvdM1d0W1JdqG/pQCC/kylvdqJcOC6vKr1JJXjnOO18XlBB9aLagFd0T+iiSfswdB04t89/1O/w1cDnyilFU=';
-const USER_ID = 'Uc96692787f41d9a314b78aff7a7c3c42';
+
+const scriptProperties = PropertiesService.getScriptProperties();
+const ACCESS_TOKEN = scriptProperties.getProperty('ACCESS_TOKEN');
+const USER_ID = scriptProperties.getProperty('USER_ID');
 
 // 列要素
-const RESISTERED_AT = 0;        // フォーム送信時刻（自動記録）
+const REGISTERED_AT = 0;        // フォーム送信時刻（自動記録）
 const EMAIL = 1;                // 登録者メール
 const NAME = 2;                 // 登録者氏名
 const ORGANIZATION = 3;         // 団体名
@@ -16,7 +18,7 @@ const ADMIN_NOTE = 8;           // 管理者備考
 
 const FORM_URL = "";            // フォームURL
 
-// スプレッドシート上の日付を確認し、一致する日付であればメッセージ送信1
+// スプレッドシート上の日付を確認し、一致する日付であればメッセージ送信
 function handoverDayRemind() {
   const data = SHEET.getDataRange().getValues();
 
@@ -27,10 +29,9 @@ function handoverDayRemind() {
     const email = data[i][EMAIL];
     const name = data[i][NAME];
     const organ = data[i][ORGANIZATION];
-    const handover = data[i][HANDOVER_ON];
     const handoverDay = data[i][DAYS_UNTIL_HANDOVER];
 
-    let mailFailLog = ""; // メール送信失敗時のログ
+    let mailFailLog = null; // メール送信失敗時のログ
 
     // 明け渡し日の判定
     if (handoverDay !== 3 && handoverDay !== 0) continue;
@@ -104,17 +105,17 @@ function sendEmail(to, subject, body) {
     }
     GmailApp.sendEmail(to, subject, body);
     Logger.log(`メール送信成功: ${to}`);
-    return 0; 
+    return { success: true, message: "" };
   } catch (error) {
     Logger.log(`メール送信失敗: ${to}\n理由: ${error.message}`);
-    return error.message;
+    return { success: false, message: error.message };
   }
 }
 
 // LINE Messaging APIでメッセージを送信
-function sendLineMessage(to, text, mailFailLog = 0) {
+function sendLineMessage(to, text, mailFailLog = '') {
   const url = 'https://api.line.me/v2/bot/message/push';
-  if (mailFailLog !== 0) {
+  if (mailFailLog) {
     text += "\n（メール送信に失敗しました。" + mailFailLog + ")";
   }
 
