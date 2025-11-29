@@ -161,6 +161,8 @@
 
     // 申請内容送信
     function submitForm() {
+      submitButton.disabled = true;
+
       // すべての日付入力を取得
       const dateInputs = document.querySelectorAll('#itemList input[type="date"]');
       let results = [];
@@ -180,6 +182,7 @@
       const hasEmpty = results.some(r => !r.newDate);
       if (hasEmpty) {
         alert('すべての日付を入力してください');
+        submitButton.disabled = false;
         return;
       }
 
