@@ -85,7 +85,7 @@ function NotifyExtensionRequest(results)
             type: "bubble",
             hero: {
               type: "image",
-              url: "https://drive.google.com/uc?export=view&id=" + data[id][PHOTO_FILE_ID],
+              url: `https://lh3.googleusercontent.com/d/${data[id][PHOTO_FILE_ID]}`,
               size: "full",
               aspectRatio: "20:13",
               aspectMode: "cover"
