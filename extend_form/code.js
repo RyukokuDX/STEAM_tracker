@@ -201,6 +201,11 @@ function sendLinePushObject(payload) {
 
 // 延長申請の許可
 function approveRequest(id, newDate) {
+  // 日付形式の検証
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+    Logger.log(`無効な日付形式: ${newDate}`);
+    return;
+  }
   // 申請者情報取得
   const data = SHEET.getDataRange().getValues();
   Logger.log(`延長申請を許可: ${id} 行目、${newDate} まで`);
