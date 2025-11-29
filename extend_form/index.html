@@ -102,7 +102,7 @@
     // メールアドレスを検証してフォームを表示
     function SubmitEmail() {
       let email = document.getElementById('email').value.trim();
-      if (!email.endsWith('@mail.ryukoku.ac.jp')) {
+      if (!email.endsWith('@mail.ryukoku.ac.jp') || email.length < 20) {
         alert('入力形式が正しくありません。龍谷大学のメールアドレスを使用してください。');
         return;
       }
