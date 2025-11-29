@@ -201,11 +201,10 @@ function sendLinePushObject(payload) {
 
 // 延長申請の許可
 function approveRequest(id, newDate) {
-  Logger.log(`延長申請を許可: ${id} 行目、${newDate} まで`);
-  SHEET.getRange(id + 1, HANDOVER_ON + 1).setValue(newDate);
-
   // 申請者情報取得
   const data = SHEET.getDataRange().getValues();
+  Logger.log(`延長申請を許可: ${id} 行目、${newDate} まで`);
+  SHEET.getRange(id + 1, HANDOVER_ON + 1).setValue(newDate);
   const email = data[id][EMAIL];
   const name = data[id][NAME];
   const organ = data[id][ORGANIZATION];
