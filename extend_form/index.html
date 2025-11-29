@@ -107,7 +107,7 @@
         return;
       }
       google.script.run
-        .withSuccessHandler(ShowForm)
+        .withSuccessHandler(showForm)
         .getItemsByEmail(email);
     }
 
