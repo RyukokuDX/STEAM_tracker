@@ -33,7 +33,7 @@ function GetFiscalYearEnd(dateStr) {
 
   let fiscalYear;
 
-  // 1月〜3月の場合、年度開始年は前年
+  // 4月〜12月の場合、年度終了年は翌年
   if (month >= 4) fiscalYear = year + 1;
   else fiscalYear = year;
 
