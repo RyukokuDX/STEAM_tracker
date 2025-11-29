@@ -233,7 +233,7 @@ function rejectRequest(id) {
   const organ = data[id][ORGANIZATION];
 
   // 申請者にメール送信
-  const subject = `STEAMコモンズ 延長申請拒否通知`;
+  const subject = `STEAMコモンズ 延長申請却下通知`;
   const body = `${name}さん（${organ}）\n\n延長申請が却下されました。\n`;
   sendEmail(email, subject, body);
 
