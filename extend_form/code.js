@@ -228,6 +228,11 @@ function rejectRequest(id) {
 
   // 申請者情報取得
   const data = SHEET.getDataRange().getValues();
+  // id の範囲チェック
+  if (typeof id !== "number" || id < 0 || id >= data.length) {
+    Logger.log(`無効な id: ${id}`);
+    return;
+  }
   const email = data[id][EMAIL];
   const name = data[id][NAME];
   const organ = data[id][ORGANIZATION];
