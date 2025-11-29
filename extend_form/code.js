@@ -134,7 +134,7 @@ function NotifyExtensionRequest(results)
                 {
                   type: "button",
                   style: "secondary",
-                  color: "#AA0000",
+                  color: "#FF0000",
                   action: {
                     type: "postback",
                     label: "却下",
