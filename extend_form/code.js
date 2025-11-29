@@ -277,9 +277,9 @@ function doPost(e) {
 
         // 承認/却下
         if (params.action === 'approve' && params.id && params.date) {
-          ApproveRequest(Number(params.id), params.date);
+          approveRequest(Number(params.id), params.date);
         } else if (params.action === 'reject' && params.id) {
-          RejectRequest(Number(params.id));
+          rejectRequest(Number(params.id));
         }
       }
     });
