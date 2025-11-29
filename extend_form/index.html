@@ -133,14 +133,28 @@
         const pad = n => n < 10 ? '0' + n : n;
         const minDate = tomorrow.getFullYear() + '-' + pad(tomorrow.getMonth() + 1) + '-' + pad(tomorrow.getDate());
 
-        const div = document.createElement('div');
-        div.innerHTML = `
-        <div class="item-block">
-          <label>${item.organ} - ${item.name}</label>
-          <input type="date" id="date-${item.id}" max="${item.maxDate}" min="${minDate}" value="${item.handover}">
-          <img src="${item.image}" alt="image" class="item-image" />
-        </div>`;
-        listContainer.appendChild(div);
+        const itemBlock = document.createElement('div');
+        itemBlock.className = 'item-block';
+
+        const label = document.createElement('label');
+        label.textContent = `${item.organ} - ${item.name}`;
+
+        const input = document.createElement('input');
+        input.type = 'date';
+        input.id = `date-${item.id}`;
+        input.max = item.maxDate;
+        input.min = minDate;
+        input.value = item.handover;
+
+        const img = document.createElement('img');
+        img.src = item.image;
+        img.alt = 'image';
+        img.className = 'item-image';
+
+        itemBlock.appendChild(label);
+        itemBlock.appendChild(input);
+        itemBlock.appendChild(img);
+        listContainer.appendChild(itemBlock);
       });
 
     }
