@@ -63,7 +63,7 @@ function getItemsByEmail(email) {
 }
 
 // 延長申請をLineに送信
-function NotifyExtensionRequest(results)
+function notifyExtensionRequest(results)
 {
   const data = SHEET.getDataRange().getValues();
 
