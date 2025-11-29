@@ -256,7 +256,7 @@ function sendEmail(to, subject, body) {
 function doPost(e) {
 
   try {
-    // Jsonに変換
+    // JSONに変換
     const json = JSON.parse(e.postData.contents);
     if (!json.events || !Array.isArray(json.events)) return ContentService.createTextOutput('No events');
 
