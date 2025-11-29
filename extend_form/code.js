@@ -152,7 +152,7 @@ function notifyExtensionRequest(results)
   });
 }
 
-// LINE Messaging APIでメッセージを送信
+// LINE Messaging APIでメッセージのみ送信
 function sendLineMessage(to, text) {
   const url = 'https://api.line.me/v2/bot/message/push';
 
@@ -178,7 +178,7 @@ function sendLineMessage(to, text) {
   }
 }
 
-// オブジェクト送信
+// LINE Messaging APIでオブジェクト送信
 function sendLinePushObject(payload) {
   const url = "https://api.line.me/v2/bot/message/push";
   const options = {

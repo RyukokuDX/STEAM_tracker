@@ -161,6 +161,7 @@
 
     // 申請内容送信
     function submitForm() {
+      const submitButton = document.querySelector('#formView button');
       submitButton.disabled = true;
 
       // すべての日付入力を取得
@@ -193,6 +194,11 @@
         .withSuccessHandler(() => {
           document.getElementById('formView').classList.add('hidden');
           document.getElementById('doneView').classList.remove('hidden');
+          submitButton.disabled = false;
+        })
+        .withFailureHandler(() => {
+          alert('申請送信に失敗しました。再度お試しください。');
+          submitButton.disabled = false;
         })
         .notifyExtensionRequest(results);
     }
