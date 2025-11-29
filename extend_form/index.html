@@ -125,11 +125,19 @@
       listContainer.innerHTML = '';
       
       items.forEach(item => {
+        // Calculate tomorrow's date in yyyy-MM-dd format (Asia/Tokyo)
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        // Format as yyyy-MM-dd
+        const pad = n => n < 10 ? '0' + n : n;
+        const minDate = tomorrow.getFullYear() + '-' + pad(tomorrow.getMonth() + 1) + '-' + pad(tomorrow.getDate());
+
         const div = document.createElement('div');
         div.innerHTML = `
         <div class="item-block">
           <label>${item.organ} - ${item.name}</label>
-          <input type="date" id="date-${item.id}" max="${item.maxDate}" min="${item.handover}" value="${item.handover}">
+          <input type="date" id="date-${item.id}" max="${item.maxDate}" min="${minDate}" value="${item.handover}">
           <img src="${item.image}" alt="image" class="item-image" />
         </div>`;
         listContainer.appendChild(div);
