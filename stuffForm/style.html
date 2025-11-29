@@ -1,0 +1,395 @@
+/* Extracted from index.html inline <style> and moved here for GAS include() */
+:root{ /* ここで再利用する色や角丸などの"変数"をまとめて定義 */
+  /* darken primary to meet WCAG AA with white text (≈5.9:1) */
+  --primary: #4f6a5c;   /* ボタンなど強調色 / 主要ブランドカラー */
+  --bg: #f8f7f4;        /* ページ背景色 / 全体のベーストーン */
+  --input: #eae8e1;     /* 入力欄背景色 / フィールドの下地 */
+  --text: #37423d;      /* 通常テキスト色 / 高コントラスト本文 */
+  /* コントラスト改善 */
+  --muted: #5b6661;     /* 旧: #707d78 より暗くし小サイズでの判読性向上 */
+  /* surface 系: 背景レイヤーの抽象化（既存の #fff / #fafafa などを変数化） */
+  --surface: #ffffff;       /* 基本カードやポップアップの背景色 */
+  --surface-alt: #fafafa;   /* ほんのり差異をつける淡色背景 */
+  --border: #eee;           /* 枠線や区切り線の標準色 */
+  --hover-bg: #f2f4f3;      /* ホバー/選択強調用の淡い背景 */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04); /* 小さな影（カードなど） */
+  --radius: 12px;       /* 標準角丸 / カード・入力等で共通 */
+  --radius-sm: 8px;     /* 小さめ角丸 / メニューや小要素向け */
+  --radius-pill: 999px; /* ピル型（丸み最大）/ 丸ボタンなど */
+  /* status colors (エラー時の色設定) */
+  --error-text: #721c24;   /* エラーテキスト / 警告を強調 */
+  --error-bg: #f8d7da;     /* エラー背景 / 赤系淡色 */
+  --success-text: #155724; /* 成功テキスト / 成功メッセージ強調 */
+  --success-bg: #d4edda;   /* 成功背景 / 緑系淡色 */
+  /* spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+}
+
+html, body { /* ページ全体の基本設定・背景色・文字色 */
+  height: 100%;              /* 画面全体を縦方向いっぱいに */
+  margin: 0;                  /* 既定の余白を除去 */
+  padding: 0;                 /* 既定のパディングを除去 */
+  background: var(--bg);      /* 背景色を共通変数で指定 */
+  color: var(--text);         /* 基本文字色を統一 */
+  -webkit-font-smoothing: antialiased; /* Mac等で文字のギザつき軽減 */
+  -webkit-text-size-adjust: 100%;      /* iOS Safari の自動文字サイズ調整防止 */
+  text-size-adjust: 100%;              /* 他ブラウザでの自動調整防止 */
+}
+
+
+body { /* 画面中央の縦長フォームレイアウト。ノッチ安全領域にも対応 */
+  font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; /* 日本語含む汎用フォント指定 */
+  max-width: 420px;       /* フォームの最大横幅をスマホ向けに制限 */
+  margin: 0 auto;         /* 左右中央寄せ */
+  padding: 20px;          /* ベースの内側余白 */
+  /* iOS/Android ノッチの安全領域対応 */
+  padding-top: calc(16px + env(safe-area-inset-top));      /* 上: 通常余白 + ノッチ安全領域 */
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));/* 下: 通常余白 + 下部インセット */
+  padding-left: max(16px, env(safe-area-inset-left));       /* 左: 16px と安全領域の大きい方 */
+  padding-right: max(16px, env(safe-area-inset-right));     /* 右: 16px と安全領域の大きい方 */
+  box-sizing: border-box;  /* パディングを幅計算に含める */
+}
+
+/* クラス: .hero-title
+  画面最上部の大きなタイトル。左右に丸いアイコンを重ねて表示するため上部に余白を確保。 */
+.hero-title {
+  position: relative;                                 /* 擬似要素アイコンを絶対配置する基準 */
+  padding-top: clamp(72px, 18vw, 110px); /* space for icons */ /* 上余白を画面幅に応じて伸縮 */
+  font-size: 40px;                                    /* タイトルの大きな文字サイズ */
+  font-weight: bold;                                  /* 太字で強調 */
+  margin: 0 0 24px 0;                                 /* 下に余白を取り他要素と区切る */
+  text-align: center;                                 /* 文字を中央揃え */
+  color: var(--text);                                 /* 共通本文色で表示 */
+}
+
+/* 擬似要素: .hero-title::before / .hero-title::after
+  タイトルの左右に丸いアイコン背景と画像を配置。ユーザーとフォームを視覚的に表現。 */
+.hero-title::before,
+.hero-title::after {
+  content: "";                                 /* 空コンテンツで装飾要素生成 */
+  display: block;                               /* ブロック化してサイズ指定可能に */
+  width: clamp(48px, 12vw, 72px);               /* 幅: 画面幅に応じ最小/最大を制限 */
+  height: clamp(48px, 12vw, 72px);              /* 高さ: 幅と同様にレスポンシブ */
+  background-color: var(--input);                /* 背景色: 入力欄と同系色で統一感 */
+  border-radius: 50%;                            /* 完全な円形に */
+  position: absolute;                            /* タイトル内で重ね配置 */
+  top: 0;                                        /* タイトル上端から配置開始 */
+  background-repeat: no-repeat;                  /* 背景画像を繰り返さない */
+  background-position: center;                   /* 画像を中央に寄せる */
+  background-size: clamp(60%, 12vw, 80%);        /* 画像の拡大率を幅依存で調整 */
+}
+
+/* 擬似要素: .hero-title::before
+  左側の丸アイコン。利用者イメージ。 */
+.hero-title::before {
+  left: calc(50% - 8px - 64px); /* 左配置: タイトル中央基準からオフセット */
+  background-image: url("https://lh3.googleusercontent.com/d/1LL1NpqQoEwytkWkvYq4-9XmTBNRyEwsD=w256"); /* 利用者アイコン画像 */
+  background-size: 120%;       /* 画像をやや拡大表示 */
+}
+
+/* 擬似要素: .hero-title::after
+  右側の丸アイコン。フォームイメージ。 */
+.hero-title::after {
+  left: calc(50% + 8px); /* 右側: 中央から右へ少しずらす */
+  background-image: url("https://lh3.googleusercontent.com/d/1XoekcUn2g8YLIi8iw3mPVNh6pd6-f8_E=w256"); /* フォームアイコン画像 */
+  background-size: 100%; /* 画像を円内にフィットさせる */
+}
+
+/* クラス: .card
+  白い背景の箱。フォームや規約文章などのまとまりを視覚的に区切るコンテナ。 */
+.card {
+  background: var(--surface);                  /* カード背景: 共通surface色 */
+  border-radius: var(--radius);                /* 角を丸め柔らかい印象に */
+  padding: 14px;                               /* 内側余白で内容に呼吸スペース */
+  margin-bottom: 14px;                         /* 下に余白を取り次カードとの間隔確保 */
+  box-shadow: var(--shadow-sm);                /* 小さな共通影 */
+}
+
+/* クラス: .header
+  カード内のタイトル領域。上下に要素を並べて中央揃え。 */
+.header {
+  font-size: 18px;            /* 見出しに適したやや大きめサイズ */
+  font-weight: 700;            /* 太字でタイトル性を強調 */
+  display: flex;               /* 子要素のレイアウトをフレックスで制御 */
+  flex-direction: column;      /* 縦方向に積む */
+  align-items: center;         /* 子要素を中央揃え */
+  gap: 4px;                    /* 要素間の最小スペース */
+  text-align: center;          /* テキスト中央揃え */
+}
+
+/* クラス: .terms-box
+  利用規約全文をスクロール表示する領域。縦長で内部に大量テキストを収める。 */
+.terms-box {
+  margin-top: 10px;                /* 上に少しスペースを確保 */
+  border-radius: var(--radius-sm); /* 小さめ角丸で枠を柔らかく */
+  padding: 12px;                   /* 内側余白で本文を読みやすく */
+  background: var(--surface-alt);  /* 淡色の代替surface背景 */
+  border: 1px solid var(--border); /* 標準の境界線色 */
+  height: 52vh;                    /* 画面高の約半分を確保（モバイル向け） */
+  min-height: 240px;               /* 極端に小さくならない最低高さ */
+  overflow: auto;                  /* 長文をスクロール可能に */
+}
+
+/* クラス: .controls
+  規約確認に関するチェック・クイズなどの操作要素を縦並びでまとめる。 */
+.controls {
+  margin-top: 12px;          /* 規約ボックスとの間隔 */
+  display: flex;             /* 子要素のレイアウトをフレックスで制御 */
+  flex-direction: column;    /* 縦に並べる */
+  gap: 10px;                 /* 各操作要素間の余白 */
+}
+
+/* セレクタ: label
+  入力やチェックボックスの説明テキスト。アイコン/入力と横並び。 */
+label {
+  font-size: 14px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* セレクタ: select, input[type=checkbox]
+  ネイティブ要素の基本サイズ調整。iOSのズームを避けるため16px以上。 */
+select, input[type="checkbox"] {
+  font-size: 16px; /* iOSのフォーカス時ズーム回避 */
+  accent-color: var(--primary);
+}
+
+/* agree button は専用IDスタイルを使わず共通 .btn を利用 */
+
+/* クラス: .form
+  同意前に操作できないフォーム。半透明＋クリック不可。 */
+.form {
+  transition: opacity .25s; /* 透明度が変わる際に滑らかなアニメーション */
+  opacity: 0.45;            /* 半透明で未アクティブ表示 */
+  pointer-events: none;     /* クリックや入力操作を無効化 */
+}
+
+/* クラス: .form.enabled
+  同意後に有効化されたフォーム。完全不透明で操作可能。 */
+.form.enabled {
+  opacity: 1;            /* 完全不透明に戻して有効化を視覚化 */
+  pointer-events: auto;  /* クリックや入力操作を許可 */
+}
+
+/* クラス: .field
+  個々の入力項目を包むブロック。下余白で並びを区切る。 */
+.field {
+  margin-bottom: 12px; /* 次フィールドとの間隔 */
+  text-align: left;    /* ラベル/入力を左揃えに */
+}
+
+/* 組み合わせセレクタ: .field label
+  フィールド内の項目名ラベル。小さめフォントで説明的。 */
+.field label {
+  font-size: 13px;         /* 小さめサイズで補助的見出し */
+  color: var(--muted);      /* サブトーン色 */
+  margin-bottom: 6px;       /* ラベルと入力欄の間隔 */
+  display: block;           /* ブロック化で下に入力を配置しやすく */
+}
+
+/* セレクトの見た目は .form-control に統一（カスタムUIで置換） */
+
+/* カスタムセレクト: ネイティブ<select>の表示崩れ対策とUI向上 */
+/* クラス: .select-wrap
+  カスタムセレクト全体の位置基準コンテナ。メニューを絶対配置するため relative。 */
+.select-wrap { position: relative; /* ポップアップメニュー絶対配置の基準 */ }
+/* クラス: .custom-select
+  見た目を整えたセレクトの表示部分。クリックでメニューを開閉。 */
+.custom-select {
+  width: 100%;                /* 横幅いっぱいに広げる */
+  background: var(--input);    /* 入力欄と同じ背景色 */
+  border-radius: var(--radius);/* 標準角丸 */
+  padding: 12px;               /* 内側余白 */
+  font-size: 16px;             /* iOSズーム回避のサイズ */
+  line-height: 1.4;            /* 行の高さで可読性確保 */
+  color: var(--text);          /* 文字色統一 */
+  box-sizing: border-box;      /* パディング込みの幅計算 */
+  display: flex;               /* ラベルとアイコン横並び */
+  align-items: center;         /* 垂直方向中央揃え */
+  justify-content: space-between; /* 両端に配置 */
+  cursor: pointer;             /* クリック可能表示 */
+  user-select: none;           /* ドラッグ選択を防止 */
+}
+/* クラス: .custom-select-label
+  現在選択されている項目名表示。長いテキストは省略記号。 */
+.custom-select .custom-select-label{
+  flex: 1 1 auto;          /* 残り幅を柔軟に使用 */
+  min-width: 0;            /* 省略処理を正しく働かせるため */
+  white-space: nowrap;      /* 折り返さず一行表示 */
+  overflow: hidden;         /* はみ出しを隠す */
+  text-overflow: ellipsis;  /* 省略記号表示 */
+}
+/* クラス: .custom-select-icon
+  下向き矢印。open時に回転して上向きへ。線で描画。 */
+.custom-select .custom-select-icon{
+  width: 10px; height: 10px;        /* 小さな正方形領域 */
+  margin-left: 8px;                 /* ラベルとの間隔 */
+  border: solid var(--muted);       /* 線色を控えめトーンに */
+  border-width: 0 2px 2px 0;        /* 斜め矢印に見える線の配置 */
+  transform: rotate(45deg);         /* 斜め右下向きに回転させ矢印化 */
+  transition: transform .2s ease;   /* 開閉時の回転アニメーション */
+  flex: 0 0 auto;                   /* サイズを固定 */
+}
+/* 組み合わせセレクタ: .custom-select.open .custom-select-icon
+  メニューが開いているとき矢印を反転表示。 */
+.custom-select.open .custom-select-icon{ transform: rotate(-135deg); /* メニュー表示時は逆向きに */ }
+
+/* クラス: .select-menu
+  選択肢一覧。listbox的役割。スクロール可能。 */
+.select-menu{
+  position: absolute;                     /* 親を基準に重ね表示 */
+  left: 0; top: calc(100% + 6px);         /* ボタン直下に少し余白を置いて表示 */
+  width: 100%;                            /* 同じ横幅で整列 */
+  max-height: min(40vh, 280px);           /* 画面高に応じた最大高さ */
+  overflow: auto;                         /* 選択肢が多い場合スクロール */
+  background: var(--surface);             /* surface背景 */
+  border: 1px solid var(--border);        /* 境界線 */
+  border-radius: var(--radius-sm);        /* 小さめ角丸 */
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);/* 下方向に広がる影で浮き上がり */
+  z-index: 1000;                          /* 他要素より前面に */
+  box-sizing: border-box;                 /* パディング込みの幅計算 */
+  padding: 6px 0;                         /* 上下に余白、左右は子要素側で */
+}
+/* クラス: .select-option
+  個々の選択肢。クリックまたはキーボードで選択。 */
+.select-option{
+  padding: 10px 12px;       /* 内側余白で押しやすく */
+  font-size: 16px;          /* 読みやすい標準サイズ */
+  color: var(--text);       /* テキスト色統一 */
+  line-height: 1.5;         /* 行間で可読性確保 */
+  white-space: normal;      /* 折り返し許可 */
+  word-break: break-word;   /* 長い単語を適宜改行 */
+  overflow-wrap: anywhere;  /* 幅超過時にどこでも改行 */
+  cursor: pointer;          /* クリック可能カーソル */
+}
+/* 組み合わせ: .select-option[aria-selected=true], .select-option:hover
+  現在選択されている、またはカーソルが乗っている項目の強調背景。 */
+.select-option[aria-selected="true"], .select-option:hover{
+  background: var(--hover-bg); /* 選択中/ホバー中の視覚強調色（変数化） */
+}
+
+/* 入力の見た目は .form-control に統一。ファイル入力は近いスタイルを適用 */
+
+/* button#submit は .btn .btn--primary を利用するため個別CSS不要 */
+
+/* Common components = 再利用される基本UI部品 */
+/* クラス: .btn
+  全幅の共通ボタン。丸みと太字で押せる要素を強調。 */
+.btn {
+  width: 100%;                            /* 横幅いっぱいで押しやすく */
+  padding: 12px;                          /* 内側余白でタップ領域確保 */
+  border: none;                           /* 既定の枠線除去 */
+  font-weight: 700;                       /* 太字でボタン性を強調 */
+  font-size: 16px;                        /* iOSズーム回避サイズ */
+  cursor: pointer;                        /* クリック可能カーソル */
+  -webkit-tap-highlight-color: transparent; /* モバイルのタップハイライト除去 */
+  display: block;                         /* ブロック化で幅指定有効に */
+  border-radius: var(--radius-pill);      /* ピル型の丸み */
+}
+/* クラス: .btn--primary
+  基本ボタンに主要色を適用したバリエーション。 */
+.btn--primary { background: var(--primary); color: #fff; /* 主要色背景＋白文字 */ }
+/* 組み合わせ: .btn[disabled]
+  無効状態のボタン。薄くしてクリック不可を視覚化。 */
+.btn[disabled] { opacity: 0.5; cursor: default; /* 無効時は半透明＋通常カーソル */ }
+
+/* クラス: .form-control
+  テキストや日付などほとんどの入力欄に適用する共通スタイル。 */
+.form-control {
+  width: 100%;                   /* 横幅いっぱいに広げる */
+  border: none;                  /* 標準枠線除去 */
+  background: var(--input);      /* 入力欄背景色 */
+  border-radius: var(--radius);  /* 標準角丸 */
+  padding: 12px;                 /* 内側余白で操作性向上 */
+  font-size: 16px;               /* iOSズーム回避 / 標準文字サイズ */
+  color: var(--text);            /* 文字色統一 */
+  box-sizing: border-box;        /* パディング込み幅計算 */
+}
+
+/* input[type=file] = ネイティブのファイル選択を共通スタイルに近づける */
+/* input[type=file]
+  ファイル選択ボタン。標準より余白と角丸を加えて統一感。 */
+input[type="file"] {
+  width: 100%;                        /* 横幅いっぱい */
+  background: var(--input);            /* 入力背景と合わせる */
+  border-radius: var(--radius);        /* 標準角丸 */
+  padding: 8px 12px;                   /* 若干小さめ余白（ボタン部分考慮） */
+  box-sizing: border-box;              /* 幅計算調整 */
+  font-size: 14px;                     /* やや小さめ文字サイズ */
+  color: var(--text);                  /* 文字色統一 */
+}
+
+/* ID: #msg
+  送信結果メッセージ表示領域。内部に状態クラスを追加して色変更。 */
+#msg {
+  padding: 10px;          /* 内側余白で読みやすく */
+  border-radius: 8px;      /* 角丸で注意喚起を柔らかく */
+  margin-top: 8px;         /* 上要素との間隔 */
+}
+/* 組み合わせ: #msg.error
+  エラー表示のための赤系背景と文字色。 */
+#msg.error {
+  color: var(--error-text);   /* エラー文字色 */
+  background: var(--error-bg);/* エラー背景色 */
+}
+/* 組み合わせ: #msg.success
+  成功表示のための緑系背景と文字色。 */
+#msg.success {
+  color: var(--success-text);   /* 成功文字色 */
+  background: var(--success-bg);/* 成功背景色 */
+}
+
+/* クラス: .small
+  補足説明・ヒントなど小さい文字サイズ用。 */
+.small {
+  font-size: 13px;        /* 12px→13pxで可読性向上 */
+  color: var(--muted);
+  margin-top: var(--space-2);
+}
+
+/* Utilities = シンプルな余白・見出し強調クラス群 */
+/* ユーティリティ: .mt-6 / .mt-8 (spacing scaleへ統一) */
+.mt-6 { margin-top: var(--space-2); /* 旧6px→8px */ }
+.mt-8 { margin-top: var(--space-3); /* 旧8px→12px */ }
+/* クラス: .section-title
+  セクションの見出し。太字＋下に余白。 */
+.section-title { font-weight: 700; margin-bottom: 8px; /* 太字＋下余白で見出し強調 */ }
+/* クラス: .heading-lg
+  大きめ見出しサイズを指定。 */
+.heading-lg { font-size: 30px; /* 大きい見出しサイズ */ }
+/* クラス: .note
+  補助的な短い説明文。控えめな色。 */
+.note { font-size: 13px; color: var(--muted); margin-bottom: 6px; /* 補足説明用スタイル */ }
+/* クラス: .btn-sub
+  ボタン内のサブテキスト(補足)を小さめに表示。 */
+.btn-sub { font-size: 13px; color: #fff; /* ボタン内サブテキスト */ }
+
+/* クラス: .termsdate
+  規約の日付表示。中央揃えで淡い文字色。 */
+.termsdate {
+  font-size: small;        /* ブラウザ定義の small サイズ */
+  color: var(--muted);     /* 控えめ色で補助情報を強調し過ぎない */
+  margin-bottom: 12px;     /* 下に余白を追加 */
+  text-align: center;      /* 中央揃え */
+}
+
+@media (min-width: 700px) { /* 横幅が広い端末向けの微調整 */
+  body { padding: 28px; /* 画面が広い時は余白拡大 */ }
+  .terms-box { height: 48vh; min-height: 380px; /* デスクトップでは少し低め比率 */ }
+  .card { padding: 18px; /* カード内余白拡大 */ }
+}
+
+/* ブラウザが 1dvh をサポートしている場合は高さをより安定化 */
+@supports (height: 1dvh) { /* ブラウザが動的ビューポート単位に対応している場合 */
+  .terms-box { height: 52dvh; /* アドレスバー変動に強い高さ計算 */ }
+  @media (min-width: 700px) {
+    .terms-box { height: 48dvh; /* 広い画面用の高さ調整 */ }
+  }
+}

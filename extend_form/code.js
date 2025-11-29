@@ -41,13 +41,13 @@ function GetFiscalYearEnd(dateStr) {
 }
 
 // メールアドレスをもとに物品を取得
-function GetItemsByEmail(email) {
+function getItemsByEmail(email) {
   const data = SHEET.getDataRange().getValues();
   let results = [];
   
   // 登録データ探索
   for (let i = 1; i < data.length; i++) {
-    if (data[i][EMAIL] === email) {
+    if (String(data[i][EMAIL]).toLowerCase() === String(email).toLowerCase()) {
       results.push({
         id: i,
         name: data[i][NAME],
@@ -85,7 +85,7 @@ function NotifyExtensionRequest(results)
             type: "bubble",
             hero: {
               type: "image",
-              url: "https://drive.google.com/uc?export=view&id=" + data[id][PHOTO_FILE_ID],
+              url: `https://lh3.googleusercontent.com/d/${data[id][PHOTO_FILE_ID]}`,
               size: "full",
               aspectRatio: "20:13",
               aspectMode: "cover"
@@ -200,7 +200,7 @@ function sendLinePushObject(payload) {
 }
 
 // 延長申請の許可
-function ApproveRequest(id, newDate) {
+function approveRequest(id, newDate) {
   Logger.log(`延長申請を許可: ${id} 行目、${newDate} まで`);
   SHEET.getRange(id + 1, HANDOVER_ON + 1).setValue(newDate);
 
@@ -219,7 +219,7 @@ function ApproveRequest(id, newDate) {
 }
 
 // 延長申請の却下
-function RejectRequest(id) {
+function rejectRequest(id) {
   Logger.log(`延長申請を却下: ${id} 行目`);
 
   // 申請者情報取得
