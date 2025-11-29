@@ -47,7 +47,7 @@ function getItemsByEmail(email) {
   
   // 登録データ探索
   for (let i = 1; i < data.length; i++) {
-    if (data[i][EMAIL] === email) {
+    if (String(data[i][EMAIL]).toLowerCase() === String(email).toLowerCase()) {
       results.push({
         id: i,
         name: data[i][NAME],
