@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <base target="_top">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base target="_top" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       /* ===== Theme tokens ===== */
       :root {
@@ -44,7 +44,7 @@
         --col-check-width: 3ch;
         --col-name-width: 5ch;
         --col-organization-width: 5ch;
-        --col-photo-width: 100px; 
+        --col-photo-width: 100px;
         --col-handover_on-width: 4ch;
         --col-status-width: 4ch;
         --col-admin_note-width: 10ch;
@@ -156,7 +156,7 @@
         border-radius: 6px;
       }
       /* 写真セルの余白をなくす */
-      tbody td.col-photo { padding: 4 ch; }
+      tbody td.col-photo { padding:  0.5ch; }
       /* 画像の行内隙間をなくし、セル幅にフィットさせる */
       tbody td.col-photo img {
         display: block;
@@ -165,7 +165,7 @@
         max-width: 100%;
         box-sizing: border-box;
       }
-      
+
       table col.col-check { width: var(--col-check-width); }
       table col.col-name { width: var(--col-name-width); }
       table col.col-organization { width: var(--col-organization-width); }
@@ -208,7 +208,7 @@
       tbody td { font-size: var(--fs-lg); }
 
       /* 列ごと細かい調整 */
-      
+
       thead th.col-name { font-size: var(--fs-lg); }
       thead th.col-check { font-size: var(--fs-lg); }
       thead th.col-organization { font-size: var(--fs-lg); }
@@ -224,7 +224,6 @@
       tbody td.col-handover_on { font-size: var(--fs-md); line-height: 1.3; }
       tbody td.col-status { font-size: var(--fs-md); }
       tbody td.col-admin_note { font-size: var(--fs-md); line-height: 1.4; }*/
-      
     </style>
   </head>
   <body>
@@ -245,13 +244,13 @@
     </div>
     <table>
       <colgroup>
-        <col class="col-check">
-        <col class="col-name">
-        <col class="col-organization">
-        <col class="col-photo">
-        <col class="col-handover_on">
-        <col class="col-status">
-        <col class="col-admin_note">
+        <col class="col-check" />
+        <col class="col-name" />
+        <col class="col-organization" />
+        <col class="col-photo" />
+        <col class="col-handover_on" />
+        <col class="col-status" />
+        <col class="col-admin_note" />
       </colgroup>
       <thead>
         <tr>
@@ -266,38 +265,61 @@
       </thead>
       <tbody>
         <tr>
-          <td class="col-check"><input type="checkbox"></td>
+          <td class="col-check"><input type="checkbox" /></td>
           <td class="col-name" data-email="test1@demo.x">戦場ヶ原　ひたぎ</td>
           <td class="col-organization">龍谷大学生協深草学生委員会平常局</td>
-          <td class="col-photo"><img src="https://lh3.googleusercontent.com/d/1oPjqEUfKnHSguaQrAFJL5411-AC9RoxU"></td>
-          
+          <td class="col-photo">
+            <img
+              src="https://lh3.googleusercontent.com/d/1oPjqEUfKnHSguaQrAFJL5411-AC9RoxU"
+            />
+          </td>
+
           <td class="col-handover_on">2025/11/01</td>
           <td class="col-status"></td>
-          <td class="col-admin_note">この物品については注意が必要です。取り扱いに注意が必要で多くの人の目に触れてはならないものであります。そのため管理者は今後も要注意して監視すること。</td>
+          <td class="col-admin_note">
+            この物品については注意が必要です。取り扱いに注意が必要で多くの人の目に触れてはならないものであります。そのため管理者は今後も要注意して監視すること。
+          </td>
         </tr>
         <tr>
-          <td class="col-check"><input type="checkbox"></td>
+          <td class="col-check"><input type="checkbox" /></td>
           <td class="col-name" data-email="test1@demo.x">shimizu</td>
           <td class="col-organization"></td>
-          <td class="col-photo"><img src="https://lh3.googleusercontent.com/d/1oPjqEUfKnHSguaQrAFJL5411-AC9RoxU"></td>
+          <td class="col-photo">
+            <img
+              src="https://lh3.googleusercontent.com/d/1oPjqEUfKnHSguaQrAFJL5411-AC9RoxU"
+            />
+          </td>
           <td class="col-handover_on"></td>
           <td class="col-status"></td>
           <td class="col-admin_note"></td>
         </tr>
         <tr>
-          <td class="col-check"><input type="checkbox"></td>
+          <td class="col-check"><input type="checkbox" /></td>
           <td class="col-name" data-email="test1@demo.x">shimizu</td>
           <td class="col-organization"></td>
-          <td class="col-photo"><img src="https://lh3.googleusercontent.com/d/1SK3Qn-K5vY21rzZv3Su-x0WE4in-iQs0"></td>
+          <td class="col-photo">
+            <img
+              src="https://lh3.googleusercontent.com/d/1SK3Qn-K5vY21rzZv3Su-x0WE4in-iQs0"
+            />
+          </td>
           <td class="col-handover_on"></td>
           <td class="col-status"></td>
           <td class="col-admin_note"></td>
         </tr>
         <tr>
-          <td class="col-check"><input type="checkbox"></td>                                      
+          <td class="col-check"><input type="checkbox" /></td>
           <td class="col-name" data-email="test2">toyoshima</td>
           <td class="col-organization">rdx</td>
-          <td class="col-photo"><img src="https://lh3.googleusercontent.com/d/1SK3Qn-K5vY21rzZv3Su-x0WE4in-iQs0"></td>
-          <td class="col-handover_on">2025/12/22</td>                                                           
+          <td class="col-photo">
+            <img
+              src="https://lh3.googleusercontent.com/d/1SK3Qn-K5vY21rzZv3Su-x0WE4in-iQs0"
+            />
+          </td>
+          <td class="col-handover_on">2025/12/22</td>
           <td class="col-status"></td>
           <td class="col-admin_note"></td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>
