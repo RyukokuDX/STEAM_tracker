@@ -35,5 +35,14 @@ function doGet() {
   tpl.photo = DriveLinkColumn;
   tpl.handover = handover;
   tpl.days = days_until_handover;
-  return tpl.evaluate().setTitle("ダッシュボード");
+  return tpl.evaluate().setTitle("ダッシュボード")
+  .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover')
+}
+
+/**
+ * テンプレートから他ファイル内容を取り込むためのユーティリティ
+ * 例: <style><?!= include('style'); ?></style>
+ */
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
