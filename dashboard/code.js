@@ -35,8 +35,13 @@ function doGet() {
   tpl.photo = DriveLinkColumn;
   tpl.handover = handover;
   tpl.days = days_until_handover;
-  return tpl.evaluate().setTitle("ダッシュボード")
-  .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover')
+  return tpl
+    .evaluate()
+    .setTitle('ダッシュボード')
+    .addMetaTag(
+      'viewport',
+      'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover'
+    );
 }
 
 /**
