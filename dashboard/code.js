@@ -16,6 +16,7 @@ const name = 3;
 const DriveLinkColumn = 5;
 const handover = 6;
 const days_until_handover = 7;
+const statusColumn = 8;
 
 function getSheetData() {
   const sh = ss.getSheetByName(sn);
@@ -59,11 +60,58 @@ function completeRows(rowNumbers) {
     throw new Error(`シート "${archiveSheetName}" が見つかりません。`);
   }
 
+  targetRows.forEach((row) => {
+    sourceSheet.getRange(row, statusColumn).setValue('撤去');
+  });
+
   const lastColumn = sourceSheet.getLastColumn();
   const rowData = targetRows.map((row) => sourceSheet.getRange(row, 1, 1, lastColumn).getValues()[0]);
 
   if (!rowData.length) {
-    throw new Error('アーカイブするデータが見つかりません。');
+    throw new Error('撤去済みにするデータが見つかりません。');
+  }
+
+  const archiveStartRow = archiveSheet.getLastRow() + 1;
+  const columnCount = rowData[0].length;
+  archiveSheet.getRange(archiveStartRow, 1, rowData.length, columnCount).setValues(rowData);
+
+  targetRows
+    .sort((a, b) => b - a)
+    .forEach((row) => {
+      sourceSheet.deleteRow(row);
+    });
+
+  return { archivedRows: rowData.length };
+}
+
+function discardRows(rowNumbers) {
+  if (!Array.isArray(rowNumbers)) {
+    throw new Error('行は列番号の配列で指定してください。');
+  }
+  const targetRows = [...new Set(rowNumbers.map(Number))]
+    .filter((row) => Number.isInteger(row) && row > 1)
+    .sort((a, b) => a - b);
+  
+  if (!targetRows.length) {
+    throw new Error('選択されたデータ行がありません。');
+  }
+
+  const sourceSheet = ss.getSheetByName(sn);
+  const archiveSheet = ss.getSheetByName(archiveSheetName);
+
+  if (!archiveSheet) {
+    throw new Error(`シート "${archiveSheetName}" が見つかりません。`);
+  }
+
+  targetRows.forEach((row) => {
+    sourceSheet.getRange(row, statusColumn).setValue('破棄');
+  });
+
+  const lastColumn = sourceSheet.getLastColumn();
+  const rowData = targetRows.map((row) => sourceSheet.getRange(row, 1, 1, lastColumn).getValues()[0]);
+
+  if (!rowData.length) {
+    throw new Error('破棄済みにするデータが見つかりません。');
   }
 
   const archiveStartRow = archiveSheet.getLastRow() + 1;
