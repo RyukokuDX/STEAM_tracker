@@ -122,8 +122,8 @@
       </div>
       <div class="button-group">
         <button id="completeButton" type="button">アーカイブ</button>
-        <button type="button">破棄</button>
-        <button type="button">削除</button>
+        <button id="discardButton" type="button">破棄</button>
+        <button id="deleteButton" type="button">データから削除</button>
       </div>
     </div>
     <? if (!data || data.length === 0) { ?>
@@ -186,9 +186,29 @@
           return;
         }
 
-        const setLoadingState = (isLoading) => {
+        const discardButton = document.getElementById('discardButton');
+        if (!discardButton) {
+          return;
+        }
+
+        const deleteButton = document.getElementById('deleteButton');
+        if (!deleteButton) {
+          return;
+        }
+
+        const archiveSetLoadingState = (isLoading) => {
           completeButton.disabled = isLoading;
           completeButton.textContent = isLoading ? '処理中...' : 'アーカイブ';
+        };
+
+        const discardSetLoadingState = (isLoading) => {
+          discardButton.disabled = isLoading;
+          discardButton.textContent = isLoading ? '処理中...' : '破棄済みにする';
+        };
+
+        const deleteSetLoadingState = (isLoading) => {
+          deleteButton.disabled = isLoading;
+          deleteButton.textContent = isLoading ? '処理中...' : 'データから削除';
         };
 
         completeButton.addEventListener('click', () => {
@@ -206,16 +226,43 @@
             return;
           }
 
-          setLoadingState(true);
+          archiveSetLoadingState(true);
           google.script.run
             .withSuccessHandler(() => {
               location.reload();
             })
             .withFailureHandler((err) => {
               alert(err && err.message ? err.message : '処理に失敗しました。');
-              setLoadingState(false);
+              archiveSetLoadingState(false);
             })
             .completeRows(checkedRows);
+        });
+
+        deleteButton.addEventListener('click', () => {
+          const checkedRows = Array.from(
+            document.querySelectorAll('tbody input.row-check:checked')
+          )
+            .map((checkbox) => {
+              const tr = checkbox.closest('tr');
+              return tr ? Number(tr.dataset.rowIndex) : NaN;
+            })
+            .filter((rowNumber) => Number.isInteger(rowNumber));
+
+          if (!checkedRows.length) {
+            alert('チェックされた行がありません。');
+            return;
+          }
+
+          deleteSetLoadingState(true);
+          google.script.run
+            .withSuccessHandler(() => {
+              location.reload();
+            })
+            .withFailureHandler((err) => {
+              alert(err && err.message ? err.message : '処理に失敗しました。');
+              deleteSetLoadingState(false);
+            })
+            .deleteRows(checkedRows);
         });
       })();
     </script>

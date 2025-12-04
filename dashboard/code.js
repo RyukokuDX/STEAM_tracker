@@ -78,3 +78,27 @@ function completeRows(rowNumbers) {
 
   return { archivedRows: rowData.length };
 }
+
+function deleteRows(rowNumbers) {
+  if (!Array.isArray(rowNumbers)) {
+    throw new Error('行は列番号の配列で指定してください。');
+  }
+
+  const targetRows = [...new Set(rowNumbers.map(Number))]
+    .filter((row) => Number.isInteger(row) && row > 1)
+    .sort((a, b) => a - b);
+
+  if (!targetRows.length) {
+    throw new Error('選択されたデータ行がありません。');
+  }
+
+  const sourceSheet = ss.getSheetByName(sn);
+
+  targetRows
+    .sort((a, b) => b - a)
+    .forEach((row) => {
+      sourceSheet.deleteRow(row);
+    });
+    
+  return { deletedRows: targetRows.length };
+}
