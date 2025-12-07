@@ -280,6 +280,9 @@
             return;
           }
 
+          if (!confirm('選択した行をデータから完全に削除します。この操作は取り消せません。よろしいですか？')) {
+            return;
+          }
           deleteSetLoadingState(true);
           google.script.run
             .withSuccessHandler(() => {
