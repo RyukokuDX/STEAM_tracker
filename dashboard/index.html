@@ -9,21 +9,13 @@
   </head>
   <body>
     <div class="header-container">
-      <div class="title-group">
-        <h1 class="app-title">
-          管理シート:
-          <?!= sheetName ?>
-        </h1>
+      <div class="button-left">
+        <button>アーカイブシートを見る</button>
       </div>
-      <div class="controls">
-        <div class="button-left">
-          <button>アーカイブへ</button>
-        </div>
-        <div class="button-group">
-          <button>完了</button>
-          <button>破棄</button>
-          <button>削除</button>
-        </div>
+      <div class="button-group">
+        <button id="completeButton" type="button">撤去済みにする</button>
+        <button id="discardButton" type="button">破棄済みにする</button>
+        <button id="deleteButton" type="button">データから削除</button>
       </div>
     </div>
     <? if (!data || data.length === 0) { ?>
@@ -46,47 +38,31 @@
               var header = data[0];
               for (var j = 0; j < header.length; j++) {
             ?>
-          <? if (j+1 === registered) { ?>
-          <!-- 列の省略 -->
-          <? } else if (j+1 === email) { ?>
-          <!-- 列の省略 -->
-          <? } else if (j+1 === days) { ?>
-          <!-- 列の省略 -->
-          <? } else { ?>
-          <? if (j+1 === name) { ?>
-          <th class="col-name"><?!= header[j] != null ? header[j] : "" ?></th>
-          <? } else if (j+1 === photo) { ?>
-          <th class="col-photo"><?!= header[j] != null ? header[j] : "" ?></th>
-          <? } else if (header[j] === 'organization') { ?>
-          <th class="col-organization"><?!= header[j] ?></th>
-          <? } else if (header[j] === 'handover_on') { ?>
-          <th class="col-handover_on"><?!= header[j] ?></th>
-          <? } else if (header[j] === 'status') { ?>
-          <th class="col-status"><?!= header[j] ?></th>
-          <? } else if (header[j] === 'admin_note') { ?>
-          <th class="col-admin_note"><?!= header[j] ?></th>
-          <? } else { ?>
-          <th><?!= header[j] != null ? header[j] : "" ?></th>
-          <? } ?>
-          <? } ?>
-          <? } ?>
-        </tr>
-      </thead>
-      <tbody>
-        <? for (var i = 1; i < data.length; i++) { ?>
-        <tr>
-          <td class="col-check"><input type="checkbox" /></td>
-          <? for (var j = 0; j < data[i].length; j++) { ?>
-          <? if (j+1 === registered) { ?>
-          <!-- 列の省略 -->
-          <? } else if (j+1 === email) { ?>
-          <!-- 列の省略 -->
-          <? } else if (j+1 === name) { ?>
-          <td class="col-name" data-email="<?!= data[i][j - 1] ?>">
-            <?!= data[i][j] != null ? data[i][j] : "" ?>
-          </td>
-          <? } else if (j+1 === photo) { ?>
-          <? if (data[i][j] != null && data[i][j] !== "") { ?>
+              <? if (j+1 === registered) { ?>
+                <!-- 列の省略 -->
+              <? } else if (j+1 === email) { ?>
+                <!-- 列の省略 -->
+              <? } else if (j+1 === days) { ?>
+                <!-- 列の省略 -->
+              <? } else { ?>
+                <th><?!= header[j] != null ? header[j] : "" ?></th>
+              <? } ?>
+            <? } ?>
+          </tr>
+        </thead>
+        <tbody>
+          <? for (var i = 1; i < data.length; i++) { ?>
+            <tr data-row-index="<?!= i + 1 ?>">
+              <td><input type="checkbox" class="row-check"></td>
+              <? for (var j = 0; j < data[i].length; j++) { ?>
+                <? if (j+1 === registered) { ?>
+                <!-- 列の省略 -->
+                <? } else if (j+1 === email) { ?>
+                <!-- 列の省略 -->
+                <? } else if (j+1 === name) { ?>
+                  <td data-email="<?!= data[i][email - 1] ?>"><?!= data[i][j] != null ? data[i][j] : "" ?></td>
+                <? } else if (j+1 === photo) { ?>
+                  <? if (data[i][j] != null && data[i][j] !== "") { ?>
 
           <? var imgUrl = "https://lh3.googleusercontent.com/d/" + data[i][j]; ?>
           <td class="col-photo">
@@ -125,5 +101,122 @@
       </tbody>
     </table>
     <? } ?>
+    <script>
+      (function () {
+        const completeButton = document.getElementById('completeButton');
+        if (!completeButton) {
+          return;
+        }
+
+        const discardButton = document.getElementById('discardButton');
+        if (!discardButton) {
+          return;
+        }
+
+        const deleteButton = document.getElementById('deleteButton');
+        if (!deleteButton) {
+          return;
+        }
+
+        const archiveSetLoadingState = (isLoading) => {
+          completeButton.disabled = isLoading;
+          completeButton.textContent = isLoading ? '処理中...' : '撤去済みにする';
+        };
+
+        const discardSetLoadingState = (isLoading) => {
+          discardButton.disabled = isLoading;
+          discardButton.textContent = isLoading ? '処理中...' : '破棄済みにする';
+        };
+
+        const deleteSetLoadingState = (isLoading) => {
+          deleteButton.disabled = isLoading;
+          deleteButton.textContent = isLoading ? '処理中...' : 'データから削除';
+        };
+
+        completeButton.addEventListener('click', () => {
+          const checkedRows = Array.from(
+            document.querySelectorAll('tbody input.row-check:checked')
+          )
+            .map((checkbox) => {
+              const tr = checkbox.closest('tr');
+              return tr ? Number(tr.dataset.rowIndex) : NaN;
+            })
+            .filter((rowNumber) => Number.isInteger(rowNumber));
+
+          if (!checkedRows.length) {
+            alert('チェックされた行がありません。');
+            return;
+          }
+
+          archiveSetLoadingState(true);
+          google.script.run
+            .withSuccessHandler(() => {
+              location.reload();
+            })
+            .withFailureHandler((err) => {
+              alert(err && err.message ? err.message : '処理に失敗しました。');
+              archiveSetLoadingState(false);
+            })
+            .completeRows(checkedRows);
+        });
+
+        discardButton.addEventListener('click', () => {
+          const checkedRows = Array.from(
+            document.querySelectorAll('tbody input.row-check:checked')
+          )
+            .map((checkbox) => {
+              const tr = checkbox.closest('tr');
+              return tr ? Number(tr.dataset.rowIndex) : NaN;
+            })
+            .filter((rowNumber) => Number.isInteger(rowNumber));
+
+          if (!checkedRows.length) {
+            alert('チェックされた行がありません。');
+            return;
+          }
+
+          discardSetLoadingState(true);
+          google.script.run
+            .withSuccessHandler(() => {
+              location.reload();
+            })
+            .withFailureHandler((err) => {
+              alert(err && err.message ? err.message : '処理に失敗しました。');
+              discardSetLoadingState(false);
+            })
+            .discardRows(checkedRows);
+        });
+
+        deleteButton.addEventListener('click', () => {
+          const checkedRows = Array.from(
+            document.querySelectorAll('tbody input.row-check:checked')
+          )
+            .map((checkbox) => {
+              const tr = checkbox.closest('tr');
+              return tr ? Number(tr.dataset.rowIndex) : NaN;
+            })
+            .filter((rowNumber) => Number.isInteger(rowNumber));
+
+          if (!checkedRows.length) {
+            alert('チェックされた行がありません。');
+            return;
+          }
+
+          if (!confirm('選択した行をデータから完全に削除します。この操作は取り消せません。よろしいですか？')) {
+            return;
+          }
+          deleteSetLoadingState(true);
+          google.script.run
+            .withSuccessHandler(() => {
+              location.reload();
+            })
+            .withFailureHandler((err) => {
+              alert(err && err.message ? err.message : '処理に失敗しました。');
+              deleteSetLoadingState(false);
+            })
+            .deleteRows(checkedRows);
+        });
+      })();
+    </script>
   </body>
 </html>
