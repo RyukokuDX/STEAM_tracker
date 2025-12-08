@@ -1,121 +1,13 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <base target="_top">
+    <base target="_top" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
-      table {
-        border-collapse: collapse; /* 枠線の重なりをなくす */
-        width: 100%;
-        margin-top: 20px;
-      }
-      th, td {
-        border: 1px solid #555; /* 枠線を表示 */
-        padding: 8px; /* 余白を追加して見やすく */
-        text-align: left;
-      }
-      th {
-        background-color: #f2f2f2; /* ヘッダー部分をグレーに */
-      }
-      tr:nth-child(even) {
-        background-color: #fafafa; /* 偶数行に薄い色を付ける */
-      }
-      .header-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-        margin-top: 10px;
-      }
-      .button-left {
-        display: flex;
-        gap: 8px;
-      }
-      .button-left button {
-        padding: 8px 16px;
-        font-size: 14px;
-        cursor: pointer;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        background-color: #2196F3;
-        color: white;
-        border-color: #2196F3;
-      }
-      .button-left button:hover {
-        background-color: #0b7dda;
-      }
-      .button-group {
-        display: flex;
-        gap: 8px;
-      }
-      .button-group button {
-        padding: 8px 16px;
-        font-size: 14px;
-        cursor: pointer;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        background-color: #fff;
-      }
-      .button-group button:hover {
-        background-color: #f5f5f5;
-      }
-      .button-group button:first-child {
-        background-color: #4CAF50;
-        color: white;
-        border-color: #4CAF50;
-      }
-      .button-group button:first-child:hover {
-        background-color: #45a049;
-      }
-      .button-group button:nth-child(2) {
-        background-color: #ff9800;
-        color: white;
-        border-color: #ff9800;
-      }
-      .button-group button:nth-child(2):hover {
-        background-color: #e68900;
-      }
-      .button-group button:last-child {
-        background-color: #f44336;
-        color: white;
-        border-color: #f44336;
-      }
-      .button-group button:last-child:hover {
-        background-color: #da190b;
-      }
-      td[data-email] {
-        position: relative;
-        cursor: pointer;
-      }
-      td[data-email]:hover::after {
-        content: attr(data-email);
-        position: absolute;
-        bottom: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: #333;
-        color: white;
-        padding: 6px 10px;
-        border-radius: 4px;
-        white-space: nowrap;
-        z-index: 1000;
-        margin-bottom: 5px;
-        font-size: 12px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      }
-      td[data-email]:hover::before {
-        content: '';
-        position: absolute;
-        bottom: 95%;
-        left: 50%;
-        transform: translateX(-50%);
-        border: 5px solid transparent;
-        border-top-color: #333;
-        z-index: 1000;
-      }
+      <?!= include('style'); ?>
     </style>
   </head>
   <body>
-    <h1>スプレッドシート：<?!= sheetName ?></h1>
     <div class="header-container">
       <div class="button-left">
         <button>アーカイブシートを見る</button>
@@ -127,13 +19,22 @@
       </div>
     </div>
     <? if (!data || data.length === 0) { ?>
-      <p>データがありません</p>
+    <p>データがありません</p>
     <? } else { ?>
-      <table>
-        <thead>
-          <tr>
-            <th>check</th>
-            <? 
+    <table>
+      <colgroup>
+        <col class="col-check" />
+        <col class="col-name" />
+        <col class="col-organization" />
+        <col class="col-photo" />
+        <col class="col-handover_on" />
+        <col class="col-status" />
+        <col class="col-admin_note" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th class="col-check">check</th>
+          <? 
               var header = data[0];
               for (var j = 0; j < header.length; j++) {
             ?>
@@ -163,21 +64,42 @@
                 <? } else if (j+1 === photo) { ?>
                   <? if (data[i][j] != null && data[i][j] !== "") { ?>
 
-                    <? var imgUrl = "https://lh3.googleusercontent.com/d/" + data[i][j]; ?>
-                    <td><img src="<?!= imgUrl ?>" style="width:40px; height:40px; border-radius:50%;"></td>
-                  <? } else { ?>
-                    <td></td>
-                  <? } ?>
-                <? } else if (j+1 === days) { ?>
-                <!-- 列の省略 -->
-                <? } else { ?>
-                  <td><?!= data[i][j] != null ? data[i][j] : "" ?></td>
-                <? } ?>
-              <? } ?>
-            </tr>
+          <? var imgUrl = "https://lh3.googleusercontent.com/d/" + data[i][j]; ?>
+          <td class="col-photo">
+            <img src="<?!= imgUrl ?>" />
+          </td>
+          <? } else { ?>
+          <td class="col-photo"></td>
           <? } ?>
-        </tbody>
-      </table>
+          <? } else if (j+1 === days) { ?>
+          <!-- 列の省略 -->
+          <? } else { ?>
+          <? var cellHeader = header[j]; ?>
+          <? if (cellHeader === 'organization') { ?>
+          <td class="col-organization">
+            <?!= data[i][j] != null ? data[i][j] : "" ?>
+          </td>
+          <? } else if (cellHeader === 'handover_on') { ?>
+          <td class="col-handover_on">
+            <?!= data[i][j] != null ? data[i][j] : "" ?>
+          </td>
+          <? } else if (cellHeader === 'status') { ?>
+          <td class="col-status">
+            <?!= data[i][j] != null ? data[i][j] : "" ?>
+          </td>
+          <? } else if (cellHeader === 'admin_note') { ?>
+          <td class="col-admin_note">
+            <?!= data[i][j] != null ? data[i][j] : "" ?>
+          </td>
+          <? } else { ?>
+          <td><?!= data[i][j] != null ? data[i][j] : "" ?></td>
+          <? } ?>
+          <? } ?>
+          <? } ?>
+        </tr>
+        <? } ?>
+      </tbody>
+    </table>
     <? } ?>
     <script>
       (function () {
