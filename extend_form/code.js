@@ -137,7 +137,7 @@ function notifyExtensionRequest(results)
               contents: [
                 {
                   type: "text",
-                  text: "延長申請",
+                  text: `延長申請 No.${id}`,
                   weight: "bold",
                   size: "xl"
                 },
@@ -260,7 +260,7 @@ function approveRequest(id, newDate) {
   const body = `${name}さん（${organ}）\n\n延長申請が許可されました。\n新しい明け渡し日: ${newDate}`;
   sendEmail(email, subject, body);
    
-  sendLineMessage(USER_ID, `延長を ${newDate} まで許可しました。`);
+  sendLineMessage(USER_ID, `延長申請No.${id}を ${newDate} まで許可しました。`);
 }
 
 // 延長申請の却下
@@ -283,7 +283,7 @@ function rejectRequest(id) {
   const body = `${name}さん（${organ}）\n\n延長申請が却下されました。\n`;
   sendEmail(email, subject, body);
 
-  sendLineMessage(USER_ID, `延長申請を却下しました。`);
+  sendLineMessage(USER_ID, `延長申請No.${id}を却下しました。`);
 }
 
 // メールを送信
