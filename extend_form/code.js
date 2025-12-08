@@ -18,11 +18,52 @@ const DAYS_UNTIL_HANDOVER = 6;  // 明け渡し日までの日数（計算列）
 const STATUS = 7;               // active / archived / pending
 const ADMIN_NOTE = 8;           // 管理者備考
 
+const DOMAIN = 'mail.ryukoku.ac.jp';
+
 // === HTMLフォーム表示 ===
 function doGet() {
   return HtmlService.createHtmlOutputFromFile("index")
     .setTitle("延長申請フォーム")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+// function doGet() {
+//   const auth = getVerifiedEmail();
+//   if (auth.error) {
+//     Logger.log(auth.email);
+//     return HtmlService.createHtmlOutput(auth.error)
+//       .setTitle('アクセス拒否');
+//   }
+ 
+//   const tpl = HtmlService.createTemplateFromFile('index');
+//   tpl.email = auth.email;
+//   Logger.log(`認証成功: ${tpl.email}`);
+//   return tpl.evaluate()
+//     .setTitle("延長申請フォーム");
+// }
+
+function getVerifiedEmail() {
+  try {
+    const email = Session.getActiveUser().getEmail();
+    if (!email) {
+      Logger.log("[認証エラー] メールアドレスの取得に失敗");
+      return {
+        error: "認証に失敗しました。ブラウザを再読み込みして再度サインインしてください。"
+      };
+    }
+    if (!email.endsWith('@' + DOMAIN)) {
+      Logger.log(`[認証エラー] 無効なドメイン: ${email}`);
+      return {
+        error: `このフォームは ${DOMAIN} ドメインのみ利用できます。`
+      };
+    }
+    return { email };
+  } catch (err) {
+    Logger.log(`[認証エラー] 例外発生: ${err}`);
+    return {
+      error: "認証中にエラーが発生しました。ブラウザを再読み込みしてお試しください。"
+    };
+  }
 }
 
 // 年度末の日付を取得
