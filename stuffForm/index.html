@@ -95,11 +95,11 @@
     <div class="controls">
       <label class="mt-6">
         <input id="confirm6" type="checkbox" />
-        私は「第6条（明け渡し日を超過した物品の取り扱い）」を読み、内容を理解しました
+        私は「第6条（明け渡し日を超過した物品の取り扱い）」を読み、内容を理解しました（必須）
       </label>
 
       <div>
-        <div class="note">第6条に関する確認クイズ</div>
+        <div class="note">第6条に関する確認クイズ（必須）</div>
         <select id="quiz" aria-label="第6条に関するクイズ" class="form-control">
           <option value="">-- 選択してください --</option>
           <option value="a">明け渡し日を超えた場合、管理者はユーザーに事前連絡して必ず保管する</option>
@@ -402,7 +402,9 @@
         return;
       }
 
-      if (!email.endsWith('@' + '<?!= domain ?>')){
+      const emailLower = email.toLowerCase();
+      const domainLower = '<?!= domain ?>'.toLowerCase();
+      if (!emailLower.endsWith('@' + domainLower)){
         msgEl.className = 'error';
         msgEl.textContent = '学内のメールアドレスを使用してください（@<?!= domain ?>）。';
         return;
