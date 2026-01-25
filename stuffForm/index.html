@@ -402,7 +402,9 @@
         return;
       }
 
-      if (!email.endsWith('@' + '<?!= domain ?>')){
+      const emailLower = email.toLowerCase();
+      const domainLower = '<?!= domain ?>'.toLowerCase();
+      if (!emailLower.endsWith('@' + domainLower)){
         msgEl.className = 'error';
         msgEl.textContent = '学内のメールアドレスを使用してください（@<?!= domain ?>）。';
         return;
