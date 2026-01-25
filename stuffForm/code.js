@@ -33,8 +33,6 @@ function getFiscalYearEnd(todayDate) {
   return m;
 }
 
-// メールアドレスでのドメインチェックを無効化中(後日実装するかも)
-
 // /**
 //  * メールアドレスを取得し、ドメインをチェック
 //  * @returns {Object} {email: string, error: string}
@@ -134,6 +132,7 @@ function submitForm(payload) {
   }
 
   const email = (payload.email || "").trim();
+  const emailLower = email.toLowerCase();
   if (!email) {
     return {
       status: "error",
@@ -148,7 +147,7 @@ function submitForm(payload) {
   }
 
   // ドメインチェック
-  if (!email.endsWith('@' + DOMAIN)) {
+  if (!emailLower.endsWith('@' + DOMAIN.toLowerCase())) {
     return {
       status: "error",
       message: `学内のメールアドレス（@${DOMAIN}）のみ利用可能です`
@@ -278,9 +277,14 @@ function uploadPhoto(dataUrl, filename) {
     if (!m) throw new Error('無効なデータURLです');
     const contentType = m[1];
     
-    // もし画像でなければエラーにして弾く
-    if (!contentType.startsWith('image/')) {
-      throw new Error('許可されていないファイル形式です。画像ファイルのみアップロード可能です。');
+    // 許可する画像 MIME タイプをホワイトリストで明示的に制限する
+    const allowedImageTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp'
+    ];
+    if (!allowedImageTypes.includes(contentType)) {
+      throw new Error('許可されていないファイル形式です。JPEG/PNG/WebP のみアップロード可能です。');
     }
 
     const b64 = m[2];
