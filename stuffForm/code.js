@@ -9,6 +9,21 @@ const DOMAIN = 'mail.ryukoku.ac.jp'; // ドメインチェック用
 const LOCK_TIMEOUT_MS = 30000; // 30秒
 const MAX_NAME_LENGTH = 50;    // 氏名の最大文字数
 
+// メールを送信
+function sendEmail(to, subject, body) {
+  try {
+    if (!to || !subject || !body) {
+      throw new Error("送信先、件名、本文のいずれかが空です。");
+    }
+    GmailApp.sendEmail(to, subject, body);
+    Logger.log(`メール送信成功: ${to}`);
+    return { success: true, message: "" };
+  } catch (error) {
+    Logger.log(`メール送信失敗: ${to}\n理由: ${error.message}`);
+    return { success: false, message: error.message };
+  }
+}
+
 /**
  * テンプレートから他ファイル内容を取り込むためのユーティリティ
  * 例: <style><?!= include('style'); ?></style>
@@ -244,9 +259,36 @@ function submitForm(payload) {
     ]);
 
     Logger.log(`[フォーム送信] 成功: ${email}, date=${payload.date}`);
+
+    // 確認メール送信
+    const emailSubject = "【STEAMコモンズ】物品登録完了のお知らせ";
+    const emailBody = `${name} 様
+
+物品登録フォームからの登録を受け付けました。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ 登録内容
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+氏名: ${name}
+団体名: ${payload.organization || "（未入力）"}
+明け渡し日: ${Utilities.formatDate(dateResult.date, tz, "yyyy年MM月dd日")}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+明け渡し日までに物品の撤去をお願いいたします。
+
+※このメールは自動送信されています。
+※心当たりのない場合は、お手数ですがSTEAMコモンズまでお越しください。
+
+──────────────────────────────
+STEAMコモンズ
+龍谷大学 瀬田キャンパス 智光館2F
+──────────────────────────────
+`;
+    sendEmail(email, emailSubject, emailBody);
+
     return {
       status: "ok",
-      message: `送信完了（年度末: ${Utilities.formatDate(fiscalEnd, tz, "yyyy-MM-dd")}）`
+      message: `送信完了しました。確認メールを ${email} に送信しました。届かない場合は迷惑メールフォルダをご確認ください。`
     };
 
   } catch (err) {
