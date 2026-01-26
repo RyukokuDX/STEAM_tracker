@@ -56,7 +56,7 @@ function handoverDayRemind() {
                     このメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
       Logger.log(text);
       mailFailLog = sendEmail(email, subject, body);
-      console.log(mailFailLog);
+      Logger.log(mailFailLog);
       sendLineMessage(USER_ID, text, mailFailLog);
     }
   }
