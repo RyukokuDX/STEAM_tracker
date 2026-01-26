@@ -40,8 +40,7 @@ function handoverDayRemind() {
     {
       const text = `[リマインド]${organ}の${name}さんの明け渡し日まであと3日です。`;
       const subject = `STEAMコモンズ 明け渡し3日前リマインド通知`;
-      const body = `${name}さん。物品の明け渡し3日前となりました。\n3日以内に物品の撤去、又は以下のURLから延長申請を行ってください。\n${FORM_URL}\n\n
-                    このメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
+      const body = `${name}さん。物品の明け渡し3日前となりました。\n3日以内に物品の撤去、又は以下のURLから延長申請を行ってください。\n${FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
       
       Logger.log(text);
 
@@ -52,8 +51,7 @@ function handoverDayRemind() {
     {
       const text = `[リマインド]${organ}の${name}さんの明け渡し当日です。`;
       const subject = `STEAMコモンズ 明け渡し当日リマインド通知`;
-      const body = `${name}さん。明け渡し当日となりました。\n本日中に物品の撤去、又は以下のURLから延長申請を行ってください。\n${FORM_URL}\n\n
-                    このメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
+      const body = `${name}さん。明け渡し当日となりました。\n本日中に物品の撤去、又は以下のURLから延長申請を行ってください。\n${FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
       Logger.log(text);
       mailFailLog = sendEmail(email, subject, body);
       Logger.log(mailFailLog);
