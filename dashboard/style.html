@@ -13,10 +13,10 @@
 /* requested washi-like cream (updated) */
 --card: #ffffff;
 /* solid white card for clear edge */
---border: rgba(0, 0, 0, 0.12);
---table-border: #cbbf99;
+--border: rgba(0, 0, 0, 0.20);
+--table-border: #a89970;
 /* warm border color fits washi */
---table-grid: rgba(0, 0, 0, 0.12);
+--table-grid: rgba(0, 0, 0, 0.20);
 --text: #1f2937;
 /* slate-800 */
 --muted: #6b7280;
@@ -47,11 +47,12 @@
 
 /* 列幅のトークン（必要に応じて数値を変えるだけでOK） */
 --col-check-width: 3ch;
---col-name-width: 5ch;
---col-organization-width: 5ch;
---col-photo-width: 100px;
+--col-name-width: 6ch;
+--col-organization-width: 6ch;
+--col-photo-width: 8ch;
+--col-photo-height: 10ch;
 --col-handover_on-width: 4ch;
---col-status-width: 4ch;
+--col-status-width: 2ch;
 --col-admin_note-width: 10ch;
 
 /* Font size tokens */
@@ -96,6 +97,16 @@ color: var(--text);
 font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo,
 sans-serif;
 line-height: 1.6;
+}
+
+/* Sheet title (管理シート / アーカイブシート) */
+.sheet-title {
+font-size: 1.8rem;
+font-weight: bold;
+color: var(--text);
+margin: 16px 12px 12px;
+padding-left: 12px;
+border-left: 4px solid var(--primary);
 }
 
 /* Header bar */
@@ -322,16 +333,24 @@ text-align: center;
 
 /* 写真セルと画像のスタイル */
 tbody td.col-photo {
-padding: 0.5ch;
+padding: 0;
+width: var(--col-photo-width);
+min-width: var(--col-photo-width);
+max-width: var(--col-photo-width);
+height: var(--col-photo-height);
+min-height: var(--col-photo-height);
+max-height: var(--col-photo-height);
+position: relative;
+overflow: hidden;
 }
 
 tbody td.col-photo img {
-display: block;
+position: absolute;
+top: 0;
+left: 0;
 width: 100%;
-max-width: 100%;
-box-sizing: border-box;
-aspect-ratio: 1 / 1;
-object-fit: cover;
+height: 100%;
+object-fit: contain;
 border-radius: 6px;
 }
 
@@ -466,4 +485,102 @@ line-height: 1.3;
 
 tbody td.col-admin_note {
 line-height: 1.4;
+}
+
+/* ================= View distinction styles ================= */
+
+/* View title group */
+.view-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* View badge base style */
+.view-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+/* 管理シート badge - green/emerald theme */
+.main-badge {
+  background: linear-gradient(135deg, var(--primary), var(--primary-600));
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+/* アーカイブ badge - amber/orange theme */
+.archive-badge {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+/* Header container variations */
+.header-container.main-header {
+  border-left: 6px solid var(--primary);
+}
+
+.header-container.archive-header {
+  border-left: 6px solid #f59e0b;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(255, 247, 237, 1));
+}
+
+/* Archive view styling */
+#archiveView {
+  --archive-accent: #f59e0b;
+  --archive-accent-dark: #d97706;
+}
+
+#archiveView table {
+  border-color: #d97706;
+}
+
+#archiveView thead th {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #92400e;
+}
+
+#archiveView tbody tr:nth-child(even) {
+  background-color: rgba(245, 158, 11, 0.04);
+}
+
+#archiveView tbody tr:hover {
+  background-color: rgba(245, 158, 11, 0.08);
+}
+
+#archiveView tbody tr:has(input[type="checkbox"]:checked) {
+  background-color: rgba(245, 158, 11, 0.16);
+  outline-color: rgba(245, 158, 11, 0.35);
+}
+
+#archiveView table input[type="checkbox"] {
+  accent-color: #f59e0b;
+}
+
+/* Archive view button styles */
+#archiveView .button-group button:first-child {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+#archiveView .button-group button:first-child:hover {
+  background-color: var(--primary-600);
+}
+
+/* Dark mode adjustments for archive view */
+@media (prefers-color-scheme: dark) {
+  .header-container.archive-header {
+    background: linear-gradient(135deg, rgba(18, 26, 26, 1), rgba(30, 25, 15, 1));
+  }
+  
+  #archiveView thead th {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+  }
 }
