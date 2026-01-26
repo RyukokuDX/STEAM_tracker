@@ -257,7 +257,8 @@ function approveRequest(id, newDate) {
 
   // 申請者にメール送信
   const subject = `STEAMコモンズ 延長申請許可通知`;
-  const body = `${name}さん（${organ}）\n\n延長申請が許可されました。\n新しい明け渡し日: ${newDate}`;
+  const body = `${name}さん（${organ}）\n\n延長申請が許可されました。\n新しい明け渡し日: ${newDate}\n\n
+                このメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`;
   sendEmail(email, subject, body);
    
   sendLineMessage(USER_ID, `延長申請No.${id}を ${newDate} まで許可しました。`);
@@ -280,7 +281,8 @@ function rejectRequest(id) {
 
   // 申請者にメール送信
   const subject = `STEAMコモンズ 延長申請却下通知`;
-  const body = `${name}さん（${organ}）\n\n延長申請が却下されました。\n`;
+  const body = `${name}さん（${organ}）\n\n延長申請が却下されました。\n\n
+                このメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`;
   sendEmail(email, subject, body);
 
   sendLineMessage(USER_ID, `延長申請No.${id}を却下しました。`);
