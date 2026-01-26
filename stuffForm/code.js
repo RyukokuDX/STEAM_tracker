@@ -5,9 +5,9 @@ if (!SPREADSHEET_ID) {
     "SPREADSHEET_ID script property is not set. Please set it in the Apps Script dashboard under Project Settings > Script Properties."
   );
 }
-const DOMAIN = 'mail.ryukoku.ac.jp';
+const DOMAIN = 'mail.ryukoku.ac.jp'; // ドメインチェック用
 const LOCK_TIMEOUT_MS = 30000; // 30秒
-const MAX_NAME_LENGTH = 50;    // 名前の最大文字数
+const MAX_NAME_LENGTH = 50;    // 氏名の最大文字数
 
 /**
  * テンプレートから他ファイル内容を取り込むためのユーティリティ
@@ -33,62 +33,67 @@ function getFiscalYearEnd(todayDate) {
   return m;
 }
 
-/**
- * メールアドレスを取得し、ドメインをチェック
- * @returns {Object} {email: string, error: string}
- */
-function getVerifiedEmail() {
-  try {
-    const email = Session.getActiveUser().getEmail();
-    if (!email) {
-      Logger.log("[認証エラー] メールアドレスの取得に失敗");
-      return {
-        error: "認証に失敗しました。ブラウザを再読み込みして再度サインインしてください。"
-      };
-    }
-    if (!email.endsWith('@' + DOMAIN)) {
-      Logger.log(`[認証エラー] 無効なドメイン: ${email}`);
-      return {
-        error: `このフォームは ${DOMAIN} ドメインのみ利用できます。`
-      };
-    }
-    return { email };
-  } catch (err) {
-    Logger.log(`[認証エラー] 例外発生: ${err}`);
-    return {
-      error: "認証中にエラーが発生しました。ブラウザを再読み込みしてお試しください。"
-    };
-  }
-}
+// /**
+//  * メールアドレスを取得し、ドメインをチェック
+//  * @returns {Object} {email: string, error: string}
+//  */
+// function getVerifiedEmail() {
+//   try {
+//     const email = Session.getActiveUser().getEmail();
+//     if (!email) {
+//       Logger.log("[認証エラー] メールアドレスの取得に失敗");
+//       return {
+//         error: "認証に失敗しました。ブラウザを再読み込みして再度サインインしてください。"
+//       };
+//     }
+//     if (!email.endsWith('@' + DOMAIN)) {
+//       Logger.log(`[認証エラー] 無効なドメイン: ${email}`);
+//       return {
+//         error: `このフォームは ${DOMAIN} ドメインのみ利用できます。`
+//       };
+//     }
+//     return { email };
+//   } catch (err) {
+//     Logger.log(`[認証エラー] 例外発生: ${err}`);
+//     return {
+//       error: "認証中にエラーが発生しました。ブラウザを再読み込みしてお試しください。"
+//     };
+//   }
+// }
 
 /**
  * フォームを表示
  * X-Frame-Options: SAMEORIGIN で埋め込み制限（セキュリティ対策）
  */
 function doGet(e) {
-  const auth = getVerifiedEmail();
-  if (auth.error) {
-    return HtmlService.createHtmlOutput(auth.error)
-      // モバイル端末でエラーメッセージを適切に表示するためのviewport設定を追加
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover')
-      .setTitle('アクセス拒否');
-  }
+  // メールドメイン制限は一時停止中
+  // const auth = getVerifiedEmail();
+  // if (auth.error) {
+  //   return HtmlService.createHtmlOutput(auth.error)
+  //     // モバイル端末でエラーメッセージを適切に表示するためのviewport設定を追加
+  //     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover')
+  //     .setTitle('アクセス拒否');
+  // }
 
   const tpl = HtmlService.createTemplateFromFile('index');
   const now = new Date();
   const tz = Session.getScriptTimeZone();
   tpl.fiscalEndStr = Utilities.formatDate(getFiscalYearEnd(now), tz, "yyyy-MM-dd");
   tpl.todayStr = Utilities.formatDate(now, tz, "yyyy-MM-dd");
-  tpl.email = auth.email;
+  // NOTE: Apps Script HTML templates evaluate scriptlets even inside HTML comments.
+  // index.html contains commented-out `<?= email ?>` / `<?= domain ?>` placeholders,
+  // so define safe defaults to avoid ReferenceError when domain auth is disabled.
+  tpl.email = '';
+  // tpl.email = auth.email;
   tpl.domain = DOMAIN;
-  
+
   // Avoid calling setXFrameOptionsMode because some GAS runtimes may not
   // expose the XFrameOptionsMode enum (leading to a null 'mode' error).
   // If you need to change framing behavior, set it in the Apps Script
   // deployment settings or use the explicit ALLOWALL value if available.
   return tpl.evaluate()
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover')
-    .setTitle("年度末制限フォーム");
+    .setTitle("物品登録フォーム");
 }
 
 /**
@@ -126,25 +131,41 @@ function submitForm(payload) {
     };
   }
 
-  const auth = getVerifiedEmail();
-  if (auth.error) {
-    return { 
+  const email = (payload.email || "").trim();
+  const emailLower = email.toLowerCase();
+  if (!email) {
+    return {
       status: "error",
-      message: auth.error
+      message: "メールアドレスは必須です"
+    };
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return {
+      status: "error",
+      message: "メールアドレスの形式が不正です"
     };
   }
 
-  // 名前の必須チェックと文字数制限
-  if (!payload.name || payload.name.trim().length === 0) {
+  // ドメインチェック
+  if (!emailLower.endsWith('@' + DOMAIN.toLowerCase())) {
     return {
       status: "error",
-      message: "名前は必須です"
+      message: `学内のメールアドレス（@${DOMAIN}）のみ利用可能です`
     };
   }
-  if (payload.name.length > MAX_NAME_LENGTH) {
+
+  // 氏名の必須チェックと文字数制限（トリム後で判定）
+  const name = (payload.name || "").trim();
+  if (name.length === 0) {
     return {
       status: "error",
-      message: `名前は${MAX_NAME_LENGTH}文字以内で入力してください`
+      message: "氏名は必須です"
+    };
+  }
+  if (name.length > MAX_NAME_LENGTH) {
+    return {
+      status: "error",
+      message: `氏名は${MAX_NAME_LENGTH}文字以内で入力してください`
     };
   }
 
@@ -212,8 +233,8 @@ function submitForm(payload) {
     const tz = Session.getScriptTimeZone();
     sh.appendRow([
       new Date(),
-      auth.email,
-      payload.name.trim(),
+      email,
+      name,
       payload.organization || "",
       payload.photo || "",
       Utilities.formatDate(dateResult.date, tz, "yyyy/MM/dd"),
@@ -222,7 +243,7 @@ function submitForm(payload) {
       ""
     ]);
 
-    Logger.log(`[フォーム送信] 成功: ${auth.email}, date=${payload.date}`);
+    Logger.log(`[フォーム送信] 成功: ${email}, date=${payload.date}`);
     return {
       status: "ok",
       message: `送信完了（年度末: ${Utilities.formatDate(fiscalEnd, tz, "yyyy-MM-dd")}）`
@@ -255,9 +276,27 @@ function uploadPhoto(dataUrl, filename) {
     const m = dataUrl.match(/^data:(.+);base64,(.*)$/);
     if (!m) throw new Error('無効なデータURLです');
     const contentType = m[1];
+    
+    // 許可する画像 MIME タイプをホワイトリストで明示的に制限する
+    const allowedImageTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp'
+    ];
+    if (!allowedImageTypes.includes(contentType)) {
+      throw new Error('許可されていないファイル形式です。JPEG/PNG/WebP のみアップロード可能です。');
+    }
+
     const b64 = m[2];
     const bytes = Utilities.base64Decode(b64);
-    const blobName = filename || ('photo_' + new Date().getTime());
+    
+    // 画像がJPEGなら拡張子を .jpg に強制する（中身と拡張子の不一致を防ぐ）
+    let saveName = filename || ('photo_' + new Date().getTime());
+    if (contentType === 'image/jpeg') {
+      saveName = saveName.replace(/\.[^.]+$/, '') + '.jpg';
+    }
+
+    const blobName = saveName;
     const blob = Utilities.newBlob(bytes, contentType, blobName);
 
     // Target folder (指定されたフォルダに保存)

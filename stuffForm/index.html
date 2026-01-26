@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
-  <title>物品登録フォーム（利用規約確認）</title>
+  <title>物品登録フォーム</title>
   <style><?!= include('style'); ?></style>
 </head>
 
@@ -13,14 +13,14 @@
   <div class="card">
     <div class="header">
       <div class="heading-lg">利用規約の確認</div> 
-      <div class="small">施行日: 2025-01-01</div>
+      <div class="small">施行日: 2026-01-19</div>
     </div>
 
     <div id="termsBox" class="terms-box" aria-label="利用規約全文">
       <!-- 規約全文（省略なし） -->
       <section id="termsText">
-        <h1 style="display:none">スチームコモンズ 物品管理システム 利用規約（草案）</h1>
-        <p class="termsdate">施行日: 2025-01-01 / 最終改定日: 2025-01-01</p>
+        <h1 style="display:none">スチームコモンズ 物品管理システム 利用規約</h1>
+        <p class="termsdate">施行日: 2026-01-19 / 最終改定日: 2026-01-19</p>
 
         <h3>1. 目的</h3>
         <ul>
@@ -95,11 +95,11 @@
     <div class="controls">
       <label class="mt-6">
         <input id="confirm6" type="checkbox" />
-        私は「第6条（明け渡し日を超過した物品の取り扱い）」を読み、内容を理解しました（必須）
+        私は「第6条（明け渡し日を超過した物品の取り扱い）」を読み、内容を理解しました
       </label>
 
       <div>
-        <div class="note">第6条に関する確認クイズ（必須）</div>
+        <div class="note">第6条に関する確認クイズ</div>
         <select id="quiz" aria-label="第6条に関するクイズ" class="form-control">
           <option value="">-- 選択してください --</option>
           <option value="a">明け渡し日を超えた場合、管理者はユーザーに事前連絡して必ず保管する</option>
@@ -124,7 +124,7 @@
 
     <div class="field">
       <label for="name">氏名</label>
-      <input id="name" type="text" autocomplete="name" class="form-control" />
+      <input id="name" type="text" autocomplete="name" class="form-control" maxlength="50" />
     </div>
 
     <div class="field">
@@ -138,9 +138,11 @@
     </div>
 
     <div class="field">
-      <label for="email">メール（自動入力・編集不可）</label>
-      <input id="email" type="email" value="<?= email ?>" readonly class="form-control" />
-      <div class="small">サインイン中のアカウントが自動入力されています（許可ドメイン: <?= domain ?>）。</div>
+      <label for="email">メールアドレス</label>
+      <input id="email" type="email" class="form-control" />
+
+      <!-- <input id="email" type="email" value="<?= email ?>" readonly class="form-control" /> -->
+      <!-- <div class="small">サインイン中のアカウントが自動入力されています（許可ドメイン: <?= domain ?>）。</div> -->
     </div>
 
     <div class="field">
@@ -159,6 +161,64 @@
   <script>
     const FISCAL_END = "<?= fiscalEndStr ?>";
     const TODAY = "<?= todayStr ?>";
+
+    // 画像をアップロード前にリサイズ/圧縮して payload サイズ超過を避ける。
+    // - 既存コードが processImage() を呼ぶが未定義だと送信が止まるため、ここで提供する。
+    // - 返り値: dataURL（JPEG）。失敗時は reject。
+    function processImage(dataUrl) {
+      return new Promise(function(resolve, reject) {
+        try {
+          if (!dataUrl || typeof dataUrl !== 'string') {
+            reject(new Error('画像データが不正です'));
+            return;
+          }
+
+          const img = new Image();
+          img.onload = function() {
+            try {
+              const maxSide = 1280; // 長辺最大(px)
+              let w = img.naturalWidth || img.width;
+              let h = img.naturalHeight || img.height;
+
+              if (!w || !h) {
+                reject(new Error('画像サイズの取得に失敗しました'));
+                return;
+              }
+
+              const scale = Math.min(1, maxSide / Math.max(w, h));
+              const outW = Math.max(1, Math.round(w * scale));
+              const outH = Math.max(1, Math.round(h * scale));
+
+              const canvas = document.createElement('canvas');
+              canvas.width = outW;
+              canvas.height = outH;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) {
+                reject(new Error('Canvas が利用できません'));
+                return;
+              }
+
+              ctx.drawImage(img, 0, 0, outW, outH);
+
+              // 写真用途なのでJPEG化して軽量化（PNGのままだと重くなりがち）
+              const quality = 0.85;
+              const out = canvas.toDataURL('image/jpeg', quality);
+              resolve(out);
+            } catch (e) {
+              reject(e);
+            }
+          };
+
+          img.onerror = function() {
+            reject(new Error('画像の読み込みに失敗しました'));
+          };
+
+          img.src = dataUrl;
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }
 
     // ズーム抑止はアクセシビリティ観点でデフォルト無効。
     // 有効化したい場合は ENABLE_ZOOM_LOCK を true に変更。
@@ -336,6 +396,20 @@
         return;
       }
 
+      if (!email){
+        msgEl.className = 'error';
+        msgEl.textContent = 'メールアドレスは必須です。';
+        return;
+      }
+
+      const emailLower = email.toLowerCase();
+      const domainLower = '<?!= domain ?>'.toLowerCase();
+      if (!emailLower.endsWith('@' + domainLower)){
+        msgEl.className = 'error';
+        msgEl.textContent = '学内のメールアドレスを使用してください（@<?!= domain ?>）。';
+        return;
+      }
+
       const min = document.getElementById('date').min;
       const max = document.getElementById('date').max;
       if (selected < min || selected > max){
@@ -402,29 +476,37 @@
         const reader = new FileReader();
         reader.onload = function(e) {
           const dataUrl = e.target.result;
-          processImage(dataUrl).then(function(comped){
-            // Upload the photo first, get back fileId
-            google.script.run
-              .withSuccessHandler(function(res){
-                if (res && res.status === 'ok'){
-                  payload.photo = res.id;
-                  doSubmit(payload);
-                } else {
+          processImage(dataUrl)
+            .then(function(comped){
+              // Upload the photo first, get back fileId
+              google.script.run
+                .withSuccessHandler(function(res){
+                  if (res && res.status === 'ok'){
+                    payload.photo = res.id;
+                    doSubmit(payload);
+                  } else {
+                    msgEl.className = 'error';
+                    msgEl.textContent = '画像アップロードに失敗しました: ' + (res && res.message ? res.message : '不明なエラー');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalSubmitText || '送信';
+                  }
+                })
+                .withFailureHandler(function(err){
                   msgEl.className = 'error';
-                  msgEl.textContent = '画像アップロードに失敗しました: ' + (res && res.message ? res.message : '不明なエラー');
+                  msgEl.textContent = '画像アップロードでサーバ接続に失敗しました。';
+                  console.error(err);
                   submitBtn.disabled = false;
                   submitBtn.textContent = originalSubmitText || '送信';
-                }
-              })
-              .withFailureHandler(function(err){
-                msgEl.className = 'error';
-                msgEl.textContent = '画像アップロードでサーバ接続に失敗しました。';
-                console.error(err);
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalSubmitText || '送信';
-              })
-              .uploadPhoto(dataUrl, file.name);
-          });
+                })
+                .uploadPhoto(comped, file.name);
+            })
+            .catch(function(err){
+              msgEl.className = 'error';
+              msgEl.textContent = '画像処理に失敗しました。別の画像でお試しください。';
+              console.error(err);
+              submitBtn.disabled = false;
+              submitBtn.textContent = originalSubmitText || '送信';
+            });
         };
         reader.onerror = function(err){
           msgEl.className = 'error';
