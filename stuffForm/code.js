@@ -284,7 +284,13 @@ STEAMコモンズ
 龍谷大学 瀬田キャンパス 智光館2F
 ──────────────────────────────
 `;
-    sendEmail(email, emailSubject, emailBody);
+    const emailResult = sendEmail(email, emailSubject, emailBody);
+    if (!emailResult.success) {
+      return {
+        status: "error",
+        message: `送信は完了しましたが、確認メールの送信に失敗しました。STEAMコモンズの管理者までお問い合わせください。（理由: ${emailResult.message}）`
+      };
+    }
 
     return {
       status: "ok",
