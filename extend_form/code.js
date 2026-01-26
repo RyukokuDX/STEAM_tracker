@@ -67,7 +67,7 @@ function getVerifiedEmail() {
 }
 
 // 年度末の日付を取得
-function GetFiscalYearEnd(dateStr) {
+function getFiscalYearEnd(dateStr) {
   const date = new Date(dateStr);
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
