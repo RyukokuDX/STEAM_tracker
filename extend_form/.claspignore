@@ -33,7 +33,6 @@ jest.config.ts
 jest.config.*
 
 # 明示的に無視する追加ファイル
-jest.config.js
 tests/__mocks__/google-apps-script.js
 tests/setup-gas.js
 
