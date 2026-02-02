@@ -17,6 +17,7 @@ const DriveLinkColumn = 5;
 const handover = 6;
 const days_until_handover = 7;
 const statusColumn = 8;
+const adminNoteColumn = 9;
 
 /**
  * テンプレートから他ファイル内容を取り込むためのユーティリティ
@@ -265,8 +266,6 @@ function updateAdminNote(rowNumber, note) {
     throw new Error(`シート "${sn}" が見つかりません。`);
   }
 
-  // admin_note列（9列目）に値をセット
-  const adminNoteColumn = 9;
   sourceSheet.getRange(row, adminNoteColumn).setValue(note);
   
   return { success: true };
@@ -286,8 +285,6 @@ function updateArchiveAdminNote(rowNumber, note) {
     throw new Error(`シート "${archiveSheetName}" が見つかりません。`);
   }
 
-  // admin_note列（9列目）に値をセット
-  const adminNoteColumn = 9;
   archiveSheet.getRange(row, adminNoteColumn).setValue(note);
   
   return { success: true };

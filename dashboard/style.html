@@ -487,51 +487,7 @@ tbody td.col-admin_note {
 line-height: 1.4;
 }
 
-/* ================= View distinction styles ================= */
-
-/* View title group */
-.view-title-group {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* View badge base style */
-.view-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 16px;
-  font-size: 18px;
-  font-weight: 700;
-  border-radius: 20px;
-  letter-spacing: 0.5px;
-}
-
-/* 管理シート badge - green/emerald theme */
-.main-badge {
-  background: linear-gradient(135deg, var(--primary), var(--primary-600));
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-}
-
-/* アーカイブ badge - amber/orange theme */
-.archive-badge {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-}
-
-/* Header container variations */
-.header-container.main-header {
-  border-left: 6px solid var(--primary);
-}
-
-.header-container.archive-header {
-  border-left: 6px solid #f59e0b;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(255, 247, 237, 1));
-}
-
-/* Archive view styling */
+/* ================= Archive view styling ================= */
 #archiveView {
   --archive-accent: #f59e0b;
   --archive-accent-dark: #d97706;
@@ -575,10 +531,6 @@ line-height: 1.4;
 
 /* Dark mode adjustments for archive view */
 @media (prefers-color-scheme: dark) {
-  .header-container.archive-header {
-    background: linear-gradient(135deg, rgba(18, 26, 26, 1), rgba(30, 25, 15, 1));
-  }
-  
   #archiveView thead th {
     background-color: rgba(245, 158, 11, 0.2);
     color: #fbbf24;

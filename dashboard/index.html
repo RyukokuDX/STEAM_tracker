@@ -125,7 +125,7 @@
           <tr>
             <th class="col-check">check</th>
             <? 
-                var defaultHeader = data[0];
+                var defaultHeader = (data && data[0]) ? data[0] : [];
                 for (var j = 0; j < defaultHeader.length; j++) {
               ?>
                 <? if (j+1 === registered) { ?>
@@ -267,7 +267,7 @@
           });
         }
 
-        // チェックされた行を取得してDOMから削除する共通関数
+        // チェックされた行を取得する関数
         function getCheckedRowsAndElements(tableId) {
           const table = document.getElementById(tableId);
           if (!table) return { rows: [], elements: [] };
@@ -290,12 +290,23 @@
           return { rows, elements };
         }
 
-        // 選択された行をDOMから削除
-        function removeRowsFromDOM(elements) {
+        // 選択された行をDOMから削除し、行番号を再採番
+        function removeRowsFromDOM(elements, tableId) {
           elements.forEach(tr => tr.remove());
+          renumberRows(tableId);
         }
 
-        // 管理テーブルに行を追加（アーカイブから戻す用、ステータスを空白に）
+        // テーブル内の行番号を再採番（スプレッドシートの実際の行番号に合わせる）
+        function renumberRows(tableId) {
+          const table = document.getElementById(tableId);
+          if (!table) return;
+          const rows = table.querySelectorAll('tbody tr');
+          rows.forEach((tr, index) => {
+            tr.dataset.rowIndex = index + 2; // ヘッダー行が1なので、データは2から
+          });
+        }
+
+        // 管理テーブルに行を追加（アーカイブから戻す用）
         function addRowsToMainTable(sourceElements) {
           const mainTable = document.getElementById('mainTable');
           if (!mainTable) return;
@@ -303,33 +314,21 @@
           const tbody = mainTable.querySelector('tbody');
           if (!tbody) return;
 
-          // 現在の最大行番号を取得
-          const existingRows = tbody.querySelectorAll('tr');
-          let maxRowIndex = 1;
-          existingRows.forEach(tr => {
-            const idx = Number(tr.dataset.rowIndex);
-            if (idx > maxRowIndex) maxRowIndex = idx;
-          });
-
-          sourceElements.forEach((sourceTr, i) => {
+          sourceElements.forEach((sourceTr) => {
             const tr = sourceTr.cloneNode(true);
-            tr.dataset.rowIndex = maxRowIndex + i + 1;
             
             // チェックボックスのチェックを外す
             const checkbox = tr.querySelector('input.row-check');
             if (checkbox) checkbox.checked = false;
             
             // ステータス列を空白にする
-            // 表示順: check(0), name(1), organization(2), photo(3), handover_on(4), status(5), admin_note(6)
             const cells = tr.querySelectorAll('td');
             if (cells.length >= 6) {
-              const statusCell = cells[5]; // 0始まりで5番目がstatus
-              if (statusCell) {
-                statusCell.textContent = '';
-              }
+              const statusCell = cells[5];
+              if (statusCell) statusCell.textContent = '';
             }
 
-            // 備考欄に編集機能を追加（最後の列）
+            // 備考欄に編集機能を追加
             const adminNoteCell = cells[cells.length - 1];
             if (adminNoteCell) {
               makeEditableCell(adminNoteCell, 'main');
@@ -337,9 +336,12 @@
             
             tbody.appendChild(tr);
           });
+
+          // 行番号を再採番
+          renumberRows('mainTable');
         }
 
-        // アーカイブテーブルに行を追加（選択された行のクローンを使用）
+        // アーカイブテーブルに行を追加
         function addRowsToArchiveTable(sourceElements, newStatus) {
           const archiveTable = document.getElementById('archiveTable');
           if (!archiveTable) return;
@@ -352,42 +354,24 @@
           const tbody = archiveTable.querySelector('tbody');
           if (!tbody) return;
 
-          // 現在の最大行番号を取得
-          const existingRows = tbody.querySelectorAll('tr');
-          let maxRowIndex = 1;
-          existingRows.forEach(tr => {
-            const idx = Number(tr.dataset.rowIndex);
-            if (idx > maxRowIndex) maxRowIndex = idx;
-          });
-
-          sourceElements.forEach((sourceTr, i) => {
+          sourceElements.forEach((sourceTr) => {
             const tr = sourceTr.cloneNode(true);
-            tr.dataset.rowIndex = maxRowIndex + i + 1;
             
             // チェックボックスのチェックを外す
             const checkbox = tr.querySelector('input.row-check');
             if (checkbox) checkbox.checked = false;
             
-            // ステータス列を更新（クラス名またはセル位置で特定）
+            // ステータス列を更新
             if (newStatus) {
-              // まずクラス名で試す
               let statusCell = tr.querySelector('.col-status');
-              
-              // クラス名で見つからない場合、セル位置で特定
-              // 表示順: check(0), name(1), organization(2), photo(3), handover_on(4), status(5), admin_note(6)
               if (!statusCell) {
                 const cells = tr.querySelectorAll('td');
-                if (cells.length >= 6) {
-                  statusCell = cells[5]; // 0始まりで5番目がstatus
-                }
+                if (cells.length >= 6) statusCell = cells[5];
               }
-              
-              if (statusCell) {
-                statusCell.textContent = newStatus;
-              }
+              if (statusCell) statusCell.textContent = newStatus;
             }
 
-            // 備考欄に編集機能を追加（最後の列）
+            // 備考欄に編集機能を追加
             const cells = tr.querySelectorAll('td');
             const adminNoteCell = cells[cells.length - 1];
             if (adminNoteCell) {
@@ -396,6 +380,9 @@
             
             tbody.appendChild(tr);
           });
+
+          // 行番号を再採番
+          renumberRows('archiveTable');
         }
 
         // ローディング状態（個別ボタンのテキスト変更用）
@@ -414,14 +401,12 @@
               return;
             }
 
-            // 先にアーカイブにコピー（削除前に）ステータスを「撤去」に更新
-            addRowsToArchiveTable(elements, '撤去');
-
             setGlobalProcessing(true);
             setLoadingState(completeButton, true, '撤去済みにする');
             google.script.run
               .withSuccessHandler(() => {
-                removeRowsFromDOM(elements);
+                addRowsToArchiveTable(elements, '撤去');
+                removeRowsFromDOM(elements, 'mainTable');
                 setLoadingState(completeButton, false, '撤去済みにする');
                 setGlobalProcessing(false);
               })
@@ -445,14 +430,12 @@
               return;
             }
 
-            // 先にアーカイブにコピー（削除前に）ステータスを「破棄」に更新
-            addRowsToArchiveTable(elements, '破棄');
-
             setGlobalProcessing(true);
             setLoadingState(discardButton, true, '破棄済みにする');
             google.script.run
               .withSuccessHandler(() => {
-                removeRowsFromDOM(elements);
+                addRowsToArchiveTable(elements, '破棄');
+                removeRowsFromDOM(elements, 'mainTable');
                 setLoadingState(discardButton, false, '破棄済みにする');
                 setGlobalProcessing(false);
               })
@@ -484,7 +467,7 @@
             setLoadingState(deleteButton, true, 'データから削除');
             google.script.run
               .withSuccessHandler(() => {
-                removeRowsFromDOM(elements);
+                removeRowsFromDOM(elements, 'mainTable');
                 setLoadingState(deleteButton, false, 'データから削除');
                 setGlobalProcessing(false);
               })
@@ -516,7 +499,7 @@
             setLoadingState(deleteArchiveButton, true, 'データから削除');
             google.script.run
               .withSuccessHandler(() => {
-                removeRowsFromDOM(elements);
+                removeRowsFromDOM(elements, 'archiveTable');
                 setLoadingState(deleteArchiveButton, false, 'データから削除');
                 setGlobalProcessing(false);
               })
@@ -540,14 +523,12 @@
               return;
             }
 
-            // 先に管理シートにコピー（削除前に）ステータスを空白に更新
-            addRowsToMainTable(elements);
-
             setGlobalProcessing(true);
             setLoadingState(restoreButton, true, '管理シートへ戻す');
             google.script.run
               .withSuccessHandler(() => {
-                removeRowsFromDOM(elements);
+                addRowsToMainTable(elements);
+                removeRowsFromDOM(elements, 'archiveTable');
                 setLoadingState(restoreButton, false, '管理シートへ戻す');
                 setGlobalProcessing(false);
               })
@@ -621,8 +602,14 @@
             input.focus();
             input.select();
 
+            // キャンセルフラグ
+            let isCancelled = false;
+
             // 保存処理
             const saveNote = () => {
+              // キャンセル済みなら何もしない
+              if (isCancelled) return;
+
               const newText = input.value;
               cell.textContent = newText;
 
@@ -662,6 +649,7 @@
                 e.preventDefault();
                 input.blur();
               } else if (e.key === 'Escape') {
+                isCancelled = true;
                 cell.textContent = currentText;
               }
             });
