@@ -18,6 +18,8 @@ const DAYS_UNTIL_HANDOVER = 6;  // 明け渡し日までの日数（計算列）
 const STATUS = 7;               // active / archived / pending
 const ADMIN_NOTE = 8;           // 管理者備考
 
+const DOMAIN = 'mail.ryukoku.ac.jp';
+
 // === HTMLフォーム表示 ===
 function doGet() {
   return HtmlService.createHtmlOutputFromFile("index")
@@ -25,8 +27,47 @@ function doGet() {
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+// function doGet() {
+//   const auth = getVerifiedEmail();
+//   if (auth.error) {
+//     Logger.log(auth.email);
+//     return HtmlService.createHtmlOutput(auth.error)
+//       .setTitle('アクセス拒否');
+//   }
+ 
+//   const tpl = HtmlService.createTemplateFromFile('index');
+//   tpl.email = auth.email;
+//   Logger.log(`認証成功: ${tpl.email}`);
+//   return tpl.evaluate()
+//     .setTitle("延長申請フォーム");
+// }
+
+function getVerifiedEmail() {
+  try {
+    const email = Session.getActiveUser().getEmail();
+    if (!email) {
+      Logger.log("[認証エラー] メールアドレスの取得に失敗");
+      return {
+        error: "認証に失敗しました。ブラウザを再読み込みして再度サインインしてください。"
+      };
+    }
+    if (!email.endsWith('@' + DOMAIN)) {
+      Logger.log(`[認証エラー] 無効なドメイン: ${email}`);
+      return {
+        error: `このフォームは ${DOMAIN} ドメインのみ利用できます。`
+      };
+    }
+    return { email };
+  } catch (err) {
+    Logger.log(`[認証エラー] 例外発生: ${err}`);
+    return {
+      error: "認証中にエラーが発生しました。ブラウザを再読み込みしてお試しください。"
+    };
+  }
+}
+
 // 年度末の日付を取得
-function GetFiscalYearEnd(dateStr) {
+function getFiscalYearEnd(dateStr) {
   const date = new Date(dateStr);
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
@@ -96,7 +137,7 @@ function notifyExtensionRequest(results)
               contents: [
                 {
                   type: "text",
-                  text: "延長申請",
+                  text: `延長申請 No.${id}`,
                   weight: "bold",
                   size: "xl"
                 },
@@ -216,10 +257,11 @@ function approveRequest(id, newDate) {
 
   // 申請者にメール送信
   const subject = `STEAMコモンズ 延長申請許可通知`;
-  const body = `${name}さん（${organ}）\n\n延長申請が許可されました。\n新しい明け渡し日: ${newDate}`;
+  const body = `${name}さん（${organ}）\n\n延長申請が許可されました。\n新しい明け渡し日: ${newDate}\n\n
+                このメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`;
   sendEmail(email, subject, body);
    
-  sendLineMessage(USER_ID, `延長を ${newDate} まで許可しました。`);
+  sendLineMessage(USER_ID, `延長申請No.${id}を ${newDate} まで許可しました。`);
 }
 
 // 延長申請の却下
@@ -239,10 +281,9 @@ function rejectRequest(id) {
 
   // 申請者にメール送信
   const subject = `STEAMコモンズ 延長申請却下通知`;
-  const body = `${name}さん（${organ}）\n\n延長申請が却下されました。\n`;
+  const body = `${name}さん（${organ}）\n\n延長申請が却下されました。\n\nこのメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`;
   sendEmail(email, subject, body);
-
-  sendLineMessage(USER_ID, `延長申請を却下しました。`);
+  sendLineMessage(USER_ID, `延長申請No.${id}を却下しました。`);
 }
 
 // メールを送信
