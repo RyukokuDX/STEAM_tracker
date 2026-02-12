@@ -240,6 +240,11 @@ function sendLinePushObject(payload) {
   }
 }
 
+// id の範囲チェック (整数かつ 1 行目以降のみ有効)
+function isValidRequestId(id, dataLength) {
+  return Number.isInteger(id) && id >= 1 && id < dataLength;
+}
+
 // 延長申請の許可
 function approveRequest(id, newDate) {
   // 日付形式の検証
@@ -249,8 +254,8 @@ function approveRequest(id, newDate) {
   }
   // 申請者情報取得
   const data = SHEET.getDataRange().getValues();
-  // id の範囲チェック (整数かつ 1 行目以降のみ有効)
-  if (!Number.isInteger(id) || id < 1 || id >= data.length) {
+  // id の範囲チェック
+  if (!isValidRequestId(id, data.length)) {
     Logger.log(`無効な id: ${id}`);
     return;
   }
@@ -276,7 +281,7 @@ function rejectRequest(id) {
   // 申請者情報取得
   const data = SHEET.getDataRange().getValues();
   // id の範囲チェック
-  if (typeof id !== "number" || id < 0 || id >= data.length) {
+  if (!isValidRequestId(id, data.length)) {
     Logger.log(`無効な id: ${id}`);
     return;
   }
