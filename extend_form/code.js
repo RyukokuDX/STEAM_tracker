@@ -1,8 +1,8 @@
 const scriptProperties = PropertiesService.getScriptProperties();
 function getRequiredProperty(key) {
   const value = scriptProperties.getProperty(key);
-  if (!value) {
-    throw new Error(`${key} Script Property is not set. Configure it in Apps Script: Project Settings > Script Properties.`);
+  if (value === null || value === '') {
+    throw new Error(`${key} script property is not set. Please set it in Project Settings > Script Properties.`);
   }
   return value;
 }
