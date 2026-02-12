@@ -4,7 +4,6 @@ const CHANNEL_SECRET = scriptProperties.getProperty('CHANNEL_SECRET');
 const USER_ID = scriptProperties.getProperty('USER_ID');
 const SPREAD_SHEET_ID = scriptProperties.getProperty('SPREAD_SHEET_ID');
 const SHEET_NAME_MANAGE = scriptProperties.getProperty('SHEET_NAME_MANAGE');
-const FORM_URL = scriptProperties.getProperty('FORM_URL');
 
 const SPREAD_SHEET = SpreadsheetApp.openById(SPREAD_SHEET_ID);
 const SHEET = SPREAD_SHEET.getSheetByName(SHEET_NAME_MANAGE);
