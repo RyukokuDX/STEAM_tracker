@@ -30,7 +30,7 @@ function handoverDayRemind() {
     const email = data[i][EMAIL];
     const name = data[i][NAME];
     const organ = data[i][ORGANIZATION];
-    const handoverDay = data[i][DAYS_UNTIL_HANDOVER];
+    const handoverDay = Number(data[i][DAYS_UNTIL_HANDOVER]);
 
     let mailFailLog = null; // メール送信失敗時のログ
 
