@@ -23,8 +23,7 @@ const DOMAIN = 'mail.ryukoku.ac.jp';
 // === HTMLフォーム表示 ===
 function doGet() {
   return HtmlService.createHtmlOutputFromFile("index")
-    .setTitle("延長申請フォーム")
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    .setTitle("延長申請フォーム");
 }
 
 // function doGet() {
