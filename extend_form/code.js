@@ -25,24 +25,8 @@ const DOMAIN = 'mail.ryukoku.ac.jp';
 // === HTMLフォーム表示 ===
 function doGet() {
   return HtmlService.createHtmlOutputFromFile("index")
-    .setTitle("延長申請フォーム")
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    .setTitle("延長申請フォーム");
 }
-
-// function doGet() {
-//   const auth = getVerifiedEmail();
-//   if (auth.error) {
-//     Logger.log(auth.email);
-//     return HtmlService.createHtmlOutput(auth.error)
-//       .setTitle('アクセス拒否');
-//   }
- 
-//   const tpl = HtmlService.createTemplateFromFile('index');
-//   tpl.email = auth.email;
-//   Logger.log(`認証成功: ${tpl.email}`);
-//   return tpl.evaluate()
-//     .setTitle("延長申請フォーム");
-// }
 
 function getVerifiedEmail() {
   try {
