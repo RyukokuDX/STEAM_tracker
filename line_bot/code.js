@@ -2,7 +2,7 @@ const scriptProperties = PropertiesService.getScriptProperties();
 function getRequiredProperty(key) {
   const value = scriptProperties.getProperty(key);
   if (!value) {
-    throw new Error(`${key} script property is not set.`);
+    throw new Error(`${key} script property is not set. Please set it in Project Settings > Script Properties.`);
   }
   return value;
 }
