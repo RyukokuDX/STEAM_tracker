@@ -1,8 +1,10 @@
 const scriptProperties = PropertiesService.getScriptProperties();
 const ACCESS_TOKEN = scriptProperties.getProperty('ACCESS_TOKEN');
+const CHANNEL_SECRET = scriptProperties.getProperty('CHANNEL_SECRET');
 const USER_ID = scriptProperties.getProperty('USER_ID');
 const SPREAD_SHEET_ID = scriptProperties.getProperty('SPREAD_SHEET_ID');
 const SHEET_NAME_MANAGE = scriptProperties.getProperty('SHEET_NAME_MANAGE');
+const FORM_URL = scriptProperties.getProperty('FORM_URL');
 
 const SPREAD_SHEET = SpreadsheetApp.openById(SPREAD_SHEET_ID);
 const SHEET = SPREAD_SHEET.getSheetByName(SHEET_NAME_MANAGE);
@@ -94,7 +96,7 @@ function getItemsByEmail(email) {
         name: data[i][NAME],
         organ: data[i][ORGANIZATION],
         handover: Utilities.formatDate(new Date(data[i][HANDOVER_ON]), "Asia/Tokyo", "yyyy-MM-dd"),
-        maxDate: GetFiscalYearEnd(data[i][HANDOVER_ON]),
+        maxDate: getFiscalYearEnd(data[i][HANDOVER_ON]),
         image: `https://lh3.googleusercontent.com/d/${data[i][PHOTO_FILE_ID]}`,
       });
     }
@@ -257,8 +259,7 @@ function approveRequest(id, newDate) {
 
   // 申請者にメール送信
   const subject = `STEAMコモンズ 延長申請許可通知`;
-  const body = `${name}さん（${organ}）\n\n延長申請が許可されました。\n新しい明け渡し日: ${newDate}\n\n
-                このメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`;
+  const body = `${name}さん（${organ}）\n\n延長申請が許可されました。\n新しい明け渡し日: ${newDate}\n\nこのメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`;
   sendEmail(email, subject, body);
    
   sendLineMessage(USER_ID, `延長申請No.${id}を ${newDate} まで許可しました。`);
@@ -302,12 +303,50 @@ function sendEmail(to, subject, body) {
   }
 }
 
+function getLineSignatureFromEvent(e) {
+  if (e && e.headers) {
+    return e.headers['X-Line-Signature'] || e.headers['x-line-signature'] || null;
+  }
+  if (e && e.parameter) {
+    return e.parameter['X-Line-Signature'] || e.parameter['x-line-signature'] || null;
+  }
+  return null;
+}
+
+function verifyLineSignature(signature, body, secret) {
+  if (!signature || !body || !secret) return false;
+  const hash = Utilities.computeHmacSha256Signature(body, secret);
+  const expected = Utilities.base64Encode(hash);
+  return String(signature).trim() === expected;
+}
+
 // LINE Webhook受信（ボタン押下イベント）
 function doPost(e) {
-
   try {
+    if (!CHANNEL_SECRET) {
+      Logger.log('[Webhook error] CHANNEL_SECRET が未設定です');
+      return ContentService.createTextOutput('Server configuration error');
+    }
+
+    const rawBody = e && e.postData && e.postData.contents ? e.postData.contents : '';
+    if (!rawBody) {
+      Logger.log('[Webhook error] POST ボディが空です');
+      return ContentService.createTextOutput('Bad Request');
+    }
+
+    const signature = getLineSignatureFromEvent(e);
+    if (!signature) {
+      Logger.log('[Webhook error] X-Line-Signature が取得できません');
+      return ContentService.createTextOutput('Bad Request');
+    }
+
+    if (!verifyLineSignature(signature, rawBody, CHANNEL_SECRET)) {
+      Logger.log('[Webhook error] 署名検証に失敗しました');
+      return ContentService.createTextOutput('Invalid signature');
+    }
+
     // JSONに変換
-    const json = JSON.parse(e.postData.contents);
+    const json = JSON.parse(rawBody);
     if (!json.events || !Array.isArray(json.events)) return ContentService.createTextOutput('No events');
 
     // postbackでボタン押下イベントのみ処理
