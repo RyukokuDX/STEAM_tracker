@@ -240,7 +240,12 @@ function sendLinePushObject(payload) {
   }
 }
 
-// id の範囲チェック (整数かつ 1 行目以降のみ有効)
+/**
+ * id の範囲チェック (整数かつ 1 行目以降のみ有効)
+ * @param {number} id - チェック対象のリクエストID (1-based)
+ * @param {number} dataLength - データ配列の長さ
+ * @returns {boolean} - id が有効な整数で範囲内であれば true
+ */
 function isValidRequestId(id, dataLength) {
   return Number.isInteger(id) && id >= 1 && id < dataLength;
 }
