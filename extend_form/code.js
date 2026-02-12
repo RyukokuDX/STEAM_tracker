@@ -15,7 +15,7 @@ const SHEET_NAME_MANAGE = getRequiredProperty('SHEET_NAME_MANAGE');
 const SPREAD_SHEET = SpreadsheetApp.openById(SPREAD_SHEET_ID);
 const SHEET = SPREAD_SHEET.getSheetByName(SHEET_NAME_MANAGE);
 if (!SHEET) {
-  throw new Error(`Sheet "${SHEET_NAME_MANAGE}" not found in spreadsheet.`);
+  throw new Error(`Sheet "${SHEET_NAME_MANAGE}" not found in spreadsheet. SPREAD_SHEET_ID="${SPREAD_SHEET_ID}", URL="https://docs.google.com/spreadsheets/d/${SPREAD_SHEET_ID}"`);
 }
 
 // 列要素
