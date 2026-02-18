@@ -249,6 +249,11 @@ function approveRequest(id, newDate) {
   }
   // 申請者情報取得
   const data = SHEET.getDataRange().getValues();
+  // id の範囲チェック (整数かつ 1 行目以降のみ有効)
+  if (!Number.isInteger(id) || id < 1 || id >= data.length) {
+    Logger.log(`無効な id: ${id}`);
+    return;
+  }
   Logger.log(`延長申請を許可: ${id} 行目、${newDate} まで`);
   SHEET.getRange(id + 1, HANDOVER_ON + 1).setValue(newDate);
   const email = data[id][EMAIL];
