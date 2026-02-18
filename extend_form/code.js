@@ -94,7 +94,7 @@ function getItemsByEmail(email) {
         name: data[i][NAME],
         organ: data[i][ORGANIZATION],
         handover: Utilities.formatDate(new Date(data[i][HANDOVER_ON]), "Asia/Tokyo", "yyyy-MM-dd"),
-        maxDate: GetFiscalYearEnd(data[i][HANDOVER_ON]),
+        maxDate: getFiscalYearEnd(data[i][HANDOVER_ON]),
         image: `https://lh3.googleusercontent.com/d/${data[i][PHOTO_FILE_ID]}`,
       });
     }
