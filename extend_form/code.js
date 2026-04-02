@@ -1,11 +1,22 @@
 const scriptProperties = PropertiesService.getScriptProperties();
-const ACCESS_TOKEN = scriptProperties.getProperty('ACCESS_TOKEN');
-const USER_ID = scriptProperties.getProperty('USER_ID');
-const SPREAD_SHEET_ID = scriptProperties.getProperty('SPREAD_SHEET_ID');
-const SHEET_NAME_MANAGE = scriptProperties.getProperty('SHEET_NAME_MANAGE');
+function getRequiredProperty(key) {
+  const value = scriptProperties.getProperty(key);
+  if (!value) {
+    throw new Error(`${key} Script Property is not set. Configure it in Apps Script: Project Settings > Script Properties.`);
+  }
+  return value;
+}
+
+const ACCESS_TOKEN = getRequiredProperty('ACCESS_TOKEN');
+const USER_ID = getRequiredProperty('USER_ID');
+const SPREAD_SHEET_ID = getRequiredProperty('SPREAD_SHEET_ID');
+const SHEET_NAME_MANAGE = getRequiredProperty('SHEET_NAME_MANAGE');
 
 const SPREAD_SHEET = SpreadsheetApp.openById(SPREAD_SHEET_ID);
 const SHEET = SPREAD_SHEET.getSheetByName(SHEET_NAME_MANAGE);
+if (!SHEET) {
+  throw new Error(`Sheet "${SHEET_NAME_MANAGE}" not found in spreadsheet. SPREAD_SHEET_ID="${SPREAD_SHEET_ID}", URL="https://docs.google.com/spreadsheets/d/${SPREAD_SHEET_ID}"`);
+}
 
 // 列要素
 const RESISTERED_AT = 0;        // フォーム送信時刻（自動記録）
