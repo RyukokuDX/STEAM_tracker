@@ -2,9 +2,292 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>物品登録フォーム</title>
-  <style><?!= include('style'); ?></style>
+  <style>
+    /* ========== 設定値 ========== */
+    :root {
+      --primary: #4f6a5c;
+      --bg: #f8f7f4;
+      --input: #eae8e1;
+      --text: #37423d;
+      --muted: #5b6661;
+      --surface: #ffffff;
+      --surface-alt: #fafafa;
+      --border: #eee;
+      --hover-bg: #f2f4f3;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-pill: 999px;
+      --error-text: #721c24;
+      --error-bg: #f8d7da;
+      --success-text: #155724;
+      --success-bg: #d4edda;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 20px;
+      padding-top: calc(16px + env(safe-area-inset-top));
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+      box-sizing: border-box;
+    }
+
+    .hero-title {
+      position: relative;
+      padding-top: clamp(72px, 18vw, 110px);
+      font-size: 40px;
+      font-weight: bold;
+      margin: 0 0 24px 0;
+      text-align: center;
+      color: var(--text);
+    }
+
+    .hero-title::before,
+    .hero-title::after {
+      content: "";
+      display: block;
+      width: clamp(48px, 12vw, 72px);
+      height: clamp(48px, 12vw, 72px);
+      background-color: var(--input);
+      border-radius: 50%;
+      position: absolute;
+      top: 0;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: clamp(60%, 12vw, 80%);
+    }
+
+    .hero-title::before {
+      left: calc(50% - 8px - 64px);
+      background-image: url("stuffFormロゴ/RDXロゴ.jpg");
+      background-size: 120%;
+    }
+
+    .hero-title::after {
+      left: calc(50% + 8px);
+      background-image: url("stuffFormロゴ/STEAMコモンズロゴ.jpg");
+      background-size: 100%;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header {
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      text-align: center;
+    }
+
+    .terms-box {
+      margin-top: 10px;
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      height: 52vh;
+      min-height: 240px;
+      overflow: auto;
+    }
+
+    .controls {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    label {
+      font-size: 14px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    select, input[type="checkbox"] {
+      font-size: 16px;
+      accent-color: var(--primary);
+    }
+
+    .form {
+      transition: opacity .25s;
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .form.enabled {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .field {
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .field label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .select-wrap { position: relative; }
+    .custom-select {
+      width: 100%;
+      background: var(--input);
+      border-radius: var(--radius);
+      padding: 12px;
+      font-size: 16px;
+      line-height: 1.4;
+      color: var(--text);
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    .custom-select .custom-select-label {
+      flex: 1 1 auto;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .custom-select .custom-select-icon {
+      width: 10px; height: 10px;
+      margin-left: 8px;
+      border: solid var(--muted);
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+      transition: transform .2s ease;
+      flex: 0 0 auto;
+    }
+    .custom-select.open .custom-select-icon { transform: rotate(-135deg); }
+    .select-menu {
+      position: absolute;
+      left: 0; top: calc(100% + 6px);
+      width: 100%;
+      max-height: min(40vh, 280px);
+      overflow: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      z-index: 1000;
+      box-sizing: border-box;
+      padding: 6px 0;
+    }
+    .select-option {
+      padding: 10px 12px;
+      font-size: 16px;
+      color: var(--text);
+      line-height: 1.5;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      cursor: pointer;
+    }
+    .select-option[aria-selected="true"], .select-option:hover {
+      background: var(--hover-bg);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      display: block;
+      border-radius: var(--radius-pill);
+    }
+    .btn--primary { background: var(--primary); color: #fff; }
+    .btn[disabled] { opacity: 0.5; cursor: default; }
+
+    .form-control {
+      width: 100%;
+      border: none;
+      background: var(--input);
+      border-radius: var(--radius);
+      padding: 12px;
+      font-size: 16px;
+      color: var(--text);
+      box-sizing: border-box;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      background: var(--input);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      box-sizing: border-box;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    #msg {
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+    #msg.error { color: var(--error-text); background: var(--error-bg); }
+    #msg.success { color: var(--success-text); background: var(--success-bg); }
+
+    .small { font-size: 13px; color: var(--muted); margin-top: var(--space-2); }
+    .mt-6 { margin-top: var(--space-2); }
+    .mt-8 { margin-top: var(--space-3); }
+    .section-title { font-weight: 700; margin-bottom: 8px; }
+    .heading-lg { font-size: 30px; }
+    .note { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    .btn-sub { font-size: 13px; color: #fff; }
+    .termsdate { font-size: small; color: var(--muted); margin-bottom: 12px; text-align: center; }
+
+    @media (min-width: 700px) {
+      body { padding: 28px; }
+      .terms-box { height: 48vh; min-height: 380px; }
+      .card { padding: 18px; }
+    }
+
+    @supports (height: 1dvh) {
+      .terms-box { height: 52dvh; }
+      @media (min-width: 700px) { .terms-box { height: 48dvh; } }
+    }
+  </style>
 </head>
 
 <body>
@@ -12,12 +295,11 @@
 
   <div class="card">
     <div class="header">
-      <div class="heading-lg">利用規約の確認</div> 
+      <div class="heading-lg">利用規約の確認</div>
       <div class="small">施行日: 2026-01-19</div>
     </div>
 
     <div id="termsBox" class="terms-box" aria-label="利用規約全文">
-      <!-- 規約全文（省略なし） -->
       <section id="termsText">
         <h1 style="display:none">スチームコモンズ 物品管理システム 利用規約</h1>
         <p class="termsdate">施行日: 2026-01-19 / 最終改定日: 2026-01-19</p>
@@ -140,9 +422,6 @@
     <div class="field">
       <label for="email">メールアドレス</label>
       <input id="email" type="email" class="form-control" />
-
-      <!-- <input id="email" type="email" value="<?= email ?>" readonly class="form-control" /> -->
-      <!-- <div class="small">サインイン中のアカウントが自動入力されています（許可ドメイン: <?= domain ?>）。</div> -->
     </div>
 
     <div class="field">
@@ -159,12 +438,37 @@
   </div>
 
   <script>
-    const FISCAL_END = "<?= fiscalEndStr ?>";
-    const TODAY = "<?= todayStr ?>";
+    // ============================================================
+    // ★ 設定: GASのWebアプリURLをここに貼り付ける
+    // ============================================================
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyu6taRiN9QVC26y8DJf2zNkrvRlSfUg5IC1Cl8thEJH-vYnRmBYrWAr157fR6sDATf/exec';
+    const DOMAIN = 'mail.ryukoku.ac.jp';
 
-    // 画像をアップロード前にリサイズ/圧縮して payload サイズ超過を避ける。
-    // - 既存コードが processImage() を呼ぶが未定義だと送信が止まるため、ここで提供する。
-    // - 返り値: dataURL（JPEG）。失敗時は reject。
+    // ============================================================
+    // 年度末・今日の日付をJavaScriptで計算（GASテンプレートの代替）
+    // ============================================================
+    function getFiscalYearEnd() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const mar31 = new Date(year, 2, 31);
+      const todayNorm = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      if (todayNorm > mar31) return new Date(year + 1, 2, 31);
+      return mar31;
+    }
+
+    function toDateStr(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    const TODAY = toDateStr(new Date());
+    const FISCAL_END = toDateStr(getFiscalYearEnd());
+
+    // ============================================================
+    // 画像リサイズ・圧縮（既存コードそのまま流用）
+    // ============================================================
     function processImage(dataUrl) {
       return new Promise(function(resolve, reject) {
         try {
@@ -172,93 +476,82 @@
             reject(new Error('画像データが不正です'));
             return;
           }
-
           const img = new Image();
           img.onload = function() {
             try {
-              const maxSide = 1280; // 長辺最大(px)
+              const maxSide = 1280;
               let w = img.naturalWidth || img.width;
               let h = img.naturalHeight || img.height;
-
-              if (!w || !h) {
-                reject(new Error('画像サイズの取得に失敗しました'));
-                return;
-              }
-
+              if (!w || !h) { reject(new Error('画像サイズの取得に失敗しました')); return; }
               const scale = Math.min(1, maxSide / Math.max(w, h));
               const outW = Math.max(1, Math.round(w * scale));
               const outH = Math.max(1, Math.round(h * scale));
-
               const canvas = document.createElement('canvas');
               canvas.width = outW;
               canvas.height = outH;
               const ctx = canvas.getContext('2d');
-              if (!ctx) {
-                reject(new Error('Canvas が利用できません'));
-                return;
-              }
-
+              if (!ctx) { reject(new Error('Canvas が利用できません')); return; }
               ctx.drawImage(img, 0, 0, outW, outH);
-
-              // 写真用途なのでJPEG化して軽量化（PNGのままだと重くなりがち）
-              const quality = 0.85;
-              const out = canvas.toDataURL('image/jpeg', quality);
-              resolve(out);
-            } catch (e) {
-              reject(e);
-            }
+              resolve(canvas.toDataURL('image/jpeg', 0.85));
+            } catch (e) { reject(e); }
           };
-
-          img.onerror = function() {
-            reject(new Error('画像の読み込みに失敗しました'));
-          };
-
+          img.onerror = function() { reject(new Error('画像の読み込みに失敗しました')); };
           img.src = dataUrl;
-        } catch (e) {
-          reject(e);
-        }
+        } catch (e) { reject(e); }
       });
     }
 
-    // ズーム抑止はアクセシビリティ観点でデフォルト無効。
-    // 有効化したい場合は ENABLE_ZOOM_LOCK を true に変更。
-    const ENABLE_ZOOM_LOCK = false;
-    if (ENABLE_ZOOM_LOCK) {
-      (function lockZoom(){
-        const opts = { passive: false };
-        document.addEventListener('touchstart', function(e){
-          if (e.touches && e.touches.length > 1) e.preventDefault();
-        }, opts);
-        document.addEventListener('gesturestart', function(e){ e.preventDefault(); }, opts);
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', function(e){
-          const now = Date.now();
-            if (now - lastTouchEnd <= 300) e.preventDefault();
-          lastTouchEnd = now;
-        }, opts);
-        document.addEventListener('wheel', function(e){
-          if (e.ctrlKey) e.preventDefault();
-        }, opts);
-      })();
+    // ============================================================
+    // GASへのfetch送信（google.script.runの代替）
+    // ============================================================
+    async function callGAS(action, payload) {
+      const body = JSON.stringify({ action, ...payload });
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        // doPost + CORS対応済みのWebアプリURLを前提にする
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      let json;
+      try {
+        json = await res.json();
+      } catch (_) {
+        throw new Error('GASの応答(JSON)を読み取れませんでした');
+      }
+
+      if (!json || json.status !== 'ok') {
+        throw new Error((json && json.message) || 'GASでエラーが発生しました');
+      }
+
+      return json;
     }
 
-    (function initDate(){
+    // ============================================================
+    // 日付初期化
+    // ============================================================
+    (function initDate() {
       const d = document.getElementById('date');
       d.setAttribute('min', TODAY);
       d.setAttribute('max', FISCAL_END);
       document.getElementById('hint').textContent = `選択可能な範囲： ${TODAY} 〜 ${FISCAL_END}`;
     })();
 
-    // ネイティブ<select>のドロップダウン幅暴走対策：カスタムセレクト化
-    (function enhanceSelect(){
+    // ============================================================
+    // カスタムセレクト（既存コードそのまま流用）
+    // ============================================================
+    (function enhanceSelect() {
       const sel = document.getElementById('quiz');
       if (!sel) return;
-      // ラッパとカスタムUIを生成
       const wrap = document.createElement('div');
       wrap.className = 'select-wrap';
       sel.parentNode.insertBefore(wrap, sel);
       wrap.appendChild(sel);
-      // 非表示化（値は保持・イベントは発火させる）
       sel.style.position = 'absolute';
       sel.style.opacity = '0';
       sel.style.pointerEvents = 'none';
@@ -271,19 +564,20 @@
       btn.setAttribute('tabindex', '0');
       btn.setAttribute('aria-haspopup', 'listbox');
       btn.setAttribute('aria-expanded', 'false');
-      const label = document.createElement('span');
-      label.className = 'custom-select-label';
-      label.textContent = sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex].text : '-- 選択してください --';
+      const labelEl = document.createElement('span');
+      labelEl.className = 'custom-select-label';
+      labelEl.textContent = '-- 選択してください --';
       const icon = document.createElement('span');
       icon.className = 'custom-select-icon';
-      btn.appendChild(label); btn.appendChild(icon);
+      btn.appendChild(labelEl);
+      btn.appendChild(icon);
       wrap.appendChild(btn);
 
       const menu = document.createElement('div');
       menu.className = 'select-menu';
       menu.setAttribute('role', 'listbox');
       menu.hidden = true;
-      Array.from(sel.options).forEach((opt, i) => {
+      Array.from(sel.options).forEach((opt) => {
         const item = document.createElement('div');
         item.className = 'select-option';
         item.setAttribute('role', 'option');
@@ -295,87 +589,85 @@
       });
       wrap.appendChild(menu);
 
-      function open(){ menu.hidden = false; btn.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
-      function close(){ menu.hidden = true; btn.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
-      function toggle(){ (menu.hidden ? open : close)(); }
-      function choose(value){
-        const idx = Array.from(sel.options).findIndex(o=>o.value===value);
+      function open() { menu.hidden = false; btn.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
+      function close() { menu.hidden = true; btn.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
+      function toggle() { (menu.hidden ? open : close)(); }
+      function choose(value) {
+        const idx = Array.from(sel.options).findIndex(o => o.value === value);
         if (idx < 0) return;
         sel.selectedIndex = idx;
-        label.textContent = sel.options[idx].text;
-        Array.from(menu.children).forEach(el=>el.setAttribute('aria-selected', String(el.dataset.value===value)));
+        labelEl.textContent = sel.options[idx].text;
+        Array.from(menu.children).forEach(el => el.setAttribute('aria-selected', String(el.dataset.value === value)));
         sel.dispatchEvent(new Event('change', { bubbles: true }));
         close();
       }
 
       btn.addEventListener('click', toggle);
-      btn.addEventListener('keydown', (e)=>{
+      btn.addEventListener('keydown', (e) => {
         if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); }
         else if (e.key === 'Escape') { close(); }
         else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
           e.preventDefault();
-          const values = Array.from(sel.options).map(o=>o.value);
+          const values = Array.from(sel.options).map(o => o.value);
           let i = Math.max(0, values.indexOf(sel.value));
-          i = e.key==='ArrowDown' ? Math.min(values.length-1, i+1) : Math.max(0, i-1);
+          i = e.key === 'ArrowDown' ? Math.min(values.length - 1, i + 1) : Math.max(0, i - 1);
           choose(values[i]);
         }
       });
-      document.addEventListener('click', (e)=>{ if (!wrap.contains(e.target)) close(); });
+      document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) close(); });
       window.addEventListener('resize', close);
     })();
 
-    // モバイルのアドレスバー表示/DevTools開閉などの高さ変動に追従
-    (function adjustTermsBoxHeight(){
+    // ============================================================
+    // 規約の高さ調整（既存コードそのまま流用）
+    // ============================================================
+    (function adjustTermsBoxHeight() {
       const el = document.getElementById('termsBox');
       if (!el) return;
-      function setHeight(){
+      function setHeight() {
         const vw = window.innerWidth || document.documentElement.clientWidth;
         const vh = window.innerHeight || document.documentElement.clientHeight;
         const ratio = vw >= 700 ? 0.48 : 0.52;
-        const h = Math.max(240, Math.round(vh * ratio));
-        el.style.height = h + 'px';
+        el.style.height = Math.max(240, Math.round(vh * ratio)) + 'px';
       }
       setHeight();
       window.addEventListener('resize', setHeight);
       window.addEventListener('orientationchange', setHeight);
     })();
 
-    // 同意ロジック（スクロール到達 + チェック + クイズ正答）
-    (function(){
+    // ============================================================
+    // 同意ロジック（既存コードそのまま流用）
+    // ============================================================
+    (function() {
       const termsBox = document.getElementById('termsBox');
       const confirm6 = document.getElementById('confirm6');
       const quiz = document.getElementById('quiz');
       const agreeBtn = document.getElementById('agreeBtn');
       const formCard = document.getElementById('formCard');
 
-      function atBottom(el){
-        return el.scrollHeight - el.scrollTop <= el.clientHeight + 2;
-      }
-
-      function update(){
-        const scrolled = atBottom(termsBox);
-        const checked = confirm6.checked;
-        const quizOK = quiz.value === 'b';
-        agreeBtn.disabled = !(scrolled && checked && quizOK);
+      function atBottom(el) { return el.scrollHeight - el.scrollTop <= el.clientHeight + 2; }
+      function update() {
+        agreeBtn.disabled = !(atBottom(termsBox) && confirm6.checked && quiz.value === 'b');
       }
 
       termsBox.addEventListener('scroll', update, { passive: true });
       confirm6.addEventListener('change', update);
       quiz.addEventListener('change', update);
-      // 画面サイズ変動（ソフトキーボード、アドレスバー、DevTools等）で再評価
       window.addEventListener('resize', update, { passive: true });
 
-      agreeBtn.addEventListener('click', function(){
+      agreeBtn.addEventListener('click', function() {
         if (agreeBtn.disabled) return;
         formCard.classList.add('enabled');
         agreeBtn.textContent = '同意済み — フォームを使用できます';
         agreeBtn.disabled = true;
-        formCard.scrollIntoView({behavior:'smooth', block:'start'});
+        formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     })();
 
-    // フォーム送信
-    document.getElementById('submit').addEventListener('click', function(){
+    // ============================================================
+    // フォーム送信（google.script.run → fetchに変更）
+    // ============================================================
+    document.getElementById('submit').addEventListener('click', async function() {
       const name = document.getElementById('name').value.trim();
       const email = document.getElementById('email').value.trim();
       const selected = document.getElementById('date').value;
@@ -384,141 +676,115 @@
       msgEl.className = '';
       msgEl.textContent = '';
 
-      if (!selected){
+      if (!GAS_URL || GAS_URL.includes('YOUR_SCRIPT_ID')) {
         msgEl.className = 'error';
-        msgEl.textContent = '明け渡し日を選択してください。';
+        msgEl.textContent = 'GAS_URL が未設定です。デプロイURLに差し替えてください。';
         return;
       }
 
-      if (!name){
+      // バリデーション（既存コードそのまま）
+      if (!selected) { msgEl.className = 'error'; msgEl.textContent = '明け渡し日を選択してください。'; return; }
+      if (!name) { msgEl.className = 'error'; msgEl.textContent = '氏名は必須です。'; return; }
+      if (!email) { msgEl.className = 'error'; msgEl.textContent = 'メールアドレスは必須です。'; return; }
+      if (!email.toLowerCase().endsWith('@' + DOMAIN.toLowerCase())) {
         msgEl.className = 'error';
-        msgEl.textContent = '氏名は必須です。';
+        msgEl.textContent = `学内のメールアドレスを使用してください（@${DOMAIN}）。`;
         return;
       }
-
-      if (!email){
+      if (selected < TODAY || selected > FISCAL_END) {
         msgEl.className = 'error';
-        msgEl.textContent = 'メールアドレスは必須です。';
+        msgEl.textContent = `選択した日付は許可範囲外です（${TODAY}〜${FISCAL_END}）。`;
         return;
       }
-
-      const emailLower = email.toLowerCase();
-      const domainLower = '<?!= domain ?>'.toLowerCase();
-      if (!emailLower.endsWith('@' + domainLower)){
-        msgEl.className = 'error';
-        msgEl.textContent = '学内のメールアドレスを使用してください（@<?!= domain ?>）。';
-        return;
-      }
-
-      const min = document.getElementById('date').min;
-      const max = document.getElementById('date').max;
-      if (selected < min || selected > max){
-        msgEl.className = 'error';
-        msgEl.textContent = `選択した日付は許可範囲外です（${min}〜${max}）。`;
-        return;
-      }
-
-  // 送信ボタンの無効化は必須チェックのあとで行う（必須項目エラー時に元に戻すため）
-
-      const payload = {
-        name,
-        email,
-        organization: document.getElementById('organization').value.trim(),
-        photo: '', // will fill with fileId after upload if a file is selected
-        date: selected
-      };
 
       const fileInput = document.getElementById('photoFile');
-
-      // クライアント側で写真必須チェック
       if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
         msgEl.className = 'error';
         msgEl.textContent = '写真の添付は必須です。';
         return;
       }
 
-      // 配置：ここでボタンを無効化して送信操作を保護
-      const originalSubmitText = submitBtn.textContent;
+      const originalText = submitBtn.textContent;
       submitBtn.disabled = true;
       submitBtn.textContent = '送信中...';
 
-      function doSubmit(finalPayload) {
-        google.script.run
-          .withSuccessHandler(function(res){
-            if (res && res.status === 'ok'){
-              msgEl.className = 'success';
-              msgEl.textContent = '送信完了';
-              document.getElementById('name').value = '';
-              document.getElementById('date').value = '';
-              document.getElementById('organization').value = '';
-              if (fileInput) fileInput.value = '';
-              submitBtn.textContent = '送信完了';
-              submitBtn.disabled = true;
-            } else {
-              msgEl.className = 'error';
-              msgEl.textContent = res && res.message ? 'エラー: ' + res.message : '送信に失敗しました。';
-              submitBtn.disabled = false;
-              submitBtn.textContent = originalSubmitText || '送信';
-            }
-          })
-          .withFailureHandler(function(err){
-            msgEl.className = 'error';
-            msgEl.textContent = 'サーバ接続に失敗しました。';
-            console.error(err);
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalSubmitText || '送信';
-          })
-          .submitForm(finalPayload);
-      }
-
-      if (fileInput && fileInput.files && fileInput.files.length > 0) {
+      try {
+        // 画像処理
         const file = fileInput.files[0];
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const dataUrl = e.target.result;
-          processImage(dataUrl)
-            .then(function(comped){
-              // Upload the photo first, get back fileId
-              google.script.run
-                .withSuccessHandler(function(res){
-                  if (res && res.status === 'ok'){
-                    payload.photo = res.id;
-                    doSubmit(payload);
-                  } else {
-                    msgEl.className = 'error';
-                    msgEl.textContent = '画像アップロードに失敗しました: ' + (res && res.message ? res.message : '不明なエラー');
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = originalSubmitText || '送信';
-                  }
-                })
-                .withFailureHandler(function(err){
-                  msgEl.className = 'error';
-                  msgEl.textContent = '画像アップロードでサーバ接続に失敗しました。';
-                  console.error(err);
-                  submitBtn.disabled = false;
-                  submitBtn.textContent = originalSubmitText || '送信';
-                })
-                .uploadPhoto(comped, file.name);
-            })
-            .catch(function(err){
-              msgEl.className = 'error';
-              msgEl.textContent = '画像処理に失敗しました。別の画像でお試しください。';
-              console.error(err);
-              submitBtn.disabled = false;
-              submitBtn.textContent = originalSubmitText || '送信';
-            });
-        };
-        reader.onerror = function(err){
-          msgEl.className = 'error';
-          msgEl.textContent = 'ファイルの読み込みに失敗しました。';
-          console.error(err);
-          submitBtn.disabled = false;
-          submitBtn.textContent = originalSubmitText || '送信';
-        };
-        reader.readAsDataURL(file);
-      } else {
-        // No file selected, submit directly
-        doSubmit(payload);
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'));
+          reader.readAsDataURL(file);
+        });
+        const compressed = await processImage(dataUrl);
+
+        // GASに送信（写真アップロード）
+        msgEl.textContent = '写真をアップロード中...';
+        const uploadResult = await callGAS('uploadPhoto', { dataUrl: compressed, filename: file.name });
+
+        const uploadData = (uploadResult && uploadResult.data) ? uploadResult.data : {};
+        const uploadedPhotoUrl =
+          uploadResult.photoUrl ||
+          uploadResult.url ||
+          uploadResult.fileUrl ||
+          uploadResult.imageUrl ||
+          uploadData.photoUrl ||
+          uploadData.url ||
+          uploadData.fileUrl ||
+          uploadData.imageUrl ||
+          '';
+
+        const uploadedPhotoId =
+          uploadResult.fileId ||
+          uploadResult.photoId ||
+          uploadResult.id ||
+          uploadData.fileId ||
+          uploadData.photoId ||
+          uploadData.id ||
+          '';
+
+        const photoForSubmit = uploadedPhotoUrl || uploadedPhotoId;
+
+        if (!photoForSubmit) {
+          throw new Error('写真アップロード結果に URL / ID がありません');
+        }
+
+        // GASに送信（フォームデータ）
+        msgEl.textContent = 'データを送信中...';
+        const submitResult = await callGAS('submitForm', {
+          name,
+          email,
+          organization: document.getElementById('organization').value.trim(),
+          date: selected,
+          photoUrl: uploadedPhotoUrl,
+          photo: photoForSubmit,
+          fileUrl: uploadedPhotoUrl,
+          imageUrl: uploadedPhotoUrl,
+          photoId: uploadedPhotoId,
+          fileId: uploadedPhotoId,
+          uploadResult
+        });
+
+        // 成功
+        msgEl.className = 'success';
+        msgEl.textContent = (submitResult && submitResult.message)
+          ? submitResult.message
+          : `送信完了しました。確認メールを ${email} に送信しました。届かない場合は迷惑メールフォルダをご確認ください。`;
+        document.getElementById('name').value = '';
+        document.getElementById('date').value = '';
+        document.getElementById('organization').value = '';
+        fileInput.value = '';
+        submitBtn.textContent = '送信完了';
+        submitBtn.disabled = true;
+
+      } catch (err) {
+        const detail = (err && err.message) ? err.message : String(err || '不明なエラー');
+        msgEl.className = 'error';
+        msgEl.textContent = `エラーが発生しました: ${detail}`;
+        console.error('送信処理エラー:', err);
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
       }
     });
   </script>
