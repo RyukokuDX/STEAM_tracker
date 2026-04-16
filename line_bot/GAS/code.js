@@ -161,7 +161,7 @@ function sendEmail(to, subject, body) {
 // LINE Messaging APIでメッセージを送信
 function sendLineMessage(to, text, mailFailLog) {
   const url = 'https://api.line.me/v2/bot/message/push';
-  if (mailFailLog.success === false) {
+  if (mailFailLog && mailFailLog.success === false) {
     text += "\n（メール送信に失敗しました。" + mailFailLog.message + ")";
   }
 

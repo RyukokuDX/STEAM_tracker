@@ -21,6 +21,17 @@ const STATUS = 7;
 const ADMIN_NOTE = 8;
 
 const DOMAIN = 'mail.ryukoku.ac.jp';
+const API_SHARED_SECRET = scriptProperties.getProperty('API_SHARED_SECRET');
+const LINE_WEBHOOK_TOKEN = scriptProperties.getProperty('LINE_WEBHOOK_TOKEN');
+
+function isAuthorizedRequest(payload) {
+  if (!API_SHARED_SECRET) {
+    Logger.log('[auth] API_SHARED_SECRET が未設定');
+    return false;
+  }
+  const requestSecret = String((payload && payload.apiSecret) || '');
+  return requestSecret === API_SHARED_SECRET;
+}
 
 // ============================================================
 // doPost: 静的HTMLからのfetchとLINE Webhookを共用
@@ -30,11 +41,14 @@ const DOMAIN = 'mail.ryukoku.ac.jp';
 // ============================================================
 function doPost(e) {
   try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return jsonResponse({ status: 'error', message: 'POSTデータがありません' });
+    }
     const json = JSON.parse(e.postData.contents);
 
     // LINE Webhookの場合
     if (json.events && Array.isArray(json.events)) {
-      return handleLineWebhook(json);
+      return handleLineWebhook(json, e);
     }
 
     // 静的HTMLからのfetchの場合
@@ -54,6 +68,10 @@ function doPost(e) {
 // 静的HTMLからのfetchを処理
 // ============================================================
 function handleFetchRequest(payload) {
+  if (!isAuthorizedRequest(payload)) {
+    return jsonResponse({ status: 'error', message: '認証に失敗しました。' });
+  }
+
   const action = payload.action;
   let result;
 
@@ -75,19 +93,50 @@ function handleFetchRequest(payload) {
 // ============================================================
 // LINE Webhookを処理（ボタン押下イベント）
 // ============================================================
-function handleLineWebhook(json) {
-  json.events.forEach(event => {
-    if (event.type === 'postback' && event.postback && event.postback.data) {
-      const params = {};
-      event.postback.data.split('&').forEach(pair => {
-        const [key, value] = pair.split('=');
-        params[key] = value;
-      });
+function isValidLineWebhookToken(e) {
+  if (!LINE_WEBHOOK_TOKEN) {
+    Logger.log('[line webhook auth] LINE_WEBHOOK_TOKEN が未設定');
+    return false;
+  }
+  const token = String((e && e.parameter && e.parameter.token) || '');
+  return token === LINE_WEBHOOK_TOKEN;
+}
 
-      if (params.action === 'approve' && params.id && params.date) {
-        approveRequest(Number(params.id), params.date);
-      } else if (params.action === 'reject' && params.id) {
-        rejectRequest(Number(params.id));
+function parsePostbackData(rawData) {
+  const params = {};
+  String(rawData || '').split('&').forEach(pair => {
+    if (!pair) return;
+    const kv = pair.split('=');
+    const key = decodeURIComponent(kv[0] || '');
+    const value = decodeURIComponent(kv.slice(1).join('=') || '');
+    if (key) params[key] = value;
+  });
+  return params;
+}
+
+function handleLineWebhook(json, e) {
+  if (!isValidLineWebhookToken(e)) {
+    return jsonResponse({ status: 'error', message: 'LINE Webhook 認証に失敗しました。' });
+  }
+
+  json.events.forEach(event => {
+    if (!event || !event.source || event.source.userId !== USER_ID) {
+      return;
+    }
+
+    if (event.type === 'postback' && event.postback && event.postback.data) {
+      const params = parsePostbackData(event.postback.data);
+      const id = Number(params.id);
+
+      if (!Number.isInteger(id) || id < 1) {
+        Logger.log('[line webhook] 無効な id: ' + params.id);
+        return;
+      }
+
+      if (params.action === 'approve' && params.date) {
+        approveRequest(id, params.date);
+      } else if (params.action === 'reject') {
+        rejectRequest(id);
       }
     }
   });

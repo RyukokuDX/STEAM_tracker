@@ -102,10 +102,10 @@
     }
 
     @media (max-width: 480px) {
-      h1 { font-size: 1.5em; }
-      label { font-size: 1.35em; }
-      input, select { font-size: 1.35em; padding: 20px 16px; }
-      button { font-size: 1.4em; padding: 22px 0; }
+      h1 { font-size: 30px; }
+      label { font-size: 24px; }
+      input, select { font-size: 20px; padding: 14px 12px; }
+      button { font-size: 20px; padding: 16px 0; }
     }
   </style>
 </head>
@@ -136,18 +136,27 @@
 
   <script>
     // ============================================================
-    // ★ 設定: 延長申請GASのデプロイURLをここに貼り付ける
+    // ★ 設定: 延長申請GASのデプロイURL / 共有シークレット
+    // 公開リポジトリに実値を置かないこと
     // ============================================================
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxuv1hmAQ6bTqss4AmdWKIlw5nuEe7JeBvBrhvSSZF6qucGDL30KPNnkZSk82tb6WTOtQ/exec';
+    const GAS_URL = '';
+    const API_SHARED_SECRET = '';
 
     // ============================================================
     // GASへのfetch（レスポンスを読むためcorsモードで送信）
     // ============================================================
     async function callGAS(action, payload) {
+      if (!GAS_URL) {
+        throw new Error('GAS_URL が未設定です');
+      }
+      if (!API_SHARED_SECRET) {
+        throw new Error('API_SHARED_SECRET が未設定です');
+      }
+
       const res = await fetch(GAS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action, ...payload })
+        body: JSON.stringify({ action, apiSecret: API_SHARED_SECRET, ...payload })
       });
       if (!res.ok) throw new Error(`HTTPエラー: ${res.status}`);
       return await res.json();

@@ -439,9 +439,11 @@
 
   <script>
     // ============================================================
-    // ★ 設定: GASのWebアプリURLをここに貼り付ける
+    // ★ 設定: GASのWebアプリURL / 共有シークレット
+    // 公開リポジトリに実値を置かないこと
     // ============================================================
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyu6taRiN9QVC26y8DJf2zNkrvRlSfUg5IC1Cl8thEJH-vYnRmBYrWAr157fR6sDATf/exec';
+    const GAS_URL = '';
+    const API_SHARED_SECRET = '';
     const DOMAIN = 'mail.ryukoku.ac.jp';
 
     // ============================================================
@@ -505,7 +507,14 @@
     // GASへのfetch送信（google.script.runの代替）
     // ============================================================
     async function callGAS(action, payload) {
-      const body = JSON.stringify({ action, ...payload });
+      if (!GAS_URL) {
+        throw new Error('GAS_URL が未設定です');
+      }
+      if (!API_SHARED_SECRET) {
+        throw new Error('API_SHARED_SECRET が未設定です');
+      }
+
+      const body = JSON.stringify({ action, apiSecret: API_SHARED_SECRET, ...payload });
       const res = await fetch(GAS_URL, {
         method: 'POST',
         // doPost + CORS対応済みのWebアプリURLを前提にする
@@ -723,31 +732,10 @@
         msgEl.textContent = '写真をアップロード中...';
         const uploadResult = await callGAS('uploadPhoto', { dataUrl: compressed, filename: file.name });
 
-        const uploadData = (uploadResult && uploadResult.data) ? uploadResult.data : {};
-        const uploadedPhotoUrl =
-          uploadResult.photoUrl ||
-          uploadResult.url ||
-          uploadResult.fileUrl ||
-          uploadResult.imageUrl ||
-          uploadData.photoUrl ||
-          uploadData.url ||
-          uploadData.fileUrl ||
-          uploadData.imageUrl ||
-          '';
-
-        const uploadedPhotoId =
-          uploadResult.fileId ||
-          uploadResult.photoId ||
-          uploadResult.id ||
-          uploadData.fileId ||
-          uploadData.photoId ||
-          uploadData.id ||
-          '';
-
-        const photoForSubmit = uploadedPhotoUrl || uploadedPhotoId;
+        const photoForSubmit = String((uploadResult && uploadResult.id) || '').trim();
 
         if (!photoForSubmit) {
-          throw new Error('写真アップロード結果に URL / ID がありません');
+          throw new Error('写真アップロード結果に ID がありません');
         }
 
         // GASに送信（フォームデータ）
@@ -757,13 +745,7 @@
           email,
           organization: document.getElementById('organization').value.trim(),
           date: selected,
-          photoUrl: uploadedPhotoUrl,
-          photo: photoForSubmit,
-          fileUrl: uploadedPhotoUrl,
-          imageUrl: uploadedPhotoUrl,
-          photoId: uploadedPhotoId,
-          fileId: uploadedPhotoId,
-          uploadResult
+          photo: photoForSubmit
         });
 
         // 成功
