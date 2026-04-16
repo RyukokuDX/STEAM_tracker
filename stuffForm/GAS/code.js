@@ -10,16 +10,6 @@ const DOMAIN = 'mail.ryukoku.ac.jp';
 const LOCK_TIMEOUT_MS = 30000;
 const MAX_NAME_LENGTH = 50;
 const LINE_BOT_NOTIFY_URL = PropertiesService.getScriptProperties().getProperty('LINE_BOT_NOTIFY_URL');
-const API_SHARED_SECRET = PropertiesService.getScriptProperties().getProperty('API_SHARED_SECRET');
-
-function isAuthorizedRequest(payload) {
-  if (!API_SHARED_SECRET) {
-    Logger.log('[auth] API_SHARED_SECRET が未設定のため検証をスキップ');
-    return true;
-  }
-  const requestSecret = String((payload && payload.apiSecret) || '');
-  return requestSecret === API_SHARED_SECRET;
-}
 
 // ============================================================
 // doPost: 静的HTMLからのfetchを受け取るエントリーポイント
@@ -29,12 +19,6 @@ function doPost(e) {
   try {
     const payload = JSON.parse(e.postData.contents);
     const action = payload.action;
-
-    if (!isAuthorizedRequest(payload)) {
-      return ContentService
-        .createTextOutput(JSON.stringify({ status: 'error', message: '認証に失敗しました。' }))
-        .setMimeType(ContentService.MimeType.JSON);
-    }
 
     Logger.log('[doPost] action=' + action + ' payload=' + JSON.stringify(payload));
 

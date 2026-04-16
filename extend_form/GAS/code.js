@@ -21,17 +21,7 @@ const STATUS = 7;
 const ADMIN_NOTE = 8;
 
 const DOMAIN = 'mail.ryukoku.ac.jp';
-const API_SHARED_SECRET = scriptProperties.getProperty('API_SHARED_SECRET');
 const LINE_WEBHOOK_TOKEN = scriptProperties.getProperty('LINE_WEBHOOK_TOKEN');
-
-function isAuthorizedRequest(payload) {
-  if (!API_SHARED_SECRET) {
-    Logger.log('[auth] API_SHARED_SECRET が未設定のため検証をスキップ');
-    return true;
-  }
-  const requestSecret = String((payload && payload.apiSecret) || '');
-  return requestSecret === API_SHARED_SECRET;
-}
 
 // ============================================================
 // doPost: 静的HTMLからのfetchとLINE Webhookを共用
@@ -69,10 +59,6 @@ function doPost(e) {
 // ============================================================
 function handleFetchRequest(payload) {
   const action = payload.action;
-  if (!isAuthorizedRequest(payload)) {
-    return jsonResponse({ status: 'error', message: '認証に失敗しました。' });
-  }
-
   let result;
 
   if (action === 'getItemsByEmail') {

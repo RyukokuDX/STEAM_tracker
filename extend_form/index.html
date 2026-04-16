@@ -136,11 +136,10 @@
 
   <script>
     // ============================================================
-    // ★ 設定: 延長申請GASのデプロイURL / 共有シークレット
+    // ★ 設定: 延長申請GASのデプロイURL
     // 公開リポジトリに実値を置かないこと
     // ============================================================
     const GAS_URL = '';
-    const API_SHARED_SECRET = '';
 
     // ============================================================
     // GASへのfetch（レスポンスを読むためcorsモードで送信）
@@ -149,14 +148,11 @@
       if (!GAS_URL) {
         throw new Error('GAS_URL が未設定です');
       }
-      if (!API_SHARED_SECRET) {
-        throw new Error('API_SHARED_SECRET が未設定です');
-      }
 
       const res = await fetch(GAS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action, apiSecret: API_SHARED_SECRET, ...payload })
+        body: JSON.stringify({ action, ...payload })
       });
       if (!res.ok) throw new Error(`HTTPエラー: ${res.status}`);
       return await res.json();

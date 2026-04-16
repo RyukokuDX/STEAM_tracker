@@ -439,11 +439,10 @@
 
   <script>
     // ============================================================
-    // ★ 設定: GASのWebアプリURL / 共有シークレット
-    // 公開リポジトリに実値を置かないこと
+    // ★ 設定: GASのWebアプリURL（固定）
+    // GitHub Pages で公開するため、ここにデプロイURLを直接設定する
     // ============================================================
-    const GAS_URL = '';
-    const API_SHARED_SECRET = '';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzLrRGdrGekhfC6TtOArrKgBvZsqN2vKq2hXjVjrs0VmUnKLQsjuGw8kKxtNJYoG4yW/exec';
     const DOMAIN = 'mail.ryukoku.ac.jp';
 
     // ============================================================
@@ -510,11 +509,8 @@
       if (!GAS_URL) {
         throw new Error('GAS_URL が未設定です');
       }
-      if (!API_SHARED_SECRET) {
-        throw new Error('API_SHARED_SECRET が未設定です');
-      }
 
-      const body = JSON.stringify({ action, apiSecret: API_SHARED_SECRET, ...payload });
+      const body = JSON.stringify({ action, ...payload });
       const res = await fetch(GAS_URL, {
         method: 'POST',
         // doPost + CORS対応済みのWebアプリURLを前提にする
@@ -685,7 +681,7 @@
       msgEl.className = '';
       msgEl.textContent = '';
 
-      if (!GAS_URL || GAS_URL.includes('YOUR_SCRIPT_ID')) {
+      if (!GAS_URL || GAS_URL.includes('YOUR_DEPLOYMENT_ID')) {
         msgEl.className = 'error';
         msgEl.textContent = 'GAS_URL が未設定です。デプロイURLに差し替えてください。';
         return;
