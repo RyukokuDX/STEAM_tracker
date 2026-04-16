@@ -26,8 +26,8 @@ const LINE_WEBHOOK_TOKEN = scriptProperties.getProperty('LINE_WEBHOOK_TOKEN');
 
 function isAuthorizedRequest(payload) {
   if (!API_SHARED_SECRET) {
-    Logger.log('[auth] API_SHARED_SECRET が未設定');
-    return false;
+    Logger.log('[auth] API_SHARED_SECRET が未設定のため検証をスキップ');
+    return true;
   }
   const requestSecret = String((payload && payload.apiSecret) || '');
   return requestSecret === API_SHARED_SECRET;
@@ -68,11 +68,11 @@ function doPost(e) {
 // 静的HTMLからのfetchを処理
 // ============================================================
 function handleFetchRequest(payload) {
+  const action = payload.action;
   if (!isAuthorizedRequest(payload)) {
     return jsonResponse({ status: 'error', message: '認証に失敗しました。' });
   }
 
-  const action = payload.action;
   let result;
 
   if (action === 'getItemsByEmail') {
@@ -95,8 +95,8 @@ function handleFetchRequest(payload) {
 // ============================================================
 function isValidLineWebhookToken(e) {
   if (!LINE_WEBHOOK_TOKEN) {
-    Logger.log('[line webhook auth] LINE_WEBHOOK_TOKEN が未設定');
-    return false;
+    Logger.log('[line webhook auth] LINE_WEBHOOK_TOKEN が未設定のため検証をスキップ');
+    return true;
   }
   const token = String((e && e.parameter && e.parameter.token) || '');
   return token === LINE_WEBHOOK_TOKEN;
