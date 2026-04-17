@@ -12,7 +12,7 @@ const archiveSheetName = "アーカイブ用シート";
 
 const registered = 1;
 const email = 2;
-const name = 3;
+const nameCol = 3;
 const DriveLinkColumn = 5;
 const handover = 6;
 const days_until_handover = 7;
@@ -84,7 +84,7 @@ function doGet(e) {
     tpl.archiveSheetName = archiveSheetName;
     tpl.registered = registered;
     tpl.email = email;
-    tpl.name = name;
+    tpl.name = nameCol;
     tpl.photo = DriveLinkColumn;
     tpl.handover = handover;
     tpl.days = days_until_handover;

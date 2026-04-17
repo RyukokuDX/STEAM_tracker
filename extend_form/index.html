@@ -64,15 +64,13 @@
       letter-spacing: 0.04em;
       box-shadow: 0 1px 4px rgba(0,0,0,0.07);
       transition: background 0.2s;
+      cursor: pointer;
     }
 
-    button:active {
-      background-color: #005ecb;
-    }
+    button:active { background-color: #005ecb; }
+    button:disabled { opacity: 0.5; cursor: default; }
 
-    .hidden {
-      display: none;
-    }
+    .hidden { display: none; }
 
     .item-block {
       margin-bottom: 18px;
@@ -86,87 +84,142 @@
       display: block;
       object-fit: cover;
       border-radius: 8px;
+      margin-top: 8px;
+    }
+
+    #errorMsg {
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.85em;
+      display: none;
+    }
+
+    #errorMsg.error {
+      display: block;
+      color: #721c24;
+      background: #f8d7da;
     }
 
     @media (max-width: 480px) {
-      h1 {
-        font-size: 1.5em;
-      }
-      label {
-        font-size: 1.35em;
-      }
-      input, select {
-        font-size: 1.35em;
-        padding: 20px 16px;
-      }
-      button {
-        font-size: 1.4em;
-        padding: 22px 0;
-      }
+      h1 { font-size: 30px; }
+      label { font-size: 24px; }
+      input, select { font-size: 20px; padding: 14px 12px; }
+      button { font-size: 20px; padding: 16px 0; }
     }
-
   </style>
 </head>
 <body>
+
+  <!-- ステップ1: 学籍番号入力 -->
   <div class="container" id="loginView">
     <h1>延長申請ログイン</h1>
-    <label for="email">学籍番号</label>
-    <!-- <label for="email">メールアドレス</label> -->
-    <input type="email" id="email" placeholder="y200000">
-    <!-- <input type="email" id="email" value="<?!= email ?>" readonly> -->
-    <button onclick="submitEmail()">次へ</button>
+    <label for="studentId">学籍番号</label>
+    <input type="text" id="studentId" placeholder="y200000">
+    <div id="errorMsg"></div>
+    <button id="loginBtn" onclick="submitEmail()">次へ</button>
   </div>
 
+  <!-- ステップ2: 延長申請フォーム -->
   <div class="container hidden" id="formView">
     <h1>延長申請フォーム</h1>
     <div id="itemList"></div>
-    <button onclick="submitForm()">申請する</button>
+    <div id="errorMsg2" class="hidden" style="margin-top:12px;padding:10px;border-radius:8px;color:#721c24;background:#f8d7da;font-size:0.85em;"></div>
+    <button id="submitBtn" onclick="submitForm()">申請する</button>
   </div>
 
+  <!-- ステップ3: 完了画面 -->
   <div class="container hidden" id="doneView">
     <h1>申請を受け付けました</h1>
     <p>申請内容を確認後、メールにて通知いたします。</p>
   </div>
 
   <script>
-    // メールアドレスを検証してフォームを表示
-    function submitEmail() {
-      let email = document.getElementById('email').value.trim();
-      email += "@mail.ryukoku.ac.jp";
-      // if (!email.endsWith('@mail.ryukoku.ac.jp') || email.length < 20) {
-      //   alert('入力形式が正しくありません。龍谷大学のメールアドレスを使用してください。');
-      //   return;
-      // }
-      google.script.run
-        .withSuccessHandler(showForm)
-        .withFailureHandler(handleGetItemsError)
-        .getItemsByEmail(email);
+    // ============================================================
+    // ★ 設定: 延長申請GASのデプロイURL
+    // 公開リポジトリに実値を置かないこと
+    // ============================================================
+    const GAS_URL = '';
+
+    // ============================================================
+    // GASへのfetch（レスポンスを読むためcorsモードで送信）
+    // ============================================================
+    async function callGAS(action, payload) {
+      if (!GAS_URL) {
+        throw new Error('GAS_URL が未設定です');
+      }
+
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action, ...payload })
+      });
+      if (!res.ok) throw new Error(`HTTPエラー: ${res.status}`);
+      return await res.json();
     }
 
-    // getItemsByEmail 呼び出し失敗時のエラーハンドラ
-    function handleGetItemsError(error) {
-      console.error('getItemsByEmail failed:', error);
-      alert('物品情報の取得中にエラーが発生しました。時間をおいて再度お試しください。');
-    }
-    // 物品リスト表示
-    function showForm(items) {
-      // console.log(items);
-      if (!items || items.length === 0) {
-        alert('該当する物品が見つかりません');
+    // ============================================================
+    // ステップ1: 学籍番号からメールアドレスを生成して物品を取得
+    // ============================================================
+    async function submitEmail() {
+      const studentId = document.getElementById('studentId').value.trim();
+      const errEl = document.getElementById('errorMsg');
+      errEl.className = '';
+      errEl.textContent = '';
+
+      if (!studentId) {
+        errEl.className = 'error';
+        errEl.textContent = '学籍番号を入力してください。';
         return;
       }
+
+      const email = studentId + '@mail.ryukoku.ac.jp';
+      const loginBtn = document.getElementById('loginBtn');
+      loginBtn.disabled = true;
+      loginBtn.textContent = '取得中...';
+
+      try {
+        const result = await callGAS('getItemsByEmail', { email });
+        if (result.status === 'error') {
+          errEl.className = 'error';
+          errEl.textContent = result.message || '取得に失敗しました。';
+          loginBtn.disabled = false;
+          loginBtn.textContent = '次へ';
+          return;
+        }
+        showForm(result.items || []);
+      } catch (err) {
+        errEl.className = 'error';
+        errEl.textContent = 'サーバーへの接続に失敗しました。時間をおいて再度お試しください。';
+        console.error(err);
+        loginBtn.disabled = false;
+        loginBtn.textContent = '次へ';
+      }
+    }
+
+    // ============================================================
+    // ステップ2: 物品リスト表示
+    // ============================================================
+    function showForm(items) {
+      if (!items || items.length === 0) {
+        const errEl = document.getElementById('errorMsg');
+        errEl.className = 'error';
+        errEl.textContent = '該当する物品が見つかりません。';
+        document.getElementById('loginBtn').disabled = false;
+        document.getElementById('loginBtn').textContent = '次へ';
+        return;
+      }
+
       document.getElementById('loginView').classList.add('hidden');
       document.getElementById('formView').classList.remove('hidden');
 
       const listContainer = document.getElementById('itemList');
       listContainer.innerHTML = '';
-      
+
       items.forEach(item => {
-        // Calculate tomorrow's date in yyyy-MM-dd format (Asia/Tokyo)
         const today = new Date();
         const tomorrow = new Date(today);
         tomorrow.setDate(today.getDate() + 1);
-        // Format as yyyy-MM-dd
         const pad = n => n < 10 ? '0' + n : n;
         const minDate = tomorrow.getFullYear() + '-' + pad(tomorrow.getMonth() + 1) + '-' + pad(tomorrow.getDate());
 
@@ -185,7 +238,7 @@
 
         const img = document.createElement('img');
         img.src = item.image;
-        img.alt = 'image';
+        img.alt = '物品画像';
         img.className = 'item-image';
 
         itemBlock.appendChild(label);
@@ -193,53 +246,51 @@
         itemBlock.appendChild(img);
         listContainer.appendChild(itemBlock);
       });
-
     }
 
-    // 申請内容送信
-    function submitForm() {
-      const submitButton = document.querySelector('#formView button');
-      submitButton.disabled = true;
+    // ============================================================
+    // ステップ3: 延長申請送信
+    // ============================================================
+    async function submitForm() {
+      const submitButton = document.getElementById('submitBtn');
+      const errEl = document.getElementById('errorMsg2');
+      errEl.classList.add('hidden');
+      errEl.textContent = '';
 
-      // すべての日付入力を取得
       const dateInputs = document.querySelectorAll('#itemList input[type="date"]');
-      let results = [];
+      const results = Array.from(dateInputs).map(input => ({
+        id: Number(input.id.replace('date-', '')),
+        newDate: input.value
+      }));
 
-      dateInputs.forEach(input => {
-        // console.log(`input`);
-        // console.log(input);
-        const id = input.id.replace('date-', '');
-        const newDate = input.value;
-
-        results.push({
-          id: Number(id),
-          newDate: newDate
-        });
-      });
-
-      const hasEmpty = results.some(r => !r.newDate);
-      if (hasEmpty) {
-        alert('すべての日付を入力してください');
-        submitButton.disabled = false;
+      if (results.some(r => !r.newDate)) {
+        errEl.classList.remove('hidden');
+        errEl.textContent = 'すべての日付を入力してください。';
         return;
       }
 
-      // console.log(`pushed:`);
-      // console.log(results);
-      
-      google.script.run
-        .withSuccessHandler(() => {
-          document.getElementById('formView').classList.add('hidden');
-          document.getElementById('doneView').classList.remove('hidden');
-          submitButton.disabled = false;
-        })
-        .withFailureHandler(() => {
-          alert('申請送信に失敗しました。再度お試しください。');
-          submitButton.disabled = false;
-        })
-        .notifyExtensionRequest(results);
-    }
+      submitButton.disabled = true;
+      submitButton.textContent = '送信中...';
 
+      try {
+        const result = await callGAS('notifyExtensionRequest', { results });
+        if (result.status === 'error') {
+          errEl.classList.remove('hidden');
+          errEl.textContent = result.message || '申請送信に失敗しました。';
+          submitButton.disabled = false;
+          submitButton.textContent = '申請する';
+          return;
+        }
+        document.getElementById('formView').classList.add('hidden');
+        document.getElementById('doneView').classList.remove('hidden');
+      } catch (err) {
+        errEl.classList.remove('hidden');
+        errEl.textContent = 'サーバーへの接続に失敗しました。時間をおいて再度お試しください。';
+        console.error(err);
+        submitButton.disabled = false;
+        submitButton.textContent = '申請する';
+      }
+    }
   </script>
 </body>
 </html>

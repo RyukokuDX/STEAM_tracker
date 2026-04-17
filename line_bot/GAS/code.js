@@ -1,22 +1,41 @@
 const scriptProperties = PropertiesService.getScriptProperties();
-function getRequiredProperty(key) {
-  const value = scriptProperties.getProperty(key);
-  if (value === null || value === '') {
-    throw new Error(`${key} script property is not set. Please set it in Project Settings > Script Properties.`);
-  }
-  return value;
-}
-
-const ACCESS_TOKEN = getRequiredProperty('ACCESS_TOKEN');
-const USER_ID = getRequiredProperty('USER_ID');
-const FORM_URL = getRequiredProperty('FORM_URL');
-const SPREAD_SHEET_ID = getRequiredProperty('SPREAD_SHEET_ID');
-const SHEET_NAME_MANAGE = getRequiredProperty('SHEET_NAME_MANAGE');
+const ACCESS_TOKEN = scriptProperties.getProperty('ACCESS_TOKEN');
+const USER_ID = scriptProperties.getProperty('USER_ID');
+const FORM_URL = scriptProperties.getProperty('FORM_URL');
+const SPREAD_SHEET_ID = scriptProperties.getProperty('SPREAD_SHEET_ID');
+const SHEET_NAME_MANAGE = scriptProperties.getProperty('SHEET_NAME_MANAGE');
 
 const SPREAD_SHEET = SpreadsheetApp.openById(SPREAD_SHEET_ID);
 const SHEET = SPREAD_SHEET.getSheetByName(SHEET_NAME_MANAGE);
-if (!SHEET) {
-  throw new Error(`Sheet "${SHEET_NAME_MANAGE}" not found in spreadsheet with ID "${SPREAD_SHEET_ID}". URL: https://docs.google.com/spreadsheets/d/${SPREAD_SHEET_ID}`);
+
+// 新規登録通知専用のWebhook
+function doPost(e) {
+  try {
+    if (!e || !e.postData || !e.postData.contents) {
+      Logger.log('[line_bot doPost] POSTデータなし');
+      return jsonResponse({ status: 'error', message: 'POSTデータがありません。' });
+    }
+
+    const payload = JSON.parse(e.postData.contents);
+    Logger.log('[line_bot doPost] action=' + payload.action + ' payload=' + JSON.stringify(payload));
+    if (payload.action !== 'notifyRegistration') {
+      Logger.log('[line_bot doPost] 不明アクション: ' + payload.action);
+      return jsonResponse({ status: 'error', message: '不明なアクションです。' });
+    }
+
+    const result = registerNotify(payload.data || payload);
+    Logger.log('[line_bot doPost] result=' + JSON.stringify(result));
+    return jsonResponse(result);
+  } catch (err) {
+    Logger.log('doPost エラー: ' + err);
+    return jsonResponse({ status: 'error', message: String(err) });
+  }
+}
+
+function jsonResponse(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 // 列要素
@@ -30,7 +49,6 @@ const DAYS_UNTIL_HANDOVER = 6;  // 明け渡し日までの日数（計算列）
 const STATUS = 7;               // active / archived / pending
 const ADMIN_NOTE = 8;           // 管理者備考
 
-
 // スプレッドシート上の日付を確認し、一致する日付であればメッセージ送信
 function handoverDayRemind() {
   const data = SHEET.getDataRange().getValues();
@@ -41,7 +59,7 @@ function handoverDayRemind() {
     const email = data[i][EMAIL];
     const name = data[i][NAME];
     const organ = data[i][ORGANIZATION];
-    const handoverDay = Number(data[i][DAYS_UNTIL_HANDOVER]);
+    const handoverDay = data[i][DAYS_UNTIL_HANDOVER];
 
     let mailFailLog = null; // メール送信失敗時のログ
 
@@ -71,56 +89,58 @@ function handoverDayRemind() {
   }
 }
 
-// 前日に登録された物品についての通知
-function registerNotify() {
-  const data = SHEET.getDataRange().getValues();
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayDate = Utilities.formatDate(yesterday, 'Asia/Tokyo', 'yyyy-MM-dd');
+// 新規登録時の通知
+// 呼び出し元から { name, organization, photoFileId } を受け取る
+function registerNotify(registration) {
+  if (!registration) {
+    Logger.log('[line_bot registerNotify] registrationなし');
+    return { status: 'error', message: '登録データがありません。' };
+  }
 
-  for (let i = 1; i < data.length; i++) {
-    const registeredAt = data[i][REGISTERED_AT];  // 登録日時
-    if (!registeredAt) continue;
-    // 日付部分だけ抽出
-    const registeredDate = Utilities.formatDate(new Date(registeredAt), 'Asia/Tokyo', 'yyyy-MM-dd');
-    if (registeredDate !== yesterdayDate) continue;
+  const name = String(registration.name || '').trim();
+  const organization = String(registration.organization || '').trim();
+  const photoFileId = String(registration.photoFileId || registration.photo || '').trim();
+  Logger.log('[line_bot registerNotify] name=' + name + ' organization=' + organization + ' photo=' + photoFileId);
 
-    Logger.log(`登録通知: ${i}行目`);
-    const name = data[i][NAME];
-    const organ = data[i][ORGANIZATION];
+  if (!name || !photoFileId) {
+    Logger.log('[line_bot registerNotify] 必須項目不足');
+    return { status: 'error', message: '通知に必要な情報が不足しています。' };
+  }
 
-    // 画像付きメッセージ送信
-    const payload = {
-      to: USER_ID,
-      messages: [
-        {
-          type: "flex",
-          altText: "物品登録通知",
-          contents: {
-            type: "bubble",
-            hero: {
-              type: "image",
-              url: "https://drive.google.com/uc?export=view&id=" + data[i][PHOTO_FILE_ID],
-              size: "full",
-              aspectRatio: "20:13",
-              aspectMode: "cover"
-            },
-            body: {
-              type: "box",
-              layout: "vertical",
-              contents: [
-                { type: "text", text: "物品登録", weight: "bold", size: "xl" },
-                { type: "text", text: `${data[i][NAME]}（${data[i][ORGANIZATION]}）`, size: "md", wrap: true }
-              ]
-            }
+  const payload = {
+    to: USER_ID,
+    messages: [
+      {
+        type: 'flex',
+        altText: '物品登録通知',
+        contents: {
+          type: 'bubble',
+          hero: {
+            type: 'image',
+            url: 'https://drive.google.com/uc?export=view&id=' + photoFileId,
+            size: 'full',
+            aspectRatio: '20:13',
+            aspectMode: 'cover'
+          },
+          body: {
+            type: 'box',
+            layout: 'vertical',
+            contents: [
+              { type: 'text', text: '物品登録', weight: 'bold', size: 'xl' },
+              { type: 'text', text: `${name}（${organization || '団体名未入力'}）`, size: 'md', wrap: true }
+            ]
           }
         }
-      ]
-    };
-    sendLinePushObject(payload);
+      }
+    ]
+  };
 
-    // sendLineMessage(USER_ID, text);
+  const lineResult = sendLinePushObject(payload);
+  if (!lineResult.success) {
+    return { status: 'error', message: lineResult.message };
   }
+
+  return { status: 'ok' };
 }
 
 // メールを送信
@@ -141,7 +161,7 @@ function sendEmail(to, subject, body) {
 // LINE Messaging APIでメッセージを送信
 function sendLineMessage(to, text, mailFailLog) {
   const url = 'https://api.line.me/v2/bot/message/push';
-  if (mailFailLog.success === false) {
+  if (mailFailLog && mailFailLog.success === false) {
     text += "\n（メール送信に失敗しました。" + mailFailLog.message + ")";
   }
 
@@ -161,9 +181,18 @@ function sendLineMessage(to, text, mailFailLog) {
 
   try {
     const response = UrlFetchApp.fetch(url, options);
-    Logger.log('送信成功: ' + response.getContentText());
+    const statusCode = response.getResponseCode();
+    const body = response.getContentText();
+    if (statusCode < 200 || statusCode >= 300) {
+      Logger.log(`送信失敗: HTTP ${statusCode} ${body}`);
+      return { success: false, message: `HTTP ${statusCode}: ${body}` };
+    }
+
+    Logger.log('送信成功: ' + body);
+    return { success: true, message: '' };
   } catch (e) {
     Logger.log('送信失敗: ' + e);
+    return { success: false, message: String(e) };
   }
 }
 
@@ -182,8 +211,17 @@ function sendLinePushObject(payload) {
 
   try {
     const res = UrlFetchApp.fetch(url, options);
-    Logger.log("送信成功: " + res.getContentText());
+    const statusCode = res.getResponseCode();
+    const body = res.getContentText();
+    if (statusCode < 200 || statusCode >= 300) {
+      Logger.log(`送信失敗: HTTP ${statusCode} ${body}`);
+      return { success: false, message: `HTTP ${statusCode}: ${body}` };
+    }
+
+    Logger.log("送信成功: " + body);
+    return { success: true, message: '' };
   } catch (e) {
     Logger.log("送信失敗: " + e);
+    return { success: false, message: String(e) };
   }
 }
