@@ -1,15 +1,107 @@
 // Code.gs
+
 const SPREADSHEET_ID = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
 if (!SPREADSHEET_ID) {
   throw new Error(
     "SPREADSHEET_ID script property is not set. Please set it in the Apps Script dashboard under Project Settings > Script Properties."
   );
 }
-const DOMAIN = 'mail.ryukoku.ac.jp'; // ドメインチェック用
-const LOCK_TIMEOUT_MS = 30000; // 30秒
-const MAX_NAME_LENGTH = 50;    // 氏名の最大文字数
+const DOMAIN = 'mail.ryukoku.ac.jp';
+const LOCK_TIMEOUT_MS = 30000;
+const MAX_NAME_LENGTH = 50;
+const LINE_BOT_NOTIFY_URL = PropertiesService.getScriptProperties().getProperty('LINE_BOT_NOTIFY_URL');
 
-// メールを送信
+// ============================================================
+// doPost: 静的HTMLからのfetchを受け取るエントリーポイント
+// actionフィールドで処理を振り分ける
+// ============================================================
+function doPost(e) {
+  try {
+    const payload = JSON.parse(e.postData.contents);
+    const action = payload.action;
+
+    Logger.log('[doPost] action=' + action + ' payload=' + JSON.stringify(payload));
+
+    let result;
+    if (action === 'uploadPhoto') {
+      result = uploadPhoto(payload.dataUrl, payload.filename);
+    } else if (action === 'submitForm') {
+      result = submitForm(payload);
+    } else {
+      result = { status: 'error', message: '不明なアクションです: ' + action };
+    }
+    Logger.log('[doPost] result=' + JSON.stringify(result));
+
+    return ContentService
+      .createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    Logger.log('[doPost] エラー: ' + err);
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'error', message: String(err) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ============================================================
+// line_bot Webhookに新規登録通知を送信
+// ============================================================
+function notifyLineBotNewRegistration(registration) {
+  if (!LINE_BOT_NOTIFY_URL) {
+    Logger.log('[LINE連携] LINE_BOT_NOTIFY_URL が未設定');
+    return { success: false, message: 'LINE_BOT_NOTIFY_URL が未設定です。' };
+  }
+
+  const requestBody = {
+    action: 'notifyRegistration',
+    data: registration
+  };
+
+  const options = {
+    method: 'post',
+    contentType: 'application/json; charset=utf-8',
+    payload: JSON.stringify(requestBody),
+    muteHttpExceptions: true
+  };
+
+  try {
+    Logger.log('[LINE連携] request=' + JSON.stringify(requestBody));
+    const res = UrlFetchApp.fetch(LINE_BOT_NOTIFY_URL, options);
+    const statusCode = res.getResponseCode();
+    const text = res.getContentText();
+    Logger.log(`[LINE連携] HTTP ${statusCode} body=${text}`);
+    if (statusCode < 200 || statusCode >= 300) {
+      return { success: false, message: `HTTP ${statusCode}: ${text}` };
+    }
+
+    const parsed = text ? JSON.parse(text) : {};
+    if (parsed.status !== 'ok') {
+      return { success: false, message: parsed.message || 'line_bot がエラーを返しました。' };
+    }
+
+    return { success: true, message: '' };
+  } catch (err) {
+    return { success: false, message: String(err) };
+  }
+}
+
+// ============================================================
+// 手動疎通確認用: Apps Script エディタから実行
+// ============================================================
+function testLineBotNotify() {
+  const result = notifyLineBotNewRegistration({
+    name: '疎通テスト',
+    organization: 'テスト団体',
+    photoFileId: 'TEST_FILE_ID'
+  });
+  Logger.log('[LINE連携テスト] ' + JSON.stringify(result));
+  return result;
+}
+
+// ============================================================
+// メール送信
+// ============================================================
 function sendEmail(to, subject, body) {
   try {
     if (!to || !subject || !body) {
@@ -24,190 +116,80 @@ function sendEmail(to, subject, body) {
   }
 }
 
-/**
- * テンプレートから他ファイル内容を取り込むためのユーティリティ
- * 例: <style><?!= include('style'); ?></style>
- */
-function include(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
-}
-
-/**
- * 年度末日を取得 (3月31日を基準とする)
- * - 3/31を含む（当日も年度末とみなす）
- * - 3/31を過ぎていたら翌年の3/31を返す
- */
+// ============================================================
+// 年度末日を取得 (3月31日基準)
+// ============================================================
 function getFiscalYearEnd(todayDate) {
   const year = todayDate.getFullYear();
-  const thisYearMar31 = new Date(year, 2, 31); // monthは0-based (3月は2)
+  const thisYearMar31 = new Date(year, 2, 31);
   const normalize = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
   const t = normalize(todayDate);
   const m = normalize(thisYearMar31);
-  // 3/31を含むため t > m を使用
   if (t > m) return new Date(year + 1, 2, 31);
   return m;
 }
 
-// /**
-//  * メールアドレスを取得し、ドメインをチェック
-//  * @returns {Object} {email: string, error: string}
-//  */
-// function getVerifiedEmail() {
-//   try {
-//     const email = Session.getActiveUser().getEmail();
-//     if (!email) {
-//       Logger.log("[認証エラー] メールアドレスの取得に失敗");
-//       return {
-//         error: "認証に失敗しました。ブラウザを再読み込みして再度サインインしてください。"
-//       };
-//     }
-//     if (!email.endsWith('@' + DOMAIN)) {
-//       Logger.log(`[認証エラー] 無効なドメイン: ${email}`);
-//       return {
-//         error: `このフォームは ${DOMAIN} ドメインのみ利用できます。`
-//       };
-//     }
-//     return { email };
-//   } catch (err) {
-//     Logger.log(`[認証エラー] 例外発生: ${err}`);
-//     return {
-//       error: "認証中にエラーが発生しました。ブラウザを再読み込みしてお試しください。"
-//     };
-//   }
-// }
-
-/**
- * フォームを表示
- * X-Frame-Options: SAMEORIGIN で埋め込み制限（セキュリティ対策）
- */
-function doGet(e) {
-  // メールドメイン制限は一時停止中
-  // const auth = getVerifiedEmail();
-  // if (auth.error) {
-  //   return HtmlService.createHtmlOutput(auth.error)
-  //     // モバイル端末でエラーメッセージを適切に表示するためのviewport設定を追加
-  //     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover')
-  //     .setTitle('アクセス拒否');
-  // }
-
-  const tpl = HtmlService.createTemplateFromFile('index');
-  const now = new Date();
-  const tz = Session.getScriptTimeZone();
-  tpl.fiscalEndStr = Utilities.formatDate(getFiscalYearEnd(now), tz, "yyyy-MM-dd");
-  tpl.todayStr = Utilities.formatDate(now, tz, "yyyy-MM-dd");
-  // NOTE: Apps Script HTML templates evaluate scriptlets even inside HTML comments.
-  // index.html contains commented-out `<?= email ?>` / `<?= domain ?>` placeholders,
-  // so define safe defaults to avoid ReferenceError when domain auth is disabled.
-  tpl.email = '';
-  // tpl.email = auth.email;
-  tpl.domain = DOMAIN;
-
-  // Avoid calling setXFrameOptionsMode because some GAS runtimes may not
-  // expose the XFrameOptionsMode enum (leading to a null 'mode' error).
-  // If you need to change framing behavior, set it in the Apps Script
-  // deployment settings or use the explicit ALLOWALL value if available.
-  return tpl.evaluate()
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover')
-    .setTitle("物品登録フォーム");
-}
-
-/**
- * 日付文字列のバリデーション
- * @returns {Object} {date: Date, error: string}
- */
+// ============================================================
+// 日付文字列のバリデーション
+// ============================================================
 function validateDate(dateStr) {
   if (!dateStr) return { error: "日付が指定されていません" };
-  
-  // YYYY-MM-DD 形式であることを確認
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
     return { error: "日付の形式が不正です (YYYY-MM-DD)" };
   }
-
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) {
     return { error: "無効な日付です" };
   }
-
-  // 時刻部分を切り捨て（normalize）
-  return { 
+  return {
     date: new Date(date.getFullYear(), date.getMonth(), date.getDate())
   };
 }
 
-
-/**
- * フォーム送信（排他制御、厳格なバリデーション付き）
- */
+// ============================================================
+// フォーム送信処理
+// ============================================================
 function submitForm(payload) {
   if (!payload) {
-    return { 
-      status: "error",
-      message: "送信データが空です"
-    };
+    return { status: "error", message: "送信データが空です" };
   }
+  Logger.log('[submitForm] start payload=' + JSON.stringify(payload));
 
   const email = (payload.email || "").trim();
   const emailLower = email.toLowerCase();
   if (!email) {
-    return {
-      status: "error",
-      message: "メールアドレスは必須です"
-    };
+    return { status: "error", message: "メールアドレスは必須です" };
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return {
-      status: "error",
-      message: "メールアドレスの形式が不正です"
-    };
+    return { status: "error", message: "メールアドレスの形式が不正です" };
   }
-
-  // ドメインチェック
   if (!emailLower.endsWith('@' + DOMAIN.toLowerCase())) {
-    return {
-      status: "error",
-      message: `学内のメールアドレス（@${DOMAIN}）のみ利用可能です`
-    };
+    return { status: "error", message: `学内のメールアドレス（@${DOMAIN}）のみ利用可能です` };
   }
 
-  // 氏名の必須チェックと文字数制限（トリム後で判定）
   const name = (payload.name || "").trim();
   if (name.length === 0) {
-    return {
-      status: "error",
-      message: "氏名は必須です"
-    };
+    return { status: "error", message: "氏名は必須です" };
   }
   if (name.length > MAX_NAME_LENGTH) {
-    return {
-      status: "error",
-      message: `氏名は${MAX_NAME_LENGTH}文字以内で入力してください`
-    };
+    return { status: "error", message: `氏名は${MAX_NAME_LENGTH}文字以内で入力してください` };
   }
 
-  // 日付の厳格なバリデーション
   const dateResult = validateDate(payload.date);
   if (dateResult.error) {
-    return {
-      status: "error",
-      message: dateResult.error
-    };
+    return { status: "error", message: dateResult.error };
   }
 
-  // 写真は必須
   if (!payload.photo || String(payload.photo).trim() === '') {
-    Logger.log('[submitForm] 写真ファイルIDが指定されていません');
     return { status: 'error', message: '写真は必須です。' };
   }
 
   const now = new Date();
-  now.setHours(0, 0, 0, 0);  // 時刻部分を切り捨て
-
+  now.setHours(0, 0, 0, 0);
   const fiscalEnd = getFiscalYearEnd(now);
+
   if (dateResult.date < now) {
-    return {
-      status: "error",
-      message: "過去の日付は選択できません"
-    };
+    return { status: "error", message: "過去の日付は選択できません" };
   }
   if (dateResult.date > fiscalEnd) {
     return {
@@ -220,17 +202,14 @@ function submitForm(payload) {
   let locked = false;
   try {
     if (!lock.tryLock(LOCK_TIMEOUT_MS)) {
-      Logger.log("[フォーム送信] ロック取得タイムアウト");
       throw new Error("サーバーが混み合っています。しばらく待ってから再度お試しください。");
     }
     locked = true;
 
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    // Save into the 管理シート to match existing spreadsheet layout
     const shName = "管理シート";
     const sh = ss.getSheetByName(shName) || ss.insertSheet(shName);
 
-    // ヘッダーチェックと追加を排他制御
     if (sh.getLastRow() === 0) {
       sh.appendRow([
         "タイムスタンプ",
@@ -258,9 +237,6 @@ function submitForm(payload) {
       ""
     ]);
 
-    Logger.log(`[フォーム送信] 成功: ${email}, date=${payload.date}`);
-
-    // 確認メール送信
     const emailSubject = "【STEAMコモンズ】物品登録完了のお知らせ";
     const emailBody = `${name} 様
 
@@ -292,62 +268,61 @@ STEAMコモンズ
       };
     }
 
+    const lineResult = notifyLineBotNewRegistration({
+      name,
+      organization: payload.organization || '',
+      photoFileId: payload.photo || ''
+    });
+    Logger.log('[submitForm] lineResult=' + JSON.stringify(lineResult));
+
+    let responseMessage = `送信完了しました。確認メールを ${email} に送信しました。届かない場合は迷惑メールフォルダをご確認ください。`;
+    if (!lineResult.success) {
+      Logger.log(`[フォーム送信] LINE通知失敗: ${lineResult.message}`);
+      responseMessage += '\n（管理者向けLINE通知に失敗しました。運用担当者に連絡してください。）';
+    }
+
     return {
       status: "ok",
-      message: `送信完了しました。確認メールを ${email} に送信しました。届かない場合は迷惑メールフォルダをご確認ください。`
+      message: responseMessage
     };
 
   } catch (err) {
     Logger.log(`[フォーム送信] エラー: ${err}`);
-    return {
-      status: "error",
-      message: err.message || "送信中にエラーが発生しました"
-    };
+    return { status: "error", message: err.message || "送信中にエラーが発生しました" };
 
   } finally {
     if (locked) lock.releaseLock();
   }
 }
 
-/**
- * Upload a base64 data URL image to a specified Drive folder and return the file ID.
- * @param {string} dataUrl - data:[<mediatype>][;base64],<data>
- * @param {string} filename - original filename (optional)
- */
+// ============================================================
+// 写真アップロード処理
+// ============================================================
 function uploadPhoto(dataUrl, filename) {
   try {
     if (!dataUrl || typeof dataUrl !== 'string') {
       throw new Error('アップロードするデータがありません');
     }
 
-    // Parse data URL
     const m = dataUrl.match(/^data:(.+);base64,(.*)$/);
     if (!m) throw new Error('無効なデータURLです');
     const contentType = m[1];
-    
-    // 許可する画像 MIME タイプをホワイトリストで明示的に制限する
-    const allowedImageTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/webp'
-    ];
+
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedImageTypes.includes(contentType)) {
       throw new Error('許可されていないファイル形式です。JPEG/PNG/WebP のみアップロード可能です。');
     }
 
     const b64 = m[2];
     const bytes = Utilities.base64Decode(b64);
-    
-    // 画像がJPEGなら拡張子を .jpg に強制する（中身と拡張子の不一致を防ぐ）
+
     let saveName = filename || ('photo_' + new Date().getTime());
     if (contentType === 'image/jpeg') {
       saveName = saveName.replace(/\.[^.]+$/, '') + '.jpg';
     }
 
-    const blobName = saveName;
-    const blob = Utilities.newBlob(bytes, contentType, blobName);
+    const blob = Utilities.newBlob(bytes, contentType, saveName);
 
-    // Target folder (指定されたフォルダに保存)
     const folderId = PropertiesService.getScriptProperties().getProperty('driveFolder_ID');
     if (!folderId) {
       throw new Error(
@@ -359,6 +334,7 @@ function uploadPhoto(dataUrl, filename) {
 
     Logger.log(`[uploadPhoto] saved fileId=${file.getId()} name=${file.getName()}`);
     return { status: 'ok', id: file.getId() };
+
   } catch (err) {
     Logger.log(`[uploadPhoto] エラー: ${err}`);
     return { status: 'error', message: String(err) };
