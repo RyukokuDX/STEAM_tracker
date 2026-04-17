@@ -1,12 +1,24 @@
 const scriptProperties = PropertiesService.getScriptProperties();
-const ACCESS_TOKEN = scriptProperties.getProperty('ACCESS_TOKEN');
-const USER_ID = scriptProperties.getProperty('USER_ID');
-const FORM_URL = scriptProperties.getProperty('FORM_URL');
-const SPREAD_SHEET_ID = scriptProperties.getProperty('SPREAD_SHEET_ID');
-const SHEET_NAME_MANAGE = scriptProperties.getProperty('SHEET_NAME_MANAGE');
+
+function getRequiredProperty(key) {
+  const value = scriptProperties.getProperty(key);
+  if (value === null || value === '') {
+    throw new Error(`${key} script property is not set. Please set it in Project Settings > Script Properties.`);
+  }
+  return value;
+}
+
+const ACCESS_TOKEN = getRequiredProperty('ACCESS_TOKEN');
+const USER_ID = getRequiredProperty('USER_ID');
+const FORM_URL = getRequiredProperty('FORM_URL');
+const SPREAD_SHEET_ID = getRequiredProperty('SPREAD_SHEET_ID');
+const SHEET_NAME_MANAGE = getRequiredProperty('SHEET_NAME_MANAGE');
 
 const SPREAD_SHEET = SpreadsheetApp.openById(SPREAD_SHEET_ID);
 const SHEET = SPREAD_SHEET.getSheetByName(SHEET_NAME_MANAGE);
+if (!SHEET) {
+  throw new Error(`シート "${SHEET_NAME_MANAGE}" が見つかりません。SHEET_NAME_MANAGE を確認してください。`);
+}
 
 // 新規登録通知専用のWebhook
 function doPost(e) {
@@ -59,7 +71,7 @@ function handoverDayRemind() {
     const email = data[i][EMAIL];
     const name = data[i][NAME];
     const organ = data[i][ORGANIZATION];
-    const handoverDay = data[i][DAYS_UNTIL_HANDOVER];
+    const handoverDay = Number(data[i][DAYS_UNTIL_HANDOVER]);
 
     let mailFailLog = null; // メール送信失敗時のログ
 
