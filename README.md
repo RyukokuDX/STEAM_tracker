@@ -9,34 +9,31 @@
 ## ドキュメント
 このプロジェクトに関する詳細なドキュメントは、すべてdocsフォルダに格納されています。
 
--   **[GitHub利用ガイド](./docs/GITHUB_GUIDE.md)**
-
-    -   本プロジェクトにおけるGitおよびGitHubの運用ルールについて説明しています。
-
--   **[プロジェクト要件定義書](./docs/REQUIREMENTS.md)**
-
-    -   プロジェクトの目的、要件、仕様などを定義したドキュメントです。
-
--   **[clasp ガイド](./docs/CLASP_GUIDE.md)**
-
-    -   clasp を使った Google Apps Script のローカル開発・ビルド・デプロイ手順をまとめたドキュメントです。
+-   **[GitHub利用ガイド](./docs/GITHUB_GUIDE.md)** — 本プロジェクトにおけるGit/GitHubの運用ルール
+-   **[プロジェクト要件定義書](./docs/REQUIREMENTS.md)** — プロジェクトの目的、要件、仕様の定義
+-   **[要件仕様書](./docs/SPECIFICATIONS.md)** — 各機能の動作仕様（モジュール構成・処理・トリガー等）
+-   **[登録フォーム仕様書](./docs/FORM_REQUIREMENTS.md)** — 物品登録フォームの仕様
+-   **[延長申請フォーム仕様書](./docs/EXTEND_FORM_SPECIFICATION.md)** — 延長申請フォームの仕様
+-   **[LINE Bot仕様書](./docs/LINE_BOT_SPECIFICATION.md)** — LINE通知/Webhookの仕様
+-   **[clasp ガイド](./docs/CLASP_GUIDE.md)** — clasp を使った Apps Script のローカル開発・デプロイ手順
 
 ## 主な機能
 
 -   **利用者向け機能**
-    -   QRコード経由での物品登録（所有者情報、物品情報、写真、明け渡し日）
+    -   Web フォーム経由での物品登録（所有者情報、物品情報、写真、明け渡し日）
     -   明け渡し日前のリマインダーメール受信
+    -   Web フォーム経由での延長申請（管理者の許可/却下後にメール通知）
 -   **管理者向け機能**
-    -   LINE Botによる期限切れ物品の自動通知
-    -   LINE Botのボタン操作による撤去完了（アーカイブ）処理
-    -   （AppSheet）管理ダッシュボードによる登録物品の一覧・検索
+    -   LINE による物品登録通知 / 明け渡しリマインド通知
+    -   LINE のボタン操作（postback）による延長申請の許可/却下
+    -   管理ダッシュボードによる登録物品の一覧・検索（`dashboard/`）
 
 ## アーキテクチャ（使用技術）
 
 -   **Backend / Automation**: Google Apps Script (GAS)
 -   **Database**: Google Sheets
--   **User Registration UI**: Google Forms
--   **Admin Interface**: LINE Messaging API, AppSheet
+-   **User Registration UI**: Apps Script + 静的HTML（Webアプリ）
+-   **Admin Interface**: LINE Messaging API（Push + Webhook postback）、管理ダッシュボード
 -   **Development Tool**: clasp, Git, GitHub
 
 ## プロジェクト構造
@@ -44,23 +41,40 @@
 ```
 STEAM_tracker/
 ├── docs/                                     # プロジェクトドキュメント
-|   ├── CLASP_GUIDE.md                        # claspガイド
+│   ├── CLASP_GUIDE.md                        # claspガイド
 │   ├── GITHUB_GUIDE.md                       # Git/GitHub運用ガイド
 │   ├── COMMIT_MESSAGE_SPECIFICATION.md       # コミットメッセージの仕様
-│   ├── FORM_REQUIREMENTS.md                  # フォーム仕様書
-│   ├── GAS_REQUIREMENTS.md                   # GAS仕様書（あとで消す）
 │   ├── COMMIT_MESSAGE_AS_CODE_GUIDE.md       # コミットメッセージ駆動開発のガイド
 │   ├── PULL_REQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
-│   |── REQUIREMENTS.md                       # 要件定義書
-|   |── APP_SHEET.md                          # フロントシート仕様書
-|   |── SPECIFICATIONS.md                     # 要件仕様書
-|   └── SPREAD_SHEET_REQUIREMENTS.md          # スプレッドシート仕様書
-│ 
-├── GAS/
-|   ├── code.gs
-|   └── .claspignore                          # GASにアップしたくないファイル/フォルダを指定
-├── .gitignore                                # Gitの管理から除外するファイル/フォルダを指定
-├── LICENSE                                   # ライセンス
+│   ├── REQUIREMENTS.md                       # 要件定義書
+│   ├── SPECIFICATIONS.md                     # 要件仕様書
+│   ├── FORM_REQUIREMENTS.md                  # 登録フォーム仕様書
+│   ├── EXTEND_FORM_SPECIFICATION.md          # 延長申請フォーム仕様書
+│   ├── LINE_BOT_SPECIFICATION.md             # LINE Bot仕様書
+│   ├── LINE_NOTIFICATION_ISSUES.md           # LINE通知の問題点調査・改良記録
+│   ├── APP_SHEET.md                          # ダッシュボード仕様書
+│   ├── GAS_REQUIREMENTS.md                   # GAS仕様書
+│   ├── SPREAD_SHEET_REQUIREMENTS.md          # スプレッドシート仕様書
+│   ├── GUIDELINE.md                          # 開発ガイドライン
+│   └── NPM_TEST_HOWTO.md                     # npmテストガイド
+│
+├── stuffForm/                                # 物品登録フォーム（Webアプリ）
+│   ├── GAS/code.js
+│   └── index.html
+├── extend_form/                              # 延長申請フォーム（Webアプリ + LINE Webhook）
+│   ├── GAS/code.js
+│   └── index.html
+├── line_bot/                                 # LINE Bot（登録通知・リマインド）
+│   └── GAS/code.js
+├── dashboard/                                # 管理ダッシュボード
+│   ├── code.js
+│   ├── index.html
+│   ├── index-demo.html
+│   └── style.html
+├── .github/                                  # GitHub Actions / PR テンプレート
+├── .commits/                                 # commit-message-as-code 履歴
+├── .gitignore
+├── LICENSE
 └── README.md                                 # 本ファイル
 ```
 
@@ -91,11 +105,22 @@ cd STEAM_tracker
 
 3. 「スクリプト プロパティ」セクションで、「スクリプトプロパティを追加」を押し、「プロパティ」「値」の欄に以下のように追加して保存してください。
 
-- SHEET_ID=（Google Sheets の ID）
-- LINE_CHANNEL_ACCESS_TOKEN=（LINE チャネルアクセストークン）
-- LINE_CHANNEL_SECRET=（LINE チャネルシークレット）
-- GMAIL_API_ENABLED=true（メール送信が AppScript 経由で必要な場合）
-- OPTIONAL: SERVICE_ACCOUNT_CREDENTIALS (CI で使用するサービスアカウント JSON のパスか内容)
+共通（`line_bot/`、`extend_form/` の GAS プロジェクトに設定）：
+
+- `ACCESS_TOKEN` =（LINE チャネルアクセストークン）
+- `USER_ID` =（通知先となる管理者のLINEユーザーID）
+- `SPREAD_SHEET_ID` =（管理シートのSpreadsheet ID）
+- `SHEET_NAME_MANAGE` =（管理シート名）
+
+`line_bot/` 固有：
+
+- `FORM_URL` =（延長申請フォームのURL、リマインドメール本文に埋め込む）
+
+`extend_form/` 固有：
+
+- `LINE_WEBHOOK_TOKEN` =（LINE Webhook の検証用トークン、optional だが本番では必須）
+
+上記のいずれかが未設定の場合、起動時に `getRequiredProperty` が明示的なエラーを投げて停止する（`LINE_WEBHOOK_TOKEN` は未設定時に検証スキップされるが本番非推奨）。
 
 > Google Spread Sheetで使うIDやトークンは.envファイルに書かないでください 
 
