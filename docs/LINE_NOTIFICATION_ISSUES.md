@@ -1,9 +1,9 @@
-# LINE通知の問題点調査報告
+# LINE通知の問題点調査報告と改良
 
 - 調査日: 2026-04-17
-- 調査ブランチ: `fix/line-notification-regressions`
-- 対象コード: `line_bot/GAS/code.js`（`origin/develop` 時点）
-- 対象仕様: `docs/SPECIFICATIONS.md`、`docs/LINE_BOT_SPECIFICATION.md`
+- 調査ブランチ: `claude/fix/line-notification-regressions`
+- 対象コード: `line_bot/GAS/code.js`、`extend_form/GAS/code.js`（`origin/develop` 時点）
+- 対象仕様: `docs/SPECIFICATIONS.md`、`docs/LINE_BOT_SPECIFICATION.md`、`docs/EXTEND_FORM_SPECIFICATION.md`
 
 ---
 
@@ -14,7 +14,7 @@ LINE通知の挙動を確認した結果、**過去に修正済みだった以�
 - PR #76 の修正（`handoverDay` の数値化）が消失 → リマインド通知が発火しない
 - PR #78 の修正（必須 script properties の起動時検証）が消失 → 未設定時に原因不明な例外
 
-本 PR はこの2件を復元することを目的とする。未実装機能（`extendRequestNotify`、年度末一斉通知、再試行ロジックなど）は scope 外とし、後続 PR で対応する。
+本 PR はこの2件の復元に加え、**発見された他の品質上の問題も併せて改良する**。未実装機能（年度末一斉通知、アーカイブ処理など）は scope 外とし、後続 PR で対応する。
 
 ---
 
@@ -87,31 +87,56 @@ if (!SHEET) {
 
 ---
 
-## 4. scope 外とした問題（後続 PR で対応すべき）
+## 4. 併せて実施した改良
 
-リグレッション復元と独立したバグ・未実装機能。優先度別に記録する。
+リグレッション復元と合わせて、以下の品質問題にも本 PR で対応した。
 
-### P1（品質改善）
-| 項目 | 現状 | 期待 |
+### 4.1 `extend_form/GAS/code.js` にも起動時検証を導入
+
+`line_bot` と同じ `getRequiredProperty()` と SHEET 存在チェックを `extend_form` にも展開。両モジュールで挙動を統一。
+
+### 4.2 `sendLinePushObject` の品質統一とリトライ導入（両モジュール）
+
+`extend_form` 側の `sendLinePushObject` は HTTPステータス未検査・返り値なしで、呼び出し元が失敗を検知できなかった。これを `line_bot` と同じ形に揃え、さらに **両モジュールに最大3回の指数バックオフリトライ**（1秒 → 2秒 → 4秒）を実装した。
+
+- 2xx 成功: `{success: true}` 即座に返却
+- 4xx クライアントエラー: リトライせず即時失敗（トークン不正などで無駄な試行を避ける）
+- 5xx / ネットワーク例外: 最大3回リトライ後失敗
+
+仕様書 §6「通知失敗時は自動で再試行を行い」に対応。再試行失敗時の管理者通知は「別チャネル（メール等）での通知」となるため、本PRでは `{success:false, message}` の戻り値で呼び出し元に失敗を伝播するに留め、上位での通知ルート整備は後続PRで対応する。
+
+### 4.3 `notifyExtensionRequest` の入力検証を追加
+
+`item.id` と `item.newDate` を LINE メッセージおよび postback data に未検証で埋め込んでいたため、以下の検証を前置：
+- `id`: 整数かつ `1 <= id < data.length`
+- `newDate`: `YYYY-MM-DD` の正規表現一致
+
+### 4.4 `approveRequest` / `rejectRequest` の引数検証統一
+
+`approveRequest` には id の範囲チェックが無かった。`rejectRequest` 側にあった検証を両方に統一、かつ `id < 0` → `id < 1`（index 0 は見出し行）に修正。
+
+### 4.5 `sendLineMessage` を `sendLinePushObject` の薄いラッパに統一
+
+`line_bot` 側で `sendLineMessage` と `sendLinePushObject` が別々に LINE API を叩いていたため、`sendLineMessage` を `sendLinePushObject` の薄いラッパに変更。リトライロジックを一箇所に集約。
+
+### 4.6 画像URLを `lh3.googleusercontent.com/d/{id}` に統一
+
+`line_bot/GAS/code.js` の `registerNotify` は `drive.google.com/uc?export=view&id=XXX` を使っていたが、`extend_form` 側が採用している `lh3.googleusercontent.com/d/XXX` のほうが LINE 側から安定的にアクセス可能（リダイレクトが少ない）。両モジュールで統一。
+
+---
+
+## 5. 後続 PR で対応すべき残課題
+
+| 項目 | 優先度 | 備考 |
 | :-- | :-- | :-- |
-| `sendLineMessage` の `mailFailLog` null 参照 | L164: `mailFailLog && mailFailLog.success` でガード済（#83時点で対応） | ✅ 既に修正済み |
-| HTTPステータスコードの未検査 | L184-196 で検査済 | ✅ 既に修正済み |
-| `muteHttpExceptions` 設定の不一致 | `sendLineMessage` 未指定 / `sendLinePushObject` true | 片方に統一すべき |
-| Drive 画像の共有設定 | `getFileById().setSharing(...)` 未実装 | 登録時または通知前に anyone-with-link へ |
-| トリガー順序への暗黙依存 | `handoverDayRemind` が更新済み列を前提 | 関数内で HANDOVER_ON から都度計算 |
-
-### P2（未実装機能 / 仕様との乖離）
-`docs/LINE_BOT_SPECIFICATION.md` に定義されているが未実装：
-- `extendRequestNotify`（延長申請通知）
-- 年度末一斉通知
-- 通知失敗時の自動再試行
-- 再試行失敗時の管理者への通知
-- 不正申請・データ検出時の管理者通知
-
-### P3（コード整理）
-- L57: `for  ( let  i  =  1 ;  i  < data.length;  i ++ )` の余分な空白
-- URL 文字列のハードコード（LINE Push API エンドポイント）を定数化
-- スプレッドシートの「送信失敗」列更新（`SPECIFICATIONS.md` §6）が未実装
+| 年度末一斉通知 | P2 | 仕様書 §4、時間主導トリガー（3月下旬）で全登録者の LINE/メール通知。未実装 |
+| 通知失敗時の管理者エスカレーション | P2 | 現状は戻り値で伝播するのみ。上位ハンドラで別チャネル（メール）に通知するルートを追加すべき |
+| 不正申請・データ検出時の管理者通知 | P2 | 「不正」の定義から議論が必要 |
+| Drive 画像の共有設定を自動化 | P2 | 登録時 or 通知前に `setSharing(ANYONE_WITH_LINK, VIEW)` |
+| `handoverDayRemind` のトリガー順序依存 | P2 | `HANDOVER_ON` から現在日との差を都度計算し `DAYS_UNTIL_HANDOVER` 列依存を解消 |
+| 共通 LINE/メールヘルパの共通化 | P3 | `line_bot` と `extend_form` の `sendLine*` / `sendEmail` を clasp library で共通化 |
+| スプレッドシート「送信失敗」列更新 | P3 | `SPECIFICATIONS.md` §6 |
+| コード整理（L57 等の空白） | P3 | |
 
 ---
 
