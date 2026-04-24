@@ -76,18 +76,6 @@ function handleFetchRequest(payload) {
   return jsonResponse(result);
 }
 
-// ============================================================
-// LINE Webhookを処理（ボタン押下イベント）
-// ============================================================
-function isValidLineWebhookToken(e) {
-  if (!LINE_WEBHOOK_TOKEN) {
-    Logger.log('[line webhook auth] LINE_WEBHOOK_TOKEN が未設定のため検証をスキップ');
-    return true;
-  }
-  const token = String((e && e.parameter && e.parameter.token) || '');
-  return token === LINE_WEBHOOK_TOKEN;
-}
-
 function parsePostbackData(rawData) {
   const params = {};
   String(rawData || '').split('&').forEach(pair => {
@@ -101,10 +89,6 @@ function parsePostbackData(rawData) {
 }
 
 function handleLineWebhook(json, e) {
-  if (!isValidLineWebhookToken(e)) {
-    return jsonResponse({ status: 'error', message: 'LINE Webhook 認証に失敗しました。' });
-  }
-
   json.events.forEach(event => {
     if (!event || !event.source || event.source.userId !== USER_ID) {
       return;
@@ -127,7 +111,9 @@ function handleLineWebhook(json, e) {
     }
   });
 
-  return ContentService.createTextOutput('OK');
+  return ContentService
+    .createTextOutput('OK')
+    .setMimeType(ContentService.MimeType.TEXT);
 }
 
 // ============================================================
