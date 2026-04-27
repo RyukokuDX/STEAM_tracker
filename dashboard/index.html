@@ -8,7 +8,7 @@
     </style>
   </head>
   <body>
-    <!-- 管理シート画面 -->
+    <!-- items シート画面 -->
     <div id="mainView">
       <div class="header-container">
         <div class="button-left">
@@ -20,7 +20,7 @@
           <button id="deleteButton" type="button">データから削除</button>
         </div>
       </div>
-      <h2 class="sheet-title">管理シート</h2>
+      <h2 class="sheet-title">items</h2>
       <? if (!data || data.length === 0) { ?>
       <p>データがありません</p>
       <? } else { ?>
@@ -96,18 +96,18 @@
       <? } ?>
     </div>
 
-    <!-- アーカイブシート画面 -->
+    <!-- archives シート画面 -->
     <div id="archiveView" style="display: none;">
       <div class="header-container">
         <div class="button-left">
-          <button id="backButton">管理シートに戻る</button>
+          <button id="backButton">items に戻る</button>
         </div>
         <div class="button-group">
-          <button id="restoreButton" type="button">管理シートへ戻す</button>
+          <button id="restoreButton" type="button">items へ戻す</button>
           <button id="deleteArchiveButton" type="button">データから削除</button>
         </div>
       </div>
-      <h2 class="sheet-title">アーカイブシート</h2>
+      <h2 class="sheet-title">archives</h2>
       <? if (!archiveData || archiveData.length === 0) { ?>
       <p id="archiveEmptyMessage">データがありません</p>
       <table id="archiveTable" style="display: none;">

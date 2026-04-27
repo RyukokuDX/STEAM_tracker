@@ -7,8 +7,8 @@ if (!SPREADSHEET_ID) {
 }
 
 const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-const sn = "管理シート";
-const archiveSheetName = "アーカイブ用シート";
+const sn = "items";
+const archiveSheetName = "archives";
 
 const registered = 1;
 const email = 2;

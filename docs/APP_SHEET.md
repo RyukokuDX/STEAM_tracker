@@ -13,8 +13,8 @@
 
 - Google スプレッドシートを使用する。
 - 使用シート:
-  - 管理シート
-  - アーカイブ用シート
+  - items
+  - archives
 
 両シートのカラムは同一とする。
 
@@ -34,35 +34,35 @@
 
 ## 2. 主要ビュー
 
-1. 管理シートビュー
+1. items ビュー
   - 管理対象のデータを表示
   - 操作: 撤去済みにする、破棄済みにする、削除、備考編集
 
-2. アーカイブシートビュー
+2. archives ビュー
   - アーカイブ済みデータを表示
-  - 操作: 管理シートへ戻す、削除、備考編集
+  - 操作: items へ戻す、削除、備考編集
 
 ---
 
 ## 3. 状態遷移
 
 1. 新規登録
-  - status = active で管理シートに追加
+  - status = active で items に追加
 
 2. 撤去済み処理
-  - 管理シートの対象行 status を archived に更新
-  - 対象行をアーカイブ用シートへコピー
-  - 管理シートの元行を削除
+  - items の対象行 status を archived に更新
+  - 対象行を archives へコピー
+  - items の元行を削除
 
 3. 破棄済み処理
-  - 管理シートの対象行 status を discarded に更新
-  - 対象行をアーカイブ用シートへコピー
-  - 管理シートの元行を削除
+  - items の対象行 status を discarded に更新
+  - 対象行を archives へコピー
+  - items の元行を削除
 
 4. 復元処理
-  - アーカイブ用シートの対象行 status を active に更新
-  - 管理シートへコピー
-  - アーカイブ用シートの元行を削除
+  - archives の対象行 status を active に更新
+  - items へコピー
+  - archives の元行を削除
 
 ---
 
@@ -76,10 +76,10 @@
 
 ## 5. 導入手順（簡易）
 
-1. スプレッドシートに 管理シート と アーカイブ用シート を作成する。
+1. スプレッドシートに items と archives を作成する。
 2. 両シートのヘッダーを同一に設定する。
   - registered_at, email, name, organization, photo_file_id, handover_on, days_until_handover, status, admin_note
-3. Script Properties のシート名関連設定（利用するスクリプト側）を環境に合わせて設定する。
+3. Script Properties のシート名関連設定（利用するスクリプト側）を環境に合わせて設定する。実タブ名は items / archives を使用する。
 4. ダッシュボードで撤去・破棄・復元・削除が期待通り動くことを確認する。
 5. active 以外が通知/延長対象に入らないことを確認する。
 

@@ -55,7 +55,7 @@ GAS 側は主に次を担います。
 
 スプレッドシートの列定義は `docs/SPREAD_SHEET_REQUIREMENTS.md` を唯一の正規仕様として参照してください。
 
-現行運用では、管理シートとアーカイブ用シートで共通スキーマ（registered_at, email, name, organization, photo_file_id, handover_on, days_until_handover, status, admin_note）を使用します。
+現行運用では、items と archives で共通スキーマ（registered_at, email, name, organization, photo_file_id, handover_on, days_until_handover, status, admin_note）を使用します。
 
 status は active / archived / discarded を使用し、通知・延長処理の抽出対象は active のみとします。
 
