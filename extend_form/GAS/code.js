@@ -13,7 +13,7 @@ function getRequiredProperty(key) {
 const ACCESS_TOKEN = getRequiredProperty('ACCESS_TOKEN');
 const USER_ID = getRequiredProperty('USER_ID');
 const SPREAD_SHEET_ID = getRequiredProperty('SPREAD_SHEET_ID');
-const SHEET_NAME_MANAGE = scriptProperties.getProperty('SHEET_NAME_MANAGE') || 'items';
+const SHEET_NAME_MANAGE = getRequiredProperty('SHEET_NAME_MANAGE');
 
 const SPREAD_SHEET = SpreadsheetApp.openById(SPREAD_SHEET_ID);
 const SHEET = SPREAD_SHEET.getSheetByName(SHEET_NAME_MANAGE);
