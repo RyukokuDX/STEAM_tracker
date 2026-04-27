@@ -249,6 +249,10 @@ function approveRequest(id, newDate) {
     return;
   }
   const data = SHEET.getDataRange().getValues();
+  if (!Number.isInteger(id) || id < 1 || id >= data.length) {
+    Logger.log(`無効な id: ${id}`);
+    return;
+  }
   SHEET.getRange(id + 1, HANDOVER_ON + 1).setValue(newDate);
   const email = data[id][EMAIL];
   const name = data[id][NAME];
