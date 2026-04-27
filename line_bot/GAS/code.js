@@ -48,6 +48,11 @@ const HANDOVER_ON = 5;          // 明け渡し日（YYYY-MM-DD）
 const DAYS_UNTIL_HANDOVER = 6;  // 明け渡し日までの日数（計算列） 
 const STATUS = 7;               // active / archived / pending
 const ADMIN_NOTE = 8;           // 管理者備考
+const STATUS_ACTIVE = 'active';
+
+function isActiveStatus(status) {
+  return String(status || '').trim().toLowerCase() === STATUS_ACTIVE;
+}
 
 // スプレッドシート上の日付を確認し、一致する日付であればメッセージ送信
 function handoverDayRemind() {
@@ -59,7 +64,10 @@ function handoverDayRemind() {
     const email = data[i][EMAIL];
     const name = data[i][NAME];
     const organ = data[i][ORGANIZATION];
-    const handoverDay = data[i][DAYS_UNTIL_HANDOVER];
+    const status = data[i][STATUS];
+    const handoverDay = Number(data[i][DAYS_UNTIL_HANDOVER]);
+
+    if (!isActiveStatus(status)) continue;
 
     let mailFailLog = null; // メール送信失敗時のログ
 

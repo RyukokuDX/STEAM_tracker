@@ -22,6 +22,11 @@ const ADMIN_NOTE = 8;
 
 const DOMAIN = 'mail.ryukoku.ac.jp';
 const LINE_WEBHOOK_TOKEN = scriptProperties.getProperty('LINE_WEBHOOK_TOKEN');
+const STATUS_ACTIVE = 'active';
+
+function isActiveStatus(status) {
+  return String(status || '').trim().toLowerCase() === STATUS_ACTIVE;
+}
 
 // ============================================================
 // doPost: 静的HTMLからのfetchとLINE Webhookを共用
@@ -153,7 +158,7 @@ function getItemsByEmail(email) {
   const results = [];
 
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][EMAIL]).toLowerCase() === String(email).toLowerCase()) {
+    if (String(data[i][EMAIL]).toLowerCase() === String(email).toLowerCase() && isActiveStatus(data[i][STATUS])) {
       results.push({
         id: i,
         name: data[i][NAME],
@@ -176,6 +181,15 @@ function notifyExtensionRequest(results) {
 
   results.forEach(item => {
     const id = item.id;
+    if (!Number.isInteger(id) || id < 1 || id >= data.length) {
+      Logger.log(`[notifyExtensionRequest] 無効な id: ${id}`);
+      return;
+    }
+    if (!isActiveStatus(data[id][STATUS])) {
+      Logger.log(`[notifyExtensionRequest] 非activeレコードのためスキップ: id=${id} status=${data[id][STATUS]}`);
+      return;
+    }
+
     const newDate = item.newDate;
     const name = data[id][NAME];
     const organ = data[id][ORGANIZATION];
@@ -253,6 +267,11 @@ function approveRequest(id, newDate) {
     Logger.log(`無効な id: ${id}`);
     return;
   }
+  if (!isActiveStatus(data[id][STATUS])) {
+    Logger.log(`非activeレコードのため許可処理をスキップ: id=${id} status=${data[id][STATUS]}`);
+    return;
+  }
+
   SHEET.getRange(id + 1, HANDOVER_ON + 1).setValue(newDate);
   const email = data[id][EMAIL];
   const name = data[id][NAME];
@@ -270,10 +289,15 @@ function approveRequest(id, newDate) {
 // ============================================================
 function rejectRequest(id) {
   const data = SHEET.getDataRange().getValues();
-  if (typeof id !== "number" || id < 0 || id >= data.length) {
+  if (typeof id !== "number" || id < 1 || id >= data.length) {
     Logger.log(`無効な id: ${id}`);
     return;
   }
+  if (!isActiveStatus(data[id][STATUS])) {
+    Logger.log(`非activeレコードのため却下処理をスキップ: id=${id} status=${data[id][STATUS]}`);
+    return;
+  }
+
   const email = data[id][EMAIL];
   const name = data[id][NAME];
   const organ = data[id][ORGANIZATION];

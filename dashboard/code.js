@@ -18,6 +18,9 @@ const handover = 6;
 const days_until_handover = 7;
 const statusColumn = 8;
 const adminNoteColumn = 9;
+const STATUS_ACTIVE = 'active';
+const STATUS_ARCHIVED = 'archived';
+const STATUS_DISCARDED = 'discarded';
 
 /**
  * テンプレートから他ファイル内容を取り込むためのユーティリティ
@@ -88,6 +91,8 @@ function doGet(e) {
     tpl.photo = DriveLinkColumn;
     tpl.handover = handover;
     tpl.days = days_until_handover;
+    tpl.statusColumn = statusColumn;
+    tpl.adminNoteColumn = adminNoteColumn;
     tpl.scriptUrl = ScriptApp.getService().getUrl();
     return tpl.evaluate().setTitle("ダッシュボード");
   } catch (err) {
@@ -118,7 +123,7 @@ function completeRows(rowNumbers) {
   }
 
   targetRows.forEach((row) => {
-    sourceSheet.getRange(row, statusColumn).setValue('撤去');
+    sourceSheet.getRange(row, statusColumn).setValue(STATUS_ARCHIVED);
   });
 
   const lastColumn = sourceSheet.getLastColumn();
@@ -169,7 +174,7 @@ function discardRows(rowNumbers) {
   }
 
   targetRows.forEach((row) => {
-    sourceSheet.getRange(row, statusColumn).setValue('破棄');
+    sourceSheet.getRange(row, statusColumn).setValue(STATUS_DISCARDED);
   });
 
   const lastColumn = sourceSheet.getLastColumn();
@@ -320,8 +325,7 @@ function restoreRows(rowNumbers) {
   const lastColumn = archiveSheet.getLastColumn();
   const rowData = targetRows.map((row) => {
     const data = archiveSheet.getRange(row, 1, 1, lastColumn).getValues()[0];
-    // status列（8列目、インデックス7）を空白にする
-    data[statusColumn - 1] = '';
+    data[statusColumn - 1] = STATUS_ACTIVE;
     return data;
   });
 
