@@ -8,8 +8,14 @@
     </style>
   </head>
   <body>
-    <!-- items シート画面 -->
+    <!-- 管理シート画面 -->
     <div id="mainView">
+      <? var formatStatusLabel = function(value) {
+           if (value === 'active') return '有効';
+           if (value === 'archived') return '撤去';
+           if (value === 'discarded') return '破棄';
+           return value != null ? value : '';
+         }; ?>
       <div class="header-container">
         <div class="button-left">
           <button id="archiveButton">アーカイブシートを見る</button>
@@ -20,7 +26,7 @@
           <button id="deleteButton" type="button">データから削除</button>
         </div>
       </div>
-      <h2 class="sheet-title">items</h2>
+      <h2 class="sheet-title">管理シート</h2>
       <? if (!data || data.length === 0) { ?>
       <p>データがありません</p>
       <? } else { ?>
@@ -48,7 +54,7 @@
                 <? } else if (j+1 === days) { ?>
                   <!-- 列の省略 -->
                 <? } else { ?>
-                  <th><?!= header[j] != null ? header[j] : "" ?></th>
+                  <th><?!= formatHeaderName(header[j] != null ? header[j] : "") ?></th>
                 <? } ?>
               <? } ?>
             </tr>
@@ -81,7 +87,7 @@
                     <? } else if (j+1 === handover) { ?>
                       <td class="col-handover_on"><?!= data[i][j] != null ? data[i][j] : "" ?></td>
                     <? } else if (j+1 === statusColumn) { ?>
-                      <td class="col-status"><?!= data[i][j] != null ? data[i][j] : "" ?></td>
+                      <td class="col-status"><?!= formatStatusLabel(data[i][j]) ?></td>
                     <? } else if (j+1 === adminNoteColumn) { ?>
                       <td class="col-admin_note"><?!= data[i][j] != null ? data[i][j] : "" ?></td>
                     <? } else { ?>
@@ -96,18 +102,18 @@
       <? } ?>
     </div>
 
-    <!-- archives シート画面 -->
+    <!-- アーカイブシート画面 -->
     <div id="archiveView" style="display: none;">
       <div class="header-container">
         <div class="button-left">
-          <button id="backButton">items に戻る</button>
+          <button id="backButton">管理シートに戻る</button>
         </div>
         <div class="button-group">
-          <button id="restoreButton" type="button">items へ戻す</button>
+          <button id="restoreButton" type="button">管理シートへ戻す</button>
           <button id="deleteArchiveButton" type="button">データから削除</button>
         </div>
       </div>
-      <h2 class="sheet-title">archives</h2>
+      <h2 class="sheet-title">アーカイブシート</h2>
       <? if (!archiveData || archiveData.length === 0) { ?>
       <p id="archiveEmptyMessage">データがありません</p>
       <table id="archiveTable" style="display: none;">
@@ -134,7 +140,7 @@
                 <? } else if (j+1 === days) { ?>
                   <!-- 列の省略 -->
                 <? } else { ?>
-                  <th><?!= defaultHeader[j] != null ? defaultHeader[j] : "" ?></th>
+                  <th><?!= formatHeaderName(defaultHeader[j] != null ? defaultHeader[j] : "") ?></th>
                 <? } ?>
               <? } ?>
             </tr>
@@ -167,7 +173,7 @@
                 <? } else if (j+1 === days) { ?>
                   <!-- 列の省略 -->
                 <? } else { ?>
-                  <th><?!= archiveHeader[j] != null ? archiveHeader[j] : "" ?></th>
+                  <th><?!= formatHeaderName(archiveHeader[j] != null ? archiveHeader[j] : "") ?></th>
                 <? } ?>
               <? } ?>
             </tr>
@@ -200,7 +206,7 @@
                     <? } else if (j+1 === handover) { ?>
                       <td class="col-handover_on"><?!= archiveData[i][j] != null ? archiveData[i][j] : "" ?></td>
                     <? } else if (j+1 === statusColumn) { ?>
-                      <td class="col-status"><?!= archiveData[i][j] != null ? archiveData[i][j] : "" ?></td>
+                      <td class="col-status"><?!= formatStatusLabel(archiveData[i][j]) ?></td>
                     <? } else if (j+1 === adminNoteColumn) { ?>
                       <td class="col-admin_note"><?!= archiveData[i][j] != null ? archiveData[i][j] : "" ?></td>
                     <? } else { ?>
@@ -323,7 +329,7 @@
             const cells = tr.querySelectorAll('td');
             if (cells.length >= 6) {
               const statusCell = cells[5];
-              if (statusCell) statusCell.textContent = 'active';
+              if (statusCell) statusCell.textContent = '有効';
             }
 
             // 備考欄に編集機能を追加

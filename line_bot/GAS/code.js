@@ -17,7 +17,7 @@ const SHEET_NAME_MANAGE = getRequiredProperty('SHEET_NAME_MANAGE');
 const SPREAD_SHEET = SpreadsheetApp.openById(SPREAD_SHEET_ID);
 const SHEET = SPREAD_SHEET.getSheetByName(SHEET_NAME_MANAGE);
 if (!SHEET) {
-  throw new Error(`シート "${SHEET_NAME_MANAGE}" が見つかりません。SHEET_NAME_MANAGE を確認してください。`);
+  throw new Error(`シート "${SHEET_NAME_MANAGE}" が見つかりません。SHEET_NAME_MANAGE を "items" に設定してください。`);
 }
 
 // 新規登録通知専用のWebhook
