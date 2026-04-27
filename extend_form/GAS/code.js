@@ -1,13 +1,25 @@
 // Code.gs（延長申請フォーム）
 
 const scriptProperties = PropertiesService.getScriptProperties();
-const ACCESS_TOKEN = scriptProperties.getProperty('ACCESS_TOKEN');
-const USER_ID = scriptProperties.getProperty('USER_ID');
-const SPREAD_SHEET_ID = scriptProperties.getProperty('SPREAD_SHEET_ID');
-const SHEET_NAME_MANAGE = scriptProperties.getProperty('SHEET_NAME_MANAGE');
+
+function getRequiredProperty(key) {
+  const value = scriptProperties.getProperty(key);
+  if (value === null || value === '') {
+    throw new Error(`${key} script property is not set. Please set it in Project Settings > Script Properties.`);
+  }
+  return value;
+}
+
+const ACCESS_TOKEN = getRequiredProperty('ACCESS_TOKEN');
+const USER_ID = getRequiredProperty('USER_ID');
+const SPREAD_SHEET_ID = getRequiredProperty('SPREAD_SHEET_ID');
+const SHEET_NAME_MANAGE = getRequiredProperty('SHEET_NAME_MANAGE');
 
 const SPREAD_SHEET = SpreadsheetApp.openById(SPREAD_SHEET_ID);
 const SHEET = SPREAD_SHEET.getSheetByName(SHEET_NAME_MANAGE);
+if (!SHEET) {
+  throw new Error(`シート "${SHEET_NAME_MANAGE}" が見つかりません。SHEET_NAME_MANAGE を確認してください。`);
+}
 
 // 列インデックス
 const RESISTERED_AT = 0;
@@ -258,7 +270,7 @@ function notifyExtensionRequest(results) {
 // 延長申請の許可
 // ============================================================
 function approveRequest(id, newDate) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(newDate)) {
+  if (!DATE_ISO_REGEX.test(newDate)) {
     Logger.log(`無効な日付形式: ${newDate}`);
     return;
   }
@@ -328,32 +340,53 @@ function sendEmail(to, subject, body) {
 // LINE テキストメッセージ送信
 // ============================================================
 function sendLineMessage(to, text) {
-  sendLinePushObject({
+  return sendLinePushObject({
     to,
     messages: [{ type: 'text', text }]
   });
 }
 
 // ============================================================
-// LINE オブジェクト送信
+// LINE オブジェクト送信（ステータスコード検査 + リトライ）
+// 最大3回、指数バックオフ（1秒→2秒→4秒）。4xx はリトライせず即時失敗。
 // ============================================================
 function sendLinePushObject(payload) {
   const url = "https://api.line.me/v2/bot/message/push";
   const options = {
     method: "post",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "application/json; charset=UTF-8",
       "Authorization": "Bearer " + ACCESS_TOKEN
     },
     payload: JSON.stringify(payload),
     muteHttpExceptions: true
   };
-  try {
-    const res = UrlFetchApp.fetch(url, options);
-    Logger.log("LINE送信成功: " + res.getContentText());
-  } catch (e) {
-    Logger.log("LINE送信失敗: " + e);
+
+  const MAX_ATTEMPTS = 3;
+  let lastError = '';
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const res = UrlFetchApp.fetch(url, options);
+      const statusCode = res.getResponseCode();
+      const body = res.getContentText();
+      if (statusCode >= 200 && statusCode < 300) {
+        Logger.log(`LINE送信成功 (試行${attempt}): ${body}`);
+        return { success: true, message: '' };
+      }
+      lastError = `HTTP ${statusCode}: ${body}`;
+      Logger.log(`LINE送信失敗 (試行${attempt}): ${lastError}`);
+      if (statusCode >= 400 && statusCode < 500) {
+        return { success: false, message: lastError };
+      }
+    } catch (e) {
+      lastError = String(e);
+      Logger.log(`LINE送信失敗 (試行${attempt}): ${lastError}`);
+    }
+    if (attempt < MAX_ATTEMPTS) {
+      Utilities.sleep(Math.pow(2, attempt - 1) * 1000);
+    }
   }
+  return { success: false, message: lastError };
 }
 
 // ============================================================

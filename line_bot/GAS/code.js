@@ -1,12 +1,24 @@
 const scriptProperties = PropertiesService.getScriptProperties();
-const ACCESS_TOKEN = scriptProperties.getProperty('ACCESS_TOKEN');
-const USER_ID = scriptProperties.getProperty('USER_ID');
-const FORM_URL = scriptProperties.getProperty('FORM_URL');
-const SPREAD_SHEET_ID = scriptProperties.getProperty('SPREAD_SHEET_ID');
-const SHEET_NAME_MANAGE = scriptProperties.getProperty('SHEET_NAME_MANAGE');
+
+function getRequiredProperty(key) {
+  const value = scriptProperties.getProperty(key);
+  if (value === null || value === '') {
+    throw new Error(`${key} script property is not set. Please set it in Project Settings > Script Properties.`);
+  }
+  return value;
+}
+
+const ACCESS_TOKEN = getRequiredProperty('ACCESS_TOKEN');
+const USER_ID = getRequiredProperty('USER_ID');
+const FORM_URL = getRequiredProperty('FORM_URL');
+const SPREAD_SHEET_ID = getRequiredProperty('SPREAD_SHEET_ID');
+const SHEET_NAME_MANAGE = getRequiredProperty('SHEET_NAME_MANAGE');
 
 const SPREAD_SHEET = SpreadsheetApp.openById(SPREAD_SHEET_ID);
 const SHEET = SPREAD_SHEET.getSheetByName(SHEET_NAME_MANAGE);
+if (!SHEET) {
+  throw new Error(`シート "${SHEET_NAME_MANAGE}" が見つかりません。SHEET_NAME_MANAGE を確認してください。`);
+}
 
 // 新規登録通知専用のWebhook
 function doPost(e) {
@@ -125,7 +137,7 @@ function registerNotify(registration) {
           type: 'bubble',
           hero: {
             type: 'image',
-            url: 'https://drive.google.com/uc?export=view&id=' + photoFileId,
+            url: 'https://lh3.googleusercontent.com/d/' + photoFileId,
             size: 'full',
             aspectRatio: '20:13',
             aspectMode: 'cover'
@@ -166,70 +178,55 @@ function sendEmail(to, subject, body) {
   }
 }
 
-// LINE Messaging APIでメッセージを送信
+// LINE Messaging APIでテキストメッセージを送信（sendLinePushObject の薄いラッパ）
 function sendLineMessage(to, text, mailFailLog) {
-  const url = 'https://api.line.me/v2/bot/message/push';
   if (mailFailLog && mailFailLog.success === false) {
     text += "\n（メール送信に失敗しました。" + mailFailLog.message + ")";
   }
-
-  const payload = {
+  return sendLinePushObject({
     to: to,
     messages: [{ type: 'text', text: text }]
-  };
-
-  const options = {
-    method: 'post',
-    headers: {
-      'Content-Type': 'application/json; charset=UTF-8',
-      'Authorization': 'Bearer ' + ACCESS_TOKEN
-    },
-    payload: JSON.stringify(payload)
-  };
-
-  try {
-    const response = UrlFetchApp.fetch(url, options);
-    const statusCode = response.getResponseCode();
-    const body = response.getContentText();
-    if (statusCode < 200 || statusCode >= 300) {
-      Logger.log(`送信失敗: HTTP ${statusCode} ${body}`);
-      return { success: false, message: `HTTP ${statusCode}: ${body}` };
-    }
-
-    Logger.log('送信成功: ' + body);
-    return { success: true, message: '' };
-  } catch (e) {
-    Logger.log('送信失敗: ' + e);
-    return { success: false, message: String(e) };
-  }
+  });
 }
 
-// オブジェクト送信
+// LINE Push APIへオブジェクト送信（ステータスコード検査 + リトライ）
+// 最大3回、指数バックオフ（1秒→2秒→4秒）。4xx はリトライせず即時失敗。
 function sendLinePushObject(payload) {
   const url = "https://api.line.me/v2/bot/message/push";
   const options = {
     method: "post",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": "application/json; charset=UTF-8",
       "Authorization": "Bearer " + ACCESS_TOKEN
     },
     payload: JSON.stringify(payload),
     muteHttpExceptions: true
   };
 
-  try {
-    const res = UrlFetchApp.fetch(url, options);
-    const statusCode = res.getResponseCode();
-    const body = res.getContentText();
-    if (statusCode < 200 || statusCode >= 300) {
-      Logger.log(`送信失敗: HTTP ${statusCode} ${body}`);
-      return { success: false, message: `HTTP ${statusCode}: ${body}` };
+  const MAX_ATTEMPTS = 3;
+  let lastError = '';
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const res = UrlFetchApp.fetch(url, options);
+      const statusCode = res.getResponseCode();
+      const body = res.getContentText();
+      if (statusCode >= 200 && statusCode < 300) {
+        Logger.log(`送信成功 (試行${attempt}): ${body}`);
+        return { success: true, message: '' };
+      }
+      lastError = `HTTP ${statusCode}: ${body}`;
+      Logger.log(`送信失敗 (試行${attempt}): ${lastError}`);
+      // 4xx はクライアント側の問題なのでリトライしない
+      if (statusCode >= 400 && statusCode < 500) {
+        return { success: false, message: lastError };
+      }
+    } catch (e) {
+      lastError = String(e);
+      Logger.log(`送信失敗 (試行${attempt}): ${lastError}`);
     }
-
-    Logger.log("送信成功: " + body);
-    return { success: true, message: '' };
-  } catch (e) {
-    Logger.log("送信失敗: " + e);
-    return { success: false, message: String(e) };
+    if (attempt < MAX_ATTEMPTS) {
+      Utilities.sleep(Math.pow(2, attempt - 1) * 1000);
+    }
   }
+  return { success: false, message: lastError };
 }
