@@ -2,9 +2,9 @@
 
 > スキーマバージョン: v1.0 （2025-11-01）
 >
-> この仕様は `docs/APP_SHEET.md` の `items` 定義（スプレッドシート列配置）を参照しています。スキーマ定義は必ず `docs/APP_SHEET.md` のみで管理し、他のドキュメントでは参照のみ行ってください。
+> この仕様は `docs/APP_SHEET.md` の管理シート定義（スプレッドシート列配置）を参照しています。スキーマ定義は必ず `docs/APP_SHEET.md` のみで管理し、他のドキュメントでは参照のみ行ってください。
 >
-> ※ スキーマ詳細は `docs/APP_SHEET.md` の「items」セクションを参照してください。
+> ※ スキーマ詳細は `docs/APP_SHEET.md` の「データソース」セクションを参照してください。
 
 このドキュメントはフォーム実装者・テスター向けの仕様書です。フォームの入力項目、検証ルール、スプレッドシートへの記録仕様、通知トリガー、受け入れ基準（Acceptance Criteria）および簡易テストケースを定義します。
 
@@ -38,6 +38,7 @@
 
 ## 3. スプレッドシートへの記録仕様
 
+送信先は「管理シート」です。アーカイブ用シートの列構成も同一です。
 スプレッドシートの列と保存内容を次のように定義します。
 
 | 列 | カラム名 | 型 | 説明 |
@@ -49,7 +50,7 @@
 | E | photo_file_id | Text | Drive ファイル ID |
 | F | handover_on | Date | 明け渡し日（YYYY-MM-DD） |
 | G | days_until_handover | Number | 明け渡し日までの日数（計算列） |
-| H | status | Text | active / archived / pending |
+| H | status | Text | active / archived / discarded |
 | I | admin_note | Text | 管理者備考 |
 
 ### days_until_handover の計算例
