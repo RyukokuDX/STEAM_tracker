@@ -10,6 +10,18 @@ const DOMAIN = 'mail.ryukoku.ac.jp';
 const LOCK_TIMEOUT_MS = 30000;
 const MAX_NAME_LENGTH = 50;
 const LINE_BOT_NOTIFY_URL = PropertiesService.getScriptProperties().getProperty('LINE_BOT_NOTIFY_URL');
+const STATUS_ACTIVE = 'active';
+const ITEMS_HEADERS = [
+  'registered_at',
+  'email',
+  'name',
+  'organization',
+  'photo_file_id',
+  'handover_on',
+  'days_until_handover',
+  'status',
+  'admin_note'
+];
 
 // ============================================================
 // doPost: 静的HTMLからのfetchを受け取るエントリーポイント
@@ -211,17 +223,7 @@ function submitForm(payload) {
     const sh = ss.getSheetByName(shName) || ss.insertSheet(shName);
 
     if (sh.getLastRow() === 0) {
-      sh.appendRow([
-        "タイムスタンプ",
-        "メールアドレス",
-        "氏名",
-        "団体名",
-        "写真",
-        "明け渡し日",
-        "残り日数",
-        "状態",
-        "備考欄"
-      ]);
+      sh.appendRow(ITEMS_HEADERS);
     }
 
     const tz = Session.getScriptTimeZone();
@@ -233,7 +235,7 @@ function submitForm(payload) {
       payload.photo || "",
       Utilities.formatDate(dateResult.date, tz, "yyyy/MM/dd"),
       "",
-      "",
+      STATUS_ACTIVE,
       ""
     ]);
 

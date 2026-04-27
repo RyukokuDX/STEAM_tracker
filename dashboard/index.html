@@ -76,14 +76,13 @@
                   <? } else if (j+1 === days) { ?>
                   <!-- 列の省略 -->
                   <? } else { ?>
-                    <? var cellHeader = header[j]; ?>
-                    <? if (cellHeader === 'organization') { ?>
+                    <? if (j+1 === 4) { ?>
                       <td class="col-organization"><?!= data[i][j] != null ? data[i][j] : "" ?></td>
-                    <? } else if (cellHeader === 'handover_on') { ?>
+                    <? } else if (j+1 === handover) { ?>
                       <td class="col-handover_on"><?!= data[i][j] != null ? data[i][j] : "" ?></td>
-                    <? } else if (cellHeader === 'status') { ?>
+                    <? } else if (j+1 === statusColumn) { ?>
                       <td class="col-status"><?!= data[i][j] != null ? data[i][j] : "" ?></td>
-                    <? } else if (cellHeader === 'admin_note') { ?>
+                    <? } else if (j+1 === adminNoteColumn) { ?>
                       <td class="col-admin_note"><?!= data[i][j] != null ? data[i][j] : "" ?></td>
                     <? } else { ?>
                       <td><?!= data[i][j] != null ? data[i][j] : "" ?></td>
@@ -196,14 +195,13 @@
                   <? } else if (j+1 === days) { ?>
                   <!-- 列の省略 -->
                   <? } else { ?>
-                    <? var cellHeader = archiveHeader[j]; ?>
-                    <? if (cellHeader === 'organization') { ?>
+                    <? if (j+1 === 4) { ?>
                       <td class="col-organization"><?!= archiveData[i][j] != null ? archiveData[i][j] : "" ?></td>
-                    <? } else if (cellHeader === 'handover_on') { ?>
+                    <? } else if (j+1 === handover) { ?>
                       <td class="col-handover_on"><?!= archiveData[i][j] != null ? archiveData[i][j] : "" ?></td>
-                    <? } else if (cellHeader === 'status') { ?>
+                    <? } else if (j+1 === statusColumn) { ?>
                       <td class="col-status"><?!= archiveData[i][j] != null ? archiveData[i][j] : "" ?></td>
-                    <? } else if (cellHeader === 'admin_note') { ?>
+                    <? } else if (j+1 === adminNoteColumn) { ?>
                       <td class="col-admin_note"><?!= archiveData[i][j] != null ? archiveData[i][j] : "" ?></td>
                     <? } else { ?>
                       <td><?!= archiveData[i][j] != null ? archiveData[i][j] : "" ?></td>
@@ -325,7 +323,7 @@
             const cells = tr.querySelectorAll('td');
             if (cells.length >= 6) {
               const statusCell = cells[5];
-              if (statusCell) statusCell.textContent = '';
+              if (statusCell) statusCell.textContent = 'active';
             }
 
             // 備考欄に編集機能を追加

@@ -34,7 +34,11 @@ const ADMIN_NOTE = 8;
 
 const DOMAIN = 'mail.ryukoku.ac.jp';
 const LINE_WEBHOOK_TOKEN = scriptProperties.getProperty('LINE_WEBHOOK_TOKEN');
-const DATE_ISO_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const STATUS_ACTIVE = 'active';
+
+function isActiveStatus(status) {
+  return String(status || '').trim().toLowerCase() === STATUS_ACTIVE;
+}
 
 // ============================================================
 // doPost: 静的HTMLからのfetchとLINE Webhookを共用
@@ -89,18 +93,6 @@ function handleFetchRequest(payload) {
   return jsonResponse(result);
 }
 
-// ============================================================
-// LINE Webhookを処理（ボタン押下イベント）
-// ============================================================
-function isValidLineWebhookToken(e) {
-  if (!LINE_WEBHOOK_TOKEN) {
-    Logger.log('[line webhook auth] LINE_WEBHOOK_TOKEN が未設定のため検証をスキップ');
-    return true;
-  }
-  const token = String((e && e.parameter && e.parameter.token) || '');
-  return token === LINE_WEBHOOK_TOKEN;
-}
-
 function parsePostbackData(rawData) {
   const params = {};
   String(rawData || '').split('&').forEach(pair => {
@@ -114,10 +106,6 @@ function parsePostbackData(rawData) {
 }
 
 function handleLineWebhook(json, e) {
-  if (!isValidLineWebhookToken(e)) {
-    return jsonResponse({ status: 'error', message: 'LINE Webhook 認証に失敗しました。' });
-  }
-
   json.events.forEach(event => {
     if (!event || !event.source || event.source.userId !== USER_ID) {
       return;
@@ -140,7 +128,9 @@ function handleLineWebhook(json, e) {
     }
   });
 
-  return ContentService.createTextOutput('OK');
+  return ContentService
+    .createTextOutput('OK')
+    .setMimeType(ContentService.MimeType.TEXT);
 }
 
 // ============================================================
@@ -180,7 +170,7 @@ function getItemsByEmail(email) {
   const results = [];
 
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][EMAIL]).toLowerCase() === String(email).toLowerCase()) {
+    if (String(data[i][EMAIL]).toLowerCase() === String(email).toLowerCase() && isActiveStatus(data[i][STATUS])) {
       results.push({
         id: i,
         name: data[i][NAME],
@@ -202,18 +192,17 @@ function notifyExtensionRequest(results) {
   const data = SHEET.getDataRange().getValues();
 
   results.forEach(item => {
-    const id = Number(item.id);
-    const newDate = String(item.newDate || '');
-
+    const id = item.id;
     if (!Number.isInteger(id) || id < 1 || id >= data.length) {
-      Logger.log(`[notifyExtensionRequest] 無効な id: ${item.id}`);
+      Logger.log(`[notifyExtensionRequest] 無効な id: ${id}`);
       return;
     }
-    if (!DATE_ISO_REGEX.test(newDate)) {
-      Logger.log(`[notifyExtensionRequest] 無効な newDate: ${item.newDate}`);
+    if (!isActiveStatus(data[id][STATUS])) {
+      Logger.log(`[notifyExtensionRequest] 非activeレコードのためスキップ: id=${id} status=${data[id][STATUS]}`);
       return;
     }
 
+    const newDate = item.newDate;
     const name = data[id][NAME];
     const organ = data[id][ORGANIZATION];
 
@@ -287,9 +276,14 @@ function approveRequest(id, newDate) {
   }
   const data = SHEET.getDataRange().getValues();
   if (!Number.isInteger(id) || id < 1 || id >= data.length) {
-    Logger.log(`[approveRequest] 無効な id: ${id}`);
+    Logger.log(`無効な id: ${id}`);
     return;
   }
+  if (!isActiveStatus(data[id][STATUS])) {
+    Logger.log(`非activeレコードのため許可処理をスキップ: id=${id} status=${data[id][STATUS]}`);
+    return;
+  }
+
   SHEET.getRange(id + 1, HANDOVER_ON + 1).setValue(newDate);
   const email = data[id][EMAIL];
   const name = data[id][NAME];
@@ -307,10 +301,15 @@ function approveRequest(id, newDate) {
 // ============================================================
 function rejectRequest(id) {
   const data = SHEET.getDataRange().getValues();
-  if (!Number.isInteger(id) || id < 1 || id >= data.length) {
-    Logger.log(`[rejectRequest] 無効な id: ${id}`);
+  if (typeof id !== "number" || id < 1 || id >= data.length) {
+    Logger.log(`無効な id: ${id}`);
     return;
   }
+  if (!isActiveStatus(data[id][STATUS])) {
+    Logger.log(`非activeレコードのため却下処理をスキップ: id=${id} status=${data[id][STATUS]}`);
+    return;
+  }
+
   const email = data[id][EMAIL];
   const name = data[id][NAME];
   const organ = data[id][ORGANIZATION];
