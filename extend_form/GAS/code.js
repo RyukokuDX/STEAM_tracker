@@ -35,6 +35,7 @@ const ADMIN_NOTE = 8;
 const DOMAIN = 'mail.ryukoku.ac.jp';
 const LINE_WEBHOOK_TOKEN = scriptProperties.getProperty('LINE_WEBHOOK_TOKEN');
 const STATUS_ACTIVE = 'active';
+const DATE_ISO_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 function isActiveStatus(status) {
   return String(status || '').trim().toLowerCase() === STATUS_ACTIVE;
