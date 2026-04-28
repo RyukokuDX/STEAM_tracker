@@ -219,7 +219,7 @@ function submitForm(payload) {
     locked = true;
 
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const shName = "管理シート";
+    const shName = "items";
     const sh = ss.getSheetByName(shName) || ss.insertSheet(shName);
 
     if (sh.getLastRow() === 0) {

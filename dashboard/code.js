@@ -7,8 +7,8 @@ if (!SPREADSHEET_ID) {
 }
 
 const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-const sn = "管理シート";
-const archiveSheetName = "アーカイブ用シート";
+const sn = "items";
+const archiveSheetName = "archives";
 
 const registered = 1;
 const email = 2;
@@ -21,6 +21,19 @@ const adminNoteColumn = 9;
 const STATUS_ACTIVE = 'active';
 const STATUS_ARCHIVED = 'archived';
 const STATUS_DISCARDED = 'discarded';
+
+// ヘッダー名の日本語表示マッピング
+const HEADER_DISPLAY_NAMES = {
+  'registered_at': '登録時刻',
+  'email': 'メールアドレス',
+  'name': '氏名',
+  'organization': '団体名',
+  'photo_file_id': '写真',
+  'handover_on': '明け渡し日',
+  'days_until_handover': '残日数',
+  'status': '状態',
+  'admin_note': '備考'
+};
 
 /**
  * テンプレートから他ファイル内容を取り込むためのユーティリティ
@@ -44,6 +57,14 @@ function formatDate(date) {
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}/${m}/${d}`;
 }
+
+/**
+ * ヘッダー名を日本語表示名に変換
+ */
+function formatHeaderName(headerName) {
+  return HEADER_DISPLAY_NAMES[headerName] || headerName;
+}
+
 
 function getSheetData() {
   const sh = ss.getSheetByName(sn);

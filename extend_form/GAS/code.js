@@ -18,7 +18,7 @@ const SHEET_NAME_MANAGE = getRequiredProperty('SHEET_NAME_MANAGE');
 const SPREAD_SHEET = SpreadsheetApp.openById(SPREAD_SHEET_ID);
 const SHEET = SPREAD_SHEET.getSheetByName(SHEET_NAME_MANAGE);
 if (!SHEET) {
-  throw new Error(`シート "${SHEET_NAME_MANAGE}" が見つかりません。SHEET_NAME_MANAGE を確認してください。`);
+  throw new Error(`シート "${SHEET_NAME_MANAGE}" が見つかりません。SHEET_NAME_MANAGE を "items" に設定してください。`);
 }
 
 // 列インデックス
@@ -35,6 +35,7 @@ const ADMIN_NOTE = 8;
 const DOMAIN = 'mail.ryukoku.ac.jp';
 const LINE_WEBHOOK_TOKEN = scriptProperties.getProperty('LINE_WEBHOOK_TOKEN');
 const STATUS_ACTIVE = 'active';
+const DATE_ISO_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 function isActiveStatus(status) {
   return String(status || '').trim().toLowerCase() === STATUS_ACTIVE;

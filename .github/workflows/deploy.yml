@@ -1,0 +1,23 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main  # mainブランチにpushしたら発動
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Replace placeholder with secret
+        run: |
+          sed -i "s|%%EXTEND_GAS_URL%%|${{ secrets.EXTEND_GAS_URL }}|g" extend_form/index.html
+          sed -i "s|%%STUFF_GAS_URL%%|${{ secrets.STUFF_GAS_URL }}|g" stuffForm/index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
