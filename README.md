@@ -35,8 +35,8 @@
 
 -   **Backend / Automation**: Google Apps Script (GAS)
 -   **Database**: Google Sheets
--   **User Registration UI**: Google Forms
--   **Admin Interface**: LINE Messaging API, AppSheet
+-   **利用者UI**: Webアプリ（`stuffForm` / `extend_form` ほか）とブラウザフォーム
+-   **管理者UI**: LINE Messaging API、GAS Webアプリ（`dashboard`）、AppSheet
 -   **Development Tool**: clasp, Git, GitHub
 
 ## プロジェクト構造
@@ -44,66 +44,54 @@
 ```
 STEAM_tracker/
 ├── docs/                                     # プロジェクトドキュメント
-|   ├── CLASP_GUIDE.md                        # claspガイド
+│   ├── CLASP_GUIDE.md                        # claspガイド
 │   ├── GITHUB_GUIDE.md                       # Git/GitHub運用ガイド
 │   ├── COMMIT_MESSAGE_SPECIFICATION.md       # コミットメッセージの仕様
 │   ├── FORM_REQUIREMENTS.md                  # フォーム仕様書
-│   ├── GAS_REQUIREMENTS.md                   # GAS仕様書（あとで消す）
+│   ├── GAS_REQUIREMENTS.md                   # GAS 連携仕様
 │   ├── COMMIT_MESSAGE_AS_CODE_GUIDE.md       # コミットメッセージ駆動開発のガイド
 │   ├── PULL_REQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
-│   |── REQUIREMENTS.md                       # 要件定義書
-|   |── APP_SHEET.md                          # フロントシート仕様書
-|   |── SPECIFICATIONS.md                     # 要件仕様書
-|   └── SPREAD_SHEET_REQUIREMENTS.md          # スプレッドシート仕様書
-│ 
-├── GAS/
-|   ├── code.gs
-|   └── .claspignore                          # GASにアップしたくないファイル/フォルダを指定
-├── .gitignore                                # Gitの管理から除外するファイル/フォルダを指定
-├── LICENSE                                   # ライセンス
-└── README.md                                 # 本ファイル
+│   ├── PULLREQUESTS_COMMENT_SPECIFICATION.md
+│   ├── REQUIREMENTS.md                       # 要件定義書
+│   ├── APP_SHEET.md                          # AppSheet 仕様
+│   ├── SPECIFICATIONS.md                     # 要件仕様書
+│   └── SPREAD_SHEET_REQUIREMENTS.md          # スプレッドシート仕様書
+├── stuffForm/                                # 物品登録 Web アプリ（GAS）
+│   └── GAS/
+├── extend_form/                              # 延長申請（GAS）
+│   └── GAS/
+├── line_bot/                                 # LINE 通知・リマインド（GAS）
+│   └── GAS/
+├── dashboard/                                # 管理者ダッシュボード（GAS）
+├── GAS/                                      # レガシー試作スクリプト（参考）
+├── .github/workflows/                        # CI（例: デプロイ）
+├── .claspignore                              # clasp push から除外するパス
+├── .gitignore
+├── LICENSE
+└── README.md
 ```
 
 ## 環境構築
 
 ### 1. リポジトリのクローン
 
+HTTPS:
+
+```bash
+git clone https://github.com/RyukokuDX/STEAM_tracker.git
+cd STEAM_tracker
+```
+
+SSH:
+
 ```bash
 git clone git@github.com:RyukokuDX/STEAM_tracker.git
 cd STEAM_tracker
 ```
 
-### 2. 設定ファイルの作成（必要に応じて）
-必須環境変数（例: .env）
+### 2. claspでのログイン
 
--   `.env.sample` ファイルをコピーして `.env` ファイルを作成し、必要な情報を追記してください。
-
-> **Note:** 現在このプロジェクトでは設定ファイルが必須かどうか確認中です。
-
-#### Google SheetsのIDやLINEのアクセストークンなど、秘密情報を管理する場合
-スクリプトプロパティにGASで使うIDなどを追加してください
-
-手順：
-
-1. Google Sheetsから**スクリプトエディタ（Apps Script）**を開く。（拡張機能メニューなどから）
-
-2. GASプロジェクトのプロジェクト設定（歯車アイコン⚙️）を開く。
-
-3. 「スクリプト プロパティ」セクションで、「スクリプトプロパティを追加」を押し、「プロパティ」「値」の欄に以下のように追加して保存してください。
-
-- SHEET_ID=（Google Sheets の ID）
-- LINE_CHANNEL_ACCESS_TOKEN=（LINE チャネルアクセストークン）
-- LINE_CHANNEL_SECRET=（LINE チャネルシークレット）
-- GMAIL_API_ENABLED=true（メール送信が AppScript 経由で必要な場合）
-- OPTIONAL: SERVICE_ACCOUNT_CREDENTIALS (CI で使用するサービスアカウント JSON のパスか内容)
-
-> Google Spread Sheetで使うIDやトークンは.envファイルに書かないでください 
-
-## GASプロジェクトへの反映
-
-### claspでのログイン
-
-Google Apps Scriptにアクセスするため、claspでログインします。
+Google Apps Script にアクセスするため、clasp でログインします。
 
 ```bash
 clasp login
@@ -111,35 +99,55 @@ clasp login
 
 詳しい使い方（インストール、認証方法、ビルド→push、CI 設定例など）は [claspガイド](./docs/CLASP_GUIDE.md) を参照してください。
 
-#### ローカルの変更をGoogle環境へ反映 (push)
+### 3. 設定と秘密情報
+
+各 GAS プロジェクト（`stuffForm` / `extend_form` / `line_bot` / `dashboard` など）のディレクトリで `clasp clone` 済みの `.clasp.json` を用意したうえで作業します。
+
+-   Google Sheets の ID、LINE チャネルシークレット等の**機密値は、リポジトリにコミットせず**、Apps Script の**スクリプトプロパティ**または GitHub Actions の Secrets で管理してください。
+-   ローカル用に `.env` を使う場合は `.env.sample` をコピーして `.env` を作成し、CI や clasp 以外のツール向けの値のみを記載してください。
+
+スクリプトプロパティの設定手順の概要:
+
+1. Google Sheets から**拡張機能 → Apps Script**（または対象の GAS エディタ）を開く。
+2. 左メニューの**プロジェクトの設定**（歯車）を開く。
+3. **スクリプト プロパティ**に、各 `code.js` のドキュメントや `getRequiredProperty` が参照するキーを追加する。
+
+> **重要:** スプレッドシート ID や LINE トークンを `.env` に置いて Git に含めないでください（誤コミット防止のため）。
+
+### 4. GAS プロジェクトへの反映
+
+対象モジュールのディレクトリ（例: `stuffForm`）に移動してから実行します。
+
+#### ローカルの変更を Google 環境へ反映 (push)
 
 ```bash
+cd stuffForm
 clasp push
 ```
 
-#### Google環境の変更をローカルへ反映 (pull)
+#### Google 環境の変更をローカルへ反映 (pull)
 
 ```bash
 clasp pull
 ```
 
-> **⚠️ 重要:** `clasp pull` コマンドはローカルの未保存の変更を上書きします。実行前に `git status` で状態を確認し、必要であれば `git stash` で変更を退避させてください。
+> **注意:** `clasp pull` はローカルの未保存変更を上書きします。実行前に `git status` を確認し、必要なら `git stash` で退避してください。
 
 ## 開発ルール
 
--   ブランチ運用はGit-flowモデルに準拠します。
+-   ブランチ運用は Git-flow モデルに準拠します。
     -   `main`: 本番用ブランチ
     -   `develop`: 開発用ブランチ
     -   機能追加や修正は `develop` から `feature/` ブランチを切って行います。
--   `develop` ブランチへのマージは、必ずGitHub上でPull Requestを作成し、チームメンバーのレビューを必須とします。
+-   `develop` ブランチへのマージは、GitHub 上で Pull Request を作成し、チームレビューを原則とします。
 
 ## 貢献
 
-プロジェクトへの貢献を歓迎します！以下の手順でお願いします：
+プロジェクトへの貢献を歓迎します。以下の手順でお願いします。
 
-1.  `develop` ブランチから `feature/` ブランチを作成
-2.  変更を加えてコミット
-3.  GitHub上でPull Requestを作成
+1.  `develop` ブランチから `feature/` ブランチを作成する
+2.  変更を加えてコミットする
+3.  GitHub 上で Pull Request を作成する
 4.  チームメンバーのレビューを待つ
 
 詳細は [GitHub利用ガイド](./docs/GITHUB_GUIDE.md) を参照してください。
