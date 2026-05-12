@@ -1,0 +1,5 @@
+# ローカル検証用（本番鍵はコミットしない）
+node_modules/
+.env
+credentials/*.json
+!credentials/.gitkeep

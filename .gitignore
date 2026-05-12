@@ -60,11 +60,9 @@ build/
 coverage/
 .nyc_output/
 
-# ログ
-npm-debug.log*
-yarn-error.log
-pnpm-debug.log
-*.log
+# ダッシュボードローカル検証（任意の Node 依存・環境ファイル）
+dashboard/node_modules/
+dashboard/.env
 
 # 一時ファイル
 *.tmp
