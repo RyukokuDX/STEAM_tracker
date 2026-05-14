@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>延長申請フォーム</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      margin: 0;
+      padding: 8px;
+      background-color: #f5f5f5;
+      width: 100%;
+      min-height: 100vh;
+      box-sizing: border-box;
+      font-size: 1.6em;
+    }
+
+    .container {
+      background: #fff;
+      border-radius: 16px;
+      padding: 24px 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      width: 90%;
+      margin: 40px auto;
+    }
+
+    h1 {
+      font-size: 1.5em;
+      text-align: center;
+      margin-bottom: 18px;
+      letter-spacing: 0.02em;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 12px;
+      font-size: 1.3em;
+      letter-spacing: 0.01em;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 9px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-top: 5px;
+      font-size: 1.4em;
+      box-sizing: border-box;
+      background: #fafcff;
+    }
+
+    button {
+      margin-top: 18px;
+      width: 100%;
+      background-color: #007aff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 13px 0;
+      font-size: 1.4em;
+      font-weight: bold;
+      letter-spacing: 0.04em;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+
+    button:active { background-color: #005ecb; }
+    button:disabled { opacity: 0.5; cursor: default; }
+
+    .hidden { display: none; }
+
+    .item-block {
+      margin-bottom: 18px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .item-image {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+
+    #errorMsg {
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.85em;
+      display: none;
+    }
+
+    #errorMsg.error {
+      display: block;
+      color: #721c24;
+      background: #f8d7da;
+    }
+
+    @media (max-width: 480px) {
+      h1 { font-size: 30px; }
+      label { font-size: 24px; }
+      input, select { font-size: 20px; padding: 14px 12px; }
+      button { font-size: 20px; padding: 16px 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ステップ1: 学籍番号入力 -->
+  <div class="container" id="loginView">
+    <h1>延長申請ログイン</h1>
+    <label for="studentId">学籍番号</label>
+    <input type="text" id="studentId" placeholder="y200000">
+    <div id="errorMsg"></div>
+    <button id="loginBtn" onclick="submitEmail()">次へ</button>
+  </div>
+
+  <!-- ステップ2: 延長申請フォーム -->
+  <div class="container hidden" id="formView">
+    <h1>延長申請フォーム</h1>
+    <div id="itemList"></div>
+    <div id="errorMsg2" class="hidden" style="margin-top:12px;padding:10px;border-radius:8px;color:#721c24;background:#f8d7da;font-size:0.85em;"></div>
+    <button id="submitBtn" onclick="submitForm()">申請する</button>
+  </div>
+
+  <!-- ステップ3: 完了画面 -->
+  <div class="container hidden" id="doneView">
+    <h1>申請を受け付けました</h1>
+    <p>申請内容を確認後、メールにて通知いたします。</p>
+  </div>
+
+  <script>
+    // ============================================================
+    // デプロイURLをプレースホルダで埋め込む
+    // ============================================================
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbyi11jD77jb3pvOcBq3aw_uA8gn4X8tlpgN1BI4cxmZf0rXVKL75D7dM4fyjfC1WkYdQA/exec';
+
+    // ============================================================
+    // GASへのfetch（レスポンスを読むためcorsモードで送信）
+    // ============================================================
+    async function callGAS(action, payload) {
+      if (!GAS_URL) {
+        throw new Error('GAS_URL が未設定です');
+      }
+
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action, ...payload })
+      });
+      if (!res.ok) throw new Error(`HTTPエラー: ${res.status}`);
+      return await res.json();
+    }
+
+    // ============================================================
+    // ステップ1: 学籍番号からメールアドレスを生成して物品を取得
+    // ============================================================
+    async function submitEmail() {
+      const studentId = document.getElementById('studentId').value.trim();
+      const errEl = document.getElementById('errorMsg');
+      errEl.className = '';
+      errEl.textContent = '';
+
+      if (!studentId) {
+        errEl.className = 'error';
+        errEl.textContent = '学籍番号を入力してください。';
+        return;
+      }
+
+      const email = studentId + '@mail.ryukoku.ac.jp';
+      const loginBtn = document.getElementById('loginBtn');
+      loginBtn.disabled = true;
+      loginBtn.textContent = '取得中...';
+
+      try {
+        const result = await callGAS('getItemsByEmail', { email });
+        if (result.status === 'error') {
+          errEl.className = 'error';
+          errEl.textContent = result.message || '取得に失敗しました。';
+          loginBtn.disabled = false;
+          loginBtn.textContent = '次へ';
+          return;
+        }
+        showForm(result.items || []);
+      } catch (err) {
+        errEl.className = 'error';
+        errEl.textContent = 'サーバーへの接続に失敗しました。時間をおいて再度お試しください。';
+        console.error(err);
+        loginBtn.disabled = false;
+        loginBtn.textContent = '次へ';
+      }
+    }
+
+    // ============================================================
+    // ステップ2: 物品リスト表示
+    // ============================================================
+    function showForm(items) {
+      if (!items || items.length === 0) {
+        const errEl = document.getElementById('errorMsg');
+        errEl.className = 'error';
+        errEl.textContent = '該当する物品が見つかりません。';
+        document.getElementById('loginBtn').disabled = false;
+        document.getElementById('loginBtn').textContent = '次へ';
+        return;
+      }
+
+      document.getElementById('loginView').classList.add('hidden');
+      document.getElementById('formView').classList.remove('hidden');
+
+      const listContainer = document.getElementById('itemList');
+      listContainer.innerHTML = '';
+
+      items.forEach(item => {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        const pad = n => n < 10 ? '0' + n : n;
+        const minDate = tomorrow.getFullYear() + '-' + pad(tomorrow.getMonth() + 1) + '-' + pad(tomorrow.getDate());
+
+        const itemBlock = document.createElement('div');
+        itemBlock.className = 'item-block';
+
+        const label = document.createElement('label');
+        label.textContent = `${item.organ} - ${item.name}`;
+
+        const input = document.createElement('input');
+        input.type = 'date';
+        input.id = `date-${item.id}`;
+        input.max = item.maxDate;
+        input.min = minDate;
+        input.value = item.handover;
+
+        const img = document.createElement('img');
+        img.src = item.image;
+        img.alt = '物品画像';
+        img.className = 'item-image';
+
+        itemBlock.appendChild(label);
+        itemBlock.appendChild(input);
+        itemBlock.appendChild(img);
+        listContainer.appendChild(itemBlock);
+      });
+    }
+
+    // ============================================================
+    // ステップ3: 延長申請送信
+    // ============================================================
+    async function submitForm() {
+      const submitButton = document.getElementById('submitBtn');
+      const errEl = document.getElementById('errorMsg2');
+      errEl.classList.add('hidden');
+      errEl.textContent = '';
+
+      const dateInputs = document.querySelectorAll('#itemList input[type="date"]');
+      const results = Array.from(dateInputs).map(input => ({
+        id: Number(input.id.replace('date-', '')),
+        newDate: input.value
+      }));
+
+      if (results.some(r => !r.newDate)) {
+        errEl.classList.remove('hidden');
+        errEl.textContent = 'すべての日付を入力してください。';
+        return;
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = '送信中...';
+
+      try {
+        const result = await callGAS('notifyExtensionRequest', { results });
+        if (result.status === 'error') {
+          errEl.classList.remove('hidden');
+          errEl.textContent = result.message || '申請送信に失敗しました。';
+          submitButton.disabled = false;
+          submitButton.textContent = '申請する';
+          return;
+        }
+        document.getElementById('formView').classList.add('hidden');
+        document.getElementById('doneView').classList.remove('hidden');
+      } catch (err) {
+        errEl.classList.remove('hidden');
+        errEl.textContent = 'サーバーへの接続に失敗しました。時間をおいて再度お試しください。';
+        console.error(err);
+        submitButton.disabled = false;
+        submitButton.textContent = '申請する';
+      }
+    }
+  </script>
+</body>
+</html>

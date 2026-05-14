@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      <?!= include('style'); ?>
+    </style>
+  </head>
+  <body>
+    <!-- 管理シート画面 -->
+    <div id="mainView">
+      <? var formatStatusLabel = function(value) {
+           if (value === 'active') return '有効';
+           if (value === 'archived') return '撤去';
+           if (value === 'discarded') return '破棄';
+           return value != null ? value : '';
+         }; ?>
+      <div class="header-container">
+        <div class="button-left">
+          <button id="archiveButton">アーカイブシートを見る</button>
+        </div>
+        <div class="button-group">
+          <button id="completeButton" type="button">撤去済みにする</button>
+          <button id="discardButton" type="button">破棄済みにする</button>
+          <button id="deleteButton" type="button">データから削除</button>
+        </div>
+      </div>
+      <h2 class="sheet-title">管理シート</h2>
+      <? if (!data || data.length === 0) { ?>
+      <p>データがありません</p>
+      <? } else { ?>
+      <table id="mainTable">
+        <colgroup>
+          <col class="col-check" />
+          <col class="col-name" />
+          <col class="col-organization" />
+          <col class="col-photo" />
+          <col class="col-handover_on" />
+          <col class="col-status" />
+          <col class="col-admin_note" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="col-check">check</th>
+            <? 
+                var header = data[0];
+                for (var j = 0; j < header.length; j++) {
+              ?>
+                <? if (j+1 === registered) { ?>
+                  <!-- 列の省略 -->
+                <? } else if (j+1 === email) { ?>
+                  <!-- 列の省略 -->
+                <? } else if (j+1 === days) { ?>
+                  <!-- 列の省略 -->
+                <? } else { ?>
+                  <th><?!= formatHeaderName(header[j] != null ? header[j] : "") ?></th>
+                <? } ?>
+              <? } ?>
+            </tr>
+          </thead>
+          <tbody>
+            <? for (var i = 1; i < data.length; i++) { ?>
+              <tr data-row-index="<?!= i + 1 ?>">
+                <td><input type="checkbox" class="row-check"></td>
+                <? for (var j = 0; j < data[i].length; j++) { ?>
+                  <? if (j+1 === registered) { ?>
+                  <!-- 列の省略 -->
+                  <? } else if (j+1 === email) { ?>
+                  <!-- 列の省略 -->
+                  <? } else if (j+1 === name) { ?>
+                    <td data-email="<?!= data[i][email - 1] ?>"><?!= data[i][j] != null ? data[i][j] : "" ?></td>
+                  <? } else if (j+1 === photo) { ?>
+                    <? if (data[i][j] != null && data[i][j] !== "") { ?>
+                      <? var imgUrl = "https://lh3.googleusercontent.com/d/" + data[i][j]; ?>
+                      <td class="col-photo">
+                        <img src="<?!= imgUrl ?>" />
+                      </td>
+                    <? } else { ?>
+                      <td class="col-photo"></td>
+                    <? } ?>
+                  <? } else if (j+1 === days) { ?>
+                  <!-- 列の省略 -->
+                  <? } else { ?>
+                    <? if (j+1 === 4) { ?>
+                      <td class="col-organization"><?!= data[i][j] != null ? data[i][j] : "" ?></td>
+                    <? } else if (j+1 === handover) { ?>
+                      <td class="col-handover_on"><?!= data[i][j] != null ? data[i][j] : "" ?></td>
+                    <? } else if (j+1 === statusColumn) { ?>
+                      <td class="col-status"><?!= formatStatusLabel(data[i][j]) ?></td>
+                    <? } else if (j+1 === adminNoteColumn) { ?>
+                      <td class="col-admin_note"><?!= data[i][j] != null ? data[i][j] : "" ?></td>
+                    <? } else { ?>
+                      <td><?!= data[i][j] != null ? data[i][j] : "" ?></td>
+                    <? } ?>
+                  <? } ?>
+                <? } ?>
+              </tr>
+            <? } ?>
+          </tbody>
+        </table>
+      <? } ?>
+    </div>
+
+    <!-- アーカイブシート画面 -->
+    <div id="archiveView" style="display: none;">
+      <div class="header-container">
+        <div class="button-left">
+          <button id="backButton">管理シートに戻る</button>
+        </div>
+        <div class="button-group">
+          <button id="restoreButton" type="button">管理シートへ戻す</button>
+          <button id="deleteArchiveButton" type="button">データから削除</button>
+        </div>
+      </div>
+      <h2 class="sheet-title">アーカイブシート</h2>
+      <? if (!archiveData || archiveData.length === 0) { ?>
+      <p id="archiveEmptyMessage">データがありません</p>
+      <table id="archiveTable" style="display: none;">
+        <colgroup>
+          <col class="col-check" />
+          <col class="col-name" />
+          <col class="col-organization" />
+          <col class="col-photo" />
+          <col class="col-handover_on" />
+          <col class="col-status" />
+          <col class="col-admin_note" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="col-check">check</th>
+            <? 
+                var defaultHeader = (data && data[0]) ? data[0] : [];
+                for (var j = 0; j < defaultHeader.length; j++) {
+              ?>
+                <? if (j+1 === registered) { ?>
+                  <!-- 列の省略 -->
+                <? } else if (j+1 === email) { ?>
+                  <!-- 列の省略 -->
+                <? } else if (j+1 === days) { ?>
+                  <!-- 列の省略 -->
+                <? } else { ?>
+                  <th><?!= formatHeaderName(defaultHeader[j] != null ? defaultHeader[j] : "") ?></th>
+                <? } ?>
+              <? } ?>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      <? } else { ?>
+      <table id="archiveTable">
+        <colgroup>
+          <col class="col-check" />
+          <col class="col-name" />
+          <col class="col-organization" />
+          <col class="col-photo" />
+          <col class="col-handover_on" />
+          <col class="col-status" />
+          <col class="col-admin_note" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="col-check">check</th>
+            <? 
+                var archiveHeader = archiveData[0];
+                for (var j = 0; j < archiveHeader.length; j++) {
+              ?>
+                <? if (j+1 === registered) { ?>
+                  <!-- 列の省略 -->
+                <? } else if (j+1 === email) { ?>
+                  <!-- 列の省略 -->
+                <? } else if (j+1 === days) { ?>
+                  <!-- 列の省略 -->
+                <? } else { ?>
+                  <th><?!= formatHeaderName(archiveHeader[j] != null ? archiveHeader[j] : "") ?></th>
+                <? } ?>
+              <? } ?>
+            </tr>
+          </thead>
+          <tbody>
+            <? for (var i = 1; i < archiveData.length; i++) { ?>
+              <tr data-row-index="<?!= i + 1 ?>">
+                <td><input type="checkbox" class="row-check"></td>
+                <? for (var j = 0; j < archiveData[i].length; j++) { ?>
+                  <? if (j+1 === registered) { ?>
+                  <!-- 列の省略 -->
+                  <? } else if (j+1 === email) { ?>
+                  <!-- 列の省略 -->
+                  <? } else if (j+1 === name) { ?>
+                    <td data-email="<?!= archiveData[i][email - 1] ?>"><?!= archiveData[i][j] != null ? archiveData[i][j] : "" ?></td>
+                  <? } else if (j+1 === photo) { ?>
+                    <? if (archiveData[i][j] != null && archiveData[i][j] !== "") { ?>
+                      <? var imgUrl = "https://lh3.googleusercontent.com/d/" + archiveData[i][j]; ?>
+                      <td class="col-photo">
+                        <img src="<?!= imgUrl ?>" />
+                      </td>
+                    <? } else { ?>
+                      <td class="col-photo"></td>
+                    <? } ?>
+                  <? } else if (j+1 === days) { ?>
+                  <!-- 列の省略 -->
+                  <? } else { ?>
+                    <? if (j+1 === 4) { ?>
+                      <td class="col-organization"><?!= archiveData[i][j] != null ? archiveData[i][j] : "" ?></td>
+                    <? } else if (j+1 === handover) { ?>
+                      <td class="col-handover_on"><?!= archiveData[i][j] != null ? archiveData[i][j] : "" ?></td>
+                    <? } else if (j+1 === statusColumn) { ?>
+                      <td class="col-status"><?!= formatStatusLabel(archiveData[i][j]) ?></td>
+                    <? } else if (j+1 === adminNoteColumn) { ?>
+                      <td class="col-admin_note"><?!= archiveData[i][j] != null ? archiveData[i][j] : "" ?></td>
+                    <? } else { ?>
+                      <td><?!= archiveData[i][j] != null ? archiveData[i][j] : "" ?></td>
+                    <? } ?>
+                  <? } ?>
+                <? } ?>
+              </tr>
+            <? } ?>
+          </tbody>
+        </table>
+      <? } ?>
+    </div>
+
+    <script>
+      (function () {
+        const archiveButton = document.getElementById('archiveButton');
+        const backButton = document.getElementById('backButton');
+        const completeButton = document.getElementById('completeButton');
+        const discardButton = document.getElementById('discardButton');
+        const deleteButton = document.getElementById('deleteButton');
+        const deleteArchiveButton = document.getElementById('deleteArchiveButton');
+        const restoreButton = document.getElementById('restoreButton');
+        const mainView = document.getElementById('mainView');
+        const archiveView = document.getElementById('archiveView');
+
+        // グローバル処理中フラグ
+        let isProcessing = false;
+
+        // 全ボタンのリスト
+        const allActionButtons = [completeButton, discardButton, deleteButton, deleteArchiveButton, restoreButton].filter(Boolean);
+
+        // 処理中状態の設定（全ボタンを無効化/有効化）
+        function setGlobalProcessing(processing) {
+          isProcessing = processing;
+          allActionButtons.forEach(btn => {
+            btn.disabled = processing;
+            if (processing) {
+              btn.style.opacity = '0.6';
+              btn.style.cursor = 'not-allowed';
+            } else {
+              btn.style.opacity = '1';
+              btn.style.cursor = 'pointer';
+            }
+          });
+        }
+
+        // 画面切り替え（ページ遷移なし）
+        if (archiveButton) {
+          archiveButton.addEventListener('click', () => {
+            if (isProcessing) return;
+            mainView.style.display = 'none';
+            archiveView.style.display = 'block';
+          });
+        }
+
+        if (backButton) {
+          backButton.addEventListener('click', () => {
+            if (isProcessing) return;
+            archiveView.style.display = 'none';
+            mainView.style.display = 'block';
+          });
+        }
+
+        // チェックされた行を取得する関数
+        function getCheckedRowsAndElements(tableId) {
+          const table = document.getElementById(tableId);
+          if (!table) return { rows: [], elements: [] };
+          
+          const checkboxes = table.querySelectorAll('tbody input.row-check:checked');
+          const rows = [];
+          const elements = [];
+          
+          checkboxes.forEach((checkbox) => {
+            const tr = checkbox.closest('tr');
+            if (tr) {
+              const rowIndex = Number(tr.dataset.rowIndex);
+              if (Number.isInteger(rowIndex)) {
+                rows.push(rowIndex);
+                elements.push(tr);
+              }
+            }
+          });
+          
+          return { rows, elements };
+        }
+
+        // 選択された行をDOMから削除し、行番号を再採番
+        function removeRowsFromDOM(elements, tableId) {
+          elements.forEach(tr => tr.remove());
+          renumberRows(tableId);
+        }
+
+        // テーブル内の行番号を再採番（スプレッドシートの実際の行番号に合わせる）
+        function renumberRows(tableId) {
+          const table = document.getElementById(tableId);
+          if (!table) return;
+          const rows = table.querySelectorAll('tbody tr');
+          rows.forEach((tr, index) => {
+            tr.dataset.rowIndex = index + 2; // ヘッダー行が1なので、データは2から
+          });
+        }
+
+        // 管理テーブルに行を追加（アーカイブから戻す用）
+        function addRowsToMainTable(sourceElements) {
+          const mainTable = document.getElementById('mainTable');
+          if (!mainTable) return;
+          
+          const tbody = mainTable.querySelector('tbody');
+          if (!tbody) return;
+
+          sourceElements.forEach((sourceTr) => {
+            const tr = sourceTr.cloneNode(true);
+            
+            // チェックボックスのチェックを外す
+            const checkbox = tr.querySelector('input.row-check');
+            if (checkbox) checkbox.checked = false;
+            
+            // ステータス列を空白にする
+            const cells = tr.querySelectorAll('td');
+            if (cells.length >= 6) {
+              const statusCell = cells[5];
+              if (statusCell) statusCell.textContent = '有効';
+            }
+
+            // 備考欄に編集機能を追加
+            const adminNoteCell = cells[cells.length - 1];
+            if (adminNoteCell) {
+              makeEditableCell(adminNoteCell, 'main');
+            }
+            
+            tbody.appendChild(tr);
+          });
+
+          // 行番号を再採番
+          renumberRows('mainTable');
+        }
+
+        // アーカイブテーブルに行を追加
+        function addRowsToArchiveTable(sourceElements, newStatus) {
+          const archiveTable = document.getElementById('archiveTable');
+          if (!archiveTable) return;
+          
+          // 空メッセージを非表示、テーブルを表示
+          const emptyMsg = document.getElementById('archiveEmptyMessage');
+          if (emptyMsg) emptyMsg.style.display = 'none';
+          archiveTable.style.display = '';
+          
+          const tbody = archiveTable.querySelector('tbody');
+          if (!tbody) return;
+
+          sourceElements.forEach((sourceTr) => {
+            const tr = sourceTr.cloneNode(true);
+            
+            // チェックボックスのチェックを外す
+            const checkbox = tr.querySelector('input.row-check');
+            if (checkbox) checkbox.checked = false;
+            
+            // ステータス列を更新
+            if (newStatus) {
+              let statusCell = tr.querySelector('.col-status');
+              if (!statusCell) {
+                const cells = tr.querySelectorAll('td');
+                if (cells.length >= 6) statusCell = cells[5];
+              }
+              if (statusCell) statusCell.textContent = newStatus;
+            }
+
+            // 備考欄に編集機能を追加
+            const cells = tr.querySelectorAll('td');
+            const adminNoteCell = cells[cells.length - 1];
+            if (adminNoteCell) {
+              makeEditableCell(adminNoteCell, 'archive');
+            }
+            
+            tbody.appendChild(tr);
+          });
+
+          // 行番号を再採番
+          renumberRows('archiveTable');
+        }
+
+        // ローディング状態（個別ボタンのテキスト変更用）
+        const setLoadingState = (button, isLoading, defaultText) => {
+          button.textContent = isLoading ? '処理中...' : defaultText;
+        };
+
+        // 撤去済みにする
+        if (completeButton) {
+          completeButton.addEventListener('click', () => {
+            if (isProcessing) return;
+            
+            const { rows, elements } = getCheckedRowsAndElements('mainTable');
+            if (!rows.length) {
+              alert('チェックされた行がありません。');
+              return;
+            }
+
+            setGlobalProcessing(true);
+            setLoadingState(completeButton, true, '撤去済みにする');
+            google.script.run
+              .withSuccessHandler(() => {
+                addRowsToArchiveTable(elements, '撤去');
+                removeRowsFromDOM(elements, 'mainTable');
+                setLoadingState(completeButton, false, '撤去済みにする');
+                setGlobalProcessing(false);
+              })
+              .withFailureHandler((err) => {
+                alert(err && err.message ? err.message : '処理に失敗しました。');
+                setLoadingState(completeButton, false, '撤去済みにする');
+                setGlobalProcessing(false);
+              })
+              .completeRows(rows);
+          });
+        }
+
+        // 破棄済みにする
+        if (discardButton) {
+          discardButton.addEventListener('click', () => {
+            if (isProcessing) return;
+            
+            const { rows, elements } = getCheckedRowsAndElements('mainTable');
+            if (!rows.length) {
+              alert('チェックされた行がありません。');
+              return;
+            }
+
+            setGlobalProcessing(true);
+            setLoadingState(discardButton, true, '破棄済みにする');
+            google.script.run
+              .withSuccessHandler(() => {
+                addRowsToArchiveTable(elements, '破棄');
+                removeRowsFromDOM(elements, 'mainTable');
+                setLoadingState(discardButton, false, '破棄済みにする');
+                setGlobalProcessing(false);
+              })
+              .withFailureHandler((err) => {
+                alert(err && err.message ? err.message : '処理に失敗しました。');
+                setLoadingState(discardButton, false, '破棄済みにする');
+                setGlobalProcessing(false);
+              })
+              .discardRows(rows);
+          });
+        }
+
+        // データから削除（管理シート）
+        if (deleteButton) {
+          deleteButton.addEventListener('click', () => {
+            if (isProcessing) return;
+            
+            const { rows, elements } = getCheckedRowsAndElements('mainTable');
+            if (!rows.length) {
+              alert('チェックされた行がありません。');
+              return;
+            }
+
+            if (!confirm('選択した行をデータから完全に削除します。この操作は取り消せません。よろしいですか？')) {
+              return;
+            }
+
+            setGlobalProcessing(true);
+            setLoadingState(deleteButton, true, 'データから削除');
+            google.script.run
+              .withSuccessHandler(() => {
+                removeRowsFromDOM(elements, 'mainTable');
+                setLoadingState(deleteButton, false, 'データから削除');
+                setGlobalProcessing(false);
+              })
+              .withFailureHandler((err) => {
+                alert(err && err.message ? err.message : '処理に失敗しました。');
+                setLoadingState(deleteButton, false, 'データから削除');
+                setGlobalProcessing(false);
+              })
+              .deleteRows(rows);
+          });
+        }
+
+        // データから削除（アーカイブシート）
+        if (deleteArchiveButton) {
+          deleteArchiveButton.addEventListener('click', () => {
+            if (isProcessing) return;
+            
+            const { rows, elements } = getCheckedRowsAndElements('archiveTable');
+            if (!rows.length) {
+              alert('チェックされた行がありません。');
+              return;
+            }
+
+            if (!confirm('選択した行をデータから完全に削除します。この操作は取り消せません。よろしいですか？')) {
+              return;
+            }
+
+            setGlobalProcessing(true);
+            setLoadingState(deleteArchiveButton, true, 'データから削除');
+            google.script.run
+              .withSuccessHandler(() => {
+                removeRowsFromDOM(elements, 'archiveTable');
+                setLoadingState(deleteArchiveButton, false, 'データから削除');
+                setGlobalProcessing(false);
+              })
+              .withFailureHandler((err) => {
+                alert(err && err.message ? err.message : '処理に失敗しました。');
+                setLoadingState(deleteArchiveButton, false, 'データから削除');
+                setGlobalProcessing(false);
+              })
+              .deleteArchiveRows(rows);
+          });
+        }
+
+        // 管理シートへ戻す（アーカイブシートから）
+        if (restoreButton) {
+          restoreButton.addEventListener('click', () => {
+            if (isProcessing) return;
+            
+            const { rows, elements } = getCheckedRowsAndElements('archiveTable');
+            if (!rows.length) {
+              alert('チェックされた行がありません。');
+              return;
+            }
+
+            setGlobalProcessing(true);
+            setLoadingState(restoreButton, true, '管理シートへ戻す');
+            google.script.run
+              .withSuccessHandler(() => {
+                addRowsToMainTable(elements);
+                removeRowsFromDOM(elements, 'archiveTable');
+                setLoadingState(restoreButton, false, '管理シートへ戻す');
+                setGlobalProcessing(false);
+              })
+              .withFailureHandler((err) => {
+                alert(err && err.message ? err.message : '処理に失敗しました。');
+                setLoadingState(restoreButton, false, '管理シートへ戻す');
+                setGlobalProcessing(false);
+              })
+              .restoreRows(rows);
+          });
+        }
+
+        // 備考欄の編集機能
+        function setupAdminNoteEditing() {
+          // 管理シートの備考欄
+          const mainTable = document.getElementById('mainTable');
+          if (mainTable) {
+            mainTable.querySelectorAll('tbody tr').forEach(tr => {
+              // 備考欄は最後の列（7番目: check, name, org, photo, handover, status, admin_note）
+              const cells = tr.querySelectorAll('td');
+              const adminNoteCell = cells[cells.length - 1];
+              if (adminNoteCell) {
+                makeEditableCell(adminNoteCell, 'main');
+              }
+            });
+          }
+
+          // アーカイブシートの備考欄
+          const archiveTable = document.getElementById('archiveTable');
+          if (archiveTable) {
+            archiveTable.querySelectorAll('tbody tr').forEach(tr => {
+              const cells = tr.querySelectorAll('td');
+              const adminNoteCell = cells[cells.length - 1];
+              if (adminNoteCell) {
+                makeEditableCell(adminNoteCell, 'archive');
+              }
+            });
+          }
+        }
+
+        function makeEditableCell(cell, sheetType) {
+          cell.style.cursor = 'pointer';
+          cell.title = 'クリックして編集';
+
+          cell.addEventListener('click', function(e) {
+            // 処理中なら何もしない
+            if (isProcessing) return;
+            
+            // すでに編集中なら何もしない
+            if (cell.querySelector('input')) return;
+
+            const currentText = cell.textContent;
+            const tr = cell.closest('tr');
+            const rowIndex = tr ? tr.dataset.rowIndex : null;
+
+            if (!rowIndex) return;
+
+            // inputに置き換え
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentText;
+            input.style.width = '100%';
+            input.style.boxSizing = 'border-box';
+            input.style.fontSize = 'inherit';
+            input.style.padding = '4px';
+            input.style.border = '2px solid var(--primary)';
+            input.style.borderRadius = '4px';
+
+            cell.textContent = '';
+            cell.appendChild(input);
+            input.focus();
+            input.select();
+
+            // キャンセルフラグ
+            let isCancelled = false;
+
+            // 保存処理
+            const saveNote = () => {
+              // キャンセル済みなら何もしない
+              if (isCancelled) return;
+
+              const newText = input.value;
+              cell.textContent = newText;
+
+              // 変更がない場合はサーバーに送らない
+              if (newText === currentText) return;
+
+              // 保存中の表示
+              cell.style.opacity = '0.6';
+              setGlobalProcessing(true);
+
+              const updateFunc = sheetType === 'main' ? 'updateAdminNote' : 'updateArchiveAdminNote';
+
+              google.script.run
+                .withSuccessHandler(() => {
+                  cell.style.opacity = '1';
+                  cell.style.backgroundColor = 'rgba(16, 185, 129, 0.2)';
+                  setTimeout(() => {
+                    cell.style.backgroundColor = '';
+                  }, 1000);
+                  setGlobalProcessing(false);
+                })
+                .withFailureHandler((err) => {
+                  cell.style.opacity = '1';
+                  cell.textContent = currentText; // 元に戻す
+                  alert('保存に失敗しました: ' + (err && err.message ? err.message : ''));
+                  setGlobalProcessing(false);
+                })
+                [updateFunc](Number(rowIndex), newText);
+            };
+
+            // フォーカスが外れたら保存
+            input.addEventListener('blur', saveNote);
+
+            // Enterで保存、Escでキャンセル
+            input.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                input.blur();
+              } else if (e.key === 'Escape') {
+                isCancelled = true;
+                cell.textContent = currentText;
+              }
+            });
+          });
+        }
+
+        // 初期化
+        setupAdminNoteEditing();
+      })();
+    </script>
+  </body>
+</html>

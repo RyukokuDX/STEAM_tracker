@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>物品登録フォーム</title>
+  <style>
+    /* ========== 設定値 ========== */
+    :root {
+      --primary: #4f6a5c;
+      --bg: #f8f7f4;
+      --input: #eae8e1;
+      --text: #37423d;
+      --muted: #5b6661;
+      --surface: #ffffff;
+      --surface-alt: #fafafa;
+      --border: #eee;
+      --hover-bg: #f2f4f3;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.04);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-pill: 999px;
+      --error-text: #721c24;
+      --error-bg: #f8d7da;
+      --success-text: #155724;
+      --success-bg: #d4edda;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 20px;
+      padding-top: calc(16px + env(safe-area-inset-top));
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+      box-sizing: border-box;
+    }
+
+    .hero-title {
+      position: relative;
+      padding-top: clamp(72px, 18vw, 110px);
+      font-size: 40px;
+      font-weight: bold;
+      margin: 0 0 24px 0;
+      text-align: center;
+      color: var(--text);
+    }
+
+    .hero-title::before,
+    .hero-title::after {
+      content: "";
+      display: block;
+      width: clamp(48px, 12vw, 72px);
+      height: clamp(48px, 12vw, 72px);
+      background-color: var(--input);
+      border-radius: 50%;
+      position: absolute;
+      top: 0;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: clamp(60%, 12vw, 80%);
+    }
+
+    .hero-title::before {
+      left: calc(50% - 8px - 64px);
+      background-image: url("stuffFormロゴ/RDXロゴ.jpg");
+      background-size: 120%;
+    }
+
+    .hero-title::after {
+      left: calc(50% + 8px);
+      background-image: url("stuffFormロゴ/STEAMコモンズロゴ.jpg");
+      background-size: 100%;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header {
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      text-align: center;
+    }
+
+    .terms-box {
+      margin-top: 10px;
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      height: 52vh;
+      min-height: 240px;
+      overflow: auto;
+    }
+
+    .controls {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    label {
+      font-size: 14px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    select, input[type="checkbox"] {
+      font-size: 16px;
+      accent-color: var(--primary);
+    }
+
+    .form {
+      transition: opacity .25s;
+      opacity: 0.45;
+      pointer-events: none;
+    }
+
+    .form.enabled {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .field {
+      margin-bottom: 12px;
+      text-align: left;
+    }
+
+    .field label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .select-wrap { position: relative; }
+    .custom-select {
+      width: 100%;
+      background: var(--input);
+      border-radius: var(--radius);
+      padding: 12px;
+      font-size: 16px;
+      line-height: 1.4;
+      color: var(--text);
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    .custom-select .custom-select-label {
+      flex: 1 1 auto;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .custom-select .custom-select-icon {
+      width: 10px; height: 10px;
+      margin-left: 8px;
+      border: solid var(--muted);
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+      transition: transform .2s ease;
+      flex: 0 0 auto;
+    }
+    .custom-select.open .custom-select-icon { transform: rotate(-135deg); }
+    .select-menu {
+      position: absolute;
+      left: 0; top: calc(100% + 6px);
+      width: 100%;
+      max-height: min(40vh, 280px);
+      overflow: auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      z-index: 1000;
+      box-sizing: border-box;
+      padding: 6px 0;
+    }
+    .select-option {
+      padding: 10px 12px;
+      font-size: 16px;
+      color: var(--text);
+      line-height: 1.5;
+      white-space: normal;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      cursor: pointer;
+    }
+    .select-option[aria-selected="true"], .select-option:hover {
+      background: var(--hover-bg);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      display: block;
+      border-radius: var(--radius-pill);
+    }
+    .btn--primary { background: var(--primary); color: #fff; }
+    .btn[disabled] { opacity: 0.5; cursor: default; }
+
+    .form-control {
+      width: 100%;
+      border: none;
+      background: var(--input);
+      border-radius: var(--radius);
+      padding: 12px;
+      font-size: 16px;
+      color: var(--text);
+      box-sizing: border-box;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      background: var(--input);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      box-sizing: border-box;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    #msg {
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+    #msg.error { color: var(--error-text); background: var(--error-bg); }
+    #msg.success { color: var(--success-text); background: var(--success-bg); }
+
+    .small { font-size: 13px; color: var(--muted); margin-top: var(--space-2); }
+    .mt-6 { margin-top: var(--space-2); }
+    .mt-8 { margin-top: var(--space-3); }
+    .section-title { font-weight: 700; margin-bottom: 8px; }
+    .heading-lg { font-size: 30px; }
+    .note { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    .btn-sub { font-size: 13px; color: #fff; }
+    .termsdate { font-size: small; color: var(--muted); margin-bottom: 12px; text-align: center; }
+
+    @media (min-width: 700px) {
+      body { padding: 28px; }
+      .terms-box { height: 48vh; min-height: 380px; }
+      .card { padding: 18px; }
+    }
+
+    @supports (height: 1dvh) {
+      .terms-box { height: 52dvh; }
+      @media (min-width: 700px) { .terms-box { height: 48dvh; } }
+    }
+  </style>
+</head>
+
+<body>
+  <h1 class="hero-title">物品登録フォーム</h1>
+
+  <div class="card">
+    <div class="header">
+      <div class="heading-lg">利用規約の確認</div>
+      <div class="small">施行日: 2026-01-19</div>
+    </div>
+
+    <div id="termsBox" class="terms-box" aria-label="利用規約全文">
+      <section id="termsText">
+        <h1 style="display:none">スチームコモンズ 物品管理システム 利用規約</h1>
+        <p class="termsdate">施行日: 2026-01-19 / 最終改定日: 2026-01-19</p>
+
+        <h3>1. 目的</h3>
+        <ul>
+          <li>本規約は、「スチームコモンズ」（以下「本施設」という。）における放置物品問題を円滑に解決することを目的とするものである。</li>
+          <li>本規約の目的は、ユーザーが快適かつ公平に作業スペースを利用できる環境を維持することである。</li>
+          <li>本サービスは、「スチームコモンズ 物品管理システム」の名称で提供されるものである。</li>
+          <li>本規約は、本サービスの提供条件およびユーザーと本施設との間の権利義務関係を定めるものである。</li>
+          <li>ユーザーは、本サービスを利用するにあたり、本規約の全文を確認しなければならない。</li>
+        </ul>
+        <p>ユーザーは、本規約に承諾の上、本サービスの利用を申し込むものとし、本サービスの申し込みをした場合、本規約を承諾したものとみなします。</p>
+
+        <h3>2. 定義</h3>
+        <p>「本サービス」とは、本施設が「スチームコモンズ 物品管理システム」の名称で提供する、物品の登録および管理に関する一切のサービスおよびそれを提供するための情報システムをいう。</p>
+        <p>「ユーザー」とは、本規約に同意の上、本サービスの利用登録をした個人をいう。</p>
+        <p>「登録物品」とは、ユーザーが本サービスを利用して、所有者情報および明け渡し日を登録した私物を指す。</p>
+        <p>「管理者」とは、本施設の運営を担当し、本サービスの管理権限を有する者を指す。</p>
+        <p>「QRコード」とは、物品登録フォームにアクセスするために、本施設が提供する個別の識別コードを指す。</p>
+        <p>「明け渡し日」とは、ユーザーが登録物品を本施設から撤去する最終期限の日を指す。</p>
+
+        <h3>3. システムの利用</h3>
+        <p>本施設内に私物を設置するユーザーは、本規約に同意の上、所定の方法で本サービスに物品を登録しなければならない。</p>
+        <p>物品の登録は、本施設内に掲示されたQRコードを読み取り、表示されるフォームに必要事項（氏名、連絡先メールアドレス、物品の情報、写真、明け渡し日など）を入力することで完了する。なお、登録できる物品は第7条（禁止事項）の定めに従うものとする。</p>
+        <p>ユーザーは、本条第2項に定める写真について、登録物品が施設内のどこに置かれているかが明確に判別できるよう、周囲の状況も含めて撮影するものとする。</p>
+        <p>前各項の定めにかかわらず、管理者は、登録申請された物品が施設の利用目的にそぐわない、スペースを過度に占有する、その他管理上不適切であると判断した場合、当該物品の登録を承認しない（受け付けない）ことができる。</p>
+        <p>前項に基づき管理者が登録を承認しなかった場合、ユーザーは当該物品を速やかに本施設から撤去しなければならない。これによってユーザーに生じた損害について、管理者は一切の責任を負わない。</p>
+        <p>ユーザーは、登録情報が正確であることを保証するものとする。登録情報に変更があった場合は、速やかに更新しなければならない。</p>
+
+        <h3>4. 個人情報の取り扱い</h3>
+        <p>管理者は、本サービスの運営にあたり取得したユーザーの個人情報（氏名、メールアドレス等）を、本サービスの管理・運営（リマインダー通知、緊急時の連絡等）の目的でのみ利用する。</p>
+        <p>法令に基づく場合を除き、ユーザーの同意なく個人情報を第三者に開示または提供することはない。</p>
+        <p>取得した個人情報は、登録物品の管理期間終了後1年間保管し、その後速やかに削除する。個人情報の漏洩、滅失、毀損等を防止するため、適切な安全管理措置を講じる。ユーザーは、個人情報の開示、訂正、利用停止、削除を希望する場合、管理者（メールアドレス）まで連絡するものとする。</p>
+
+        <h3>5. 登録物品の管理</h3>
+        <p>ユーザーは、自らの責任において登録物品を管理するものとする。</p>
+        <p>ユーザーは、設定した明け渡し日までに、登録物品を本施設から撤去する義務を負う。</p>
+        <p>本サービスは、明け渡し日の到来前に、登録されたメールアドレス宛にリマインダー通知を自動送信する。ユーザーは、この通知を受信できるよう、メール設定を適切に行うものとする。なお、リマインダー通知は明け渡し日の3日前および当日に、登録されたメールアドレス宛に自動送信される。</p>
+        <p>ユーザーは、やむを得ない事情がある場合、明け渡し日の延長を申請することができる。延長申請は所定のフォームから行い、管理者が承認または否認する。管理者が延長申請を承認した場合、明け渡し日を延長する。否認の場合は、ユーザーは速やかに物品を撤去しなければならない。</p>
+        <p>物品の設置期間は原則として年度末（3月31日）までとする。年度末が近づいた場合、管理者は全ユーザーに一斉通知を行い、明け渡し日を周知する。年度末までに撤去されない物品は、管理者が任意に処分できるものとする。</p>
+        <p>撤去完了または管理者による処分が確認された物品の登録データは、管理シートからアーカイブ用シートに移動し、過去の記録として保管する。アーカイブ後は主要情報のみを保持し、個人情報は速やかに削除する。</p>
+
+        <h3>6. 明け渡し日を超過した物品の取り扱い</h3>
+        <p>明け渡し日を超過しても撤去されない登録物品について、管理者は、当該物品の所有権がユーザーによって放棄されたものとみなし、ユーザーへの事前の通知なく、任意に移動、保管、または処分（廃棄、再利用を含む）することができる。</p>
+        <p>前項の措置に関し、ユーザーは一切の異議を申し立てることができず、管理者はユーザーおよび第三者に対して何らの責任も負わないものとする。</p>
+
+        <h3>7. 禁止事項</h3>
+        <p>ユーザーは、本サービスの利用にあたり、以下の各号に定める行為を行ってはなりません。</p>
+        <ul>
+          <li>虚偽の情報を登録する行為</li>
+          <li>他人の情報を無断で使用して登録する行為</li>
+          <li>本サービスの運営を妨害する行為</li>
+          <li>本施設内に危険物、違法物、その他管理者が不適切と判断する物品を設置する行為</li>
+          <li>その他、法令または公序良俗に反する行為</li>
+        </ul>
+
+        <h3>8. 免責事項</h3>
+        <p>本サービスの障害、メンテナンス、通信回線の異常、その他やむを得ない事情により、予告なく本サービスの提供を中断または停止する場合がある。</p>
+        <p>本サービスの利用または利用不能によってユーザーに生じた損害について、管理者に故意または重過失がある場合を除き、一切の責任を負わないものとする。</p>
+
+        <h3>8-1. エラー・障害時の対応</h3>
+        <ul>
+          <li>システム障害、通信エラー、その他予期せぬ事象が発生した場合、管理者は速やかに復旧対応を行うものである。</li>
+          <li>登録・通知・アーカイブ等の処理に失敗した場合、管理者はユーザーに状況を通知し、必要な対応を協議するものである。</li>
+          <li>ユーザーは、エラー発生時に管理者の指示に従うものとする。</li>
+        </ul>
+
+        <h3>9. 規約の変更</h3>
+        <p>管理者は、必要に応じて本規約を変更できるものとします。</p>
+        <p>規約を変更した場合、管理者は本施設内への掲示その他適切な方法でユーザーに通知します。通知後、ユーザーが本サービスを利用した場合は、変更後の規約に同意したものとみなします。</p>
+      </section>
+    </div>
+
+    <div class="controls">
+      <label class="mt-6">
+        <input id="confirm6" type="checkbox" />
+        私は「第6条（明け渡し日を超過した物品の取り扱い）」を読み、内容を理解しました
+      </label>
+
+      <div>
+        <div class="note">第6条に関する確認クイズ</div>
+        <select id="quiz" aria-label="第6条に関するクイズ" class="form-control">
+          <option value="">-- 選択してください --</option>
+          <option value="a">明け渡し日を超えた場合、管理者はユーザーに事前連絡して必ず保管する</option>
+          <option value="b">明け渡し日を超えた場合、管理者は当該物品を任意に移動・保管・処分できる</option>
+          <option value="c">明け渡し日を超えた場合、ユーザーは自動的に所有権が移転されるが処分は不可</option>
+        </select>
+      </div>
+
+      <div class="mt-6">
+        <button id="agreeBtn" class="btn btn--primary" disabled>
+          同意して進む<div class="btn-sub">⚠必須⚠</div>
+        </button>
+      </div>
+
+      <div class="small">ヒント：第6条の本文をよく読んで正しい選択肢を選んでください。下までスクロールしてからチェックとクイズを完了してください。</div>
+    </div>
+  </div>
+
+  <!-- フォーム -->
+  <div id="formCard" class="card form">
+    <div class="section-title">物品登録フォーム</div>
+
+    <div class="field">
+      <label for="name">氏名</label>
+      <input id="name" type="text" autocomplete="name" class="form-control" maxlength="50" />
+    </div>
+
+    <div class="field">
+      <label for="organization">団体名（任意）</label>
+      <input id="organization" type="text" autocomplete="organization" class="form-control" />
+    </div>
+
+    <div class="field">
+      <label for="photoFile">写真を添付</label>
+      <input id="photoFile" type="file" accept="image/*" />
+    </div>
+
+    <div class="field">
+      <label for="email">メールアドレス</label>
+      <input id="email" type="email" class="form-control" />
+    </div>
+
+    <div class="field">
+      <label for="date">明け渡し日</label>
+      <input id="date" type="date" class="form-control" />
+      <div id="hint" class="small"></div>
+    </div>
+
+    <div id="msg" aria-live="polite"></div>
+
+    <div class="mt-8">
+      <button id="submit" class="btn btn--primary">送信</button>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // デプロイURLをプレースホルダで埋め込む
+    // ============================================================
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzjI4ednTtQBdqjjkZh2yA7S3BImEgYY9GbWhsxw07u4XmWvky8J5qEOSmEFAinleqZww/exec';
+    const DOMAIN = 'mail.ryukoku.ac.jp';
+
+    // ============================================================
+    // 年度末・今日の日付をJavaScriptで計算（GASテンプレートの代替）
+    // ============================================================
+    function getFiscalYearEnd() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const mar31 = new Date(year, 2, 31);
+      const todayNorm = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      if (todayNorm > mar31) return new Date(year + 1, 2, 31);
+      return mar31;
+    }
+
+    function toDateStr(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    const TODAY = toDateStr(new Date());
+    const FISCAL_END = toDateStr(getFiscalYearEnd());
+
+    // ============================================================
+    // 画像リサイズ・圧縮（既存コードそのまま流用）
+    // ============================================================
+    function processImage(dataUrl) {
+      return new Promise(function(resolve, reject) {
+        try {
+          if (!dataUrl || typeof dataUrl !== 'string') {
+            reject(new Error('画像データが不正です'));
+            return;
+          }
+          const img = new Image();
+          img.onload = function() {
+            try {
+              const maxSide = 1280;
+              let w = img.naturalWidth || img.width;
+              let h = img.naturalHeight || img.height;
+              if (!w || !h) { reject(new Error('画像サイズの取得に失敗しました')); return; }
+              const scale = Math.min(1, maxSide / Math.max(w, h));
+              const outW = Math.max(1, Math.round(w * scale));
+              const outH = Math.max(1, Math.round(h * scale));
+              const canvas = document.createElement('canvas');
+              canvas.width = outW;
+              canvas.height = outH;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) { reject(new Error('Canvas が利用できません')); return; }
+              ctx.drawImage(img, 0, 0, outW, outH);
+              resolve(canvas.toDataURL('image/jpeg', 0.85));
+            } catch (e) { reject(e); }
+          };
+          img.onerror = function() { reject(new Error('画像の読み込みに失敗しました')); };
+          img.src = dataUrl;
+        } catch (e) { reject(e); }
+      });
+    }
+
+    // ============================================================
+    // GASへのfetch送信（google.script.runの代替）
+    // ============================================================
+    async function callGAS(action, payload) {
+      if (!GAS_URL) {
+        throw new Error('GAS_URL が未設定です');
+      }
+
+      const body = JSON.stringify({ action, ...payload });
+      const res = await fetch(GAS_URL, {
+        method: 'POST',
+        // doPost + CORS対応済みのWebアプリURLを前提にする
+        mode: 'cors',
+        headers: { 'Content-Type': 'text/plain' },
+        body
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+
+      let json;
+      try {
+        json = await res.json();
+      } catch (_) {
+        throw new Error('GASの応答(JSON)を読み取れませんでした');
+      }
+
+      if (!json || json.status !== 'ok') {
+        throw new Error((json && json.message) || 'GASでエラーが発生しました');
+      }
+
+      return json;
+    }
+
+    // ============================================================
+    // 日付初期化
+    // ============================================================
+    (function initDate() {
+      const d = document.getElementById('date');
+      d.setAttribute('min', TODAY);
+      d.setAttribute('max', FISCAL_END);
+      document.getElementById('hint').textContent = `選択可能な範囲： ${TODAY} 〜 ${FISCAL_END}`;
+    })();
+
+    // ============================================================
+    // カスタムセレクト（既存コードそのまま流用）
+    // ============================================================
+    (function enhanceSelect() {
+      const sel = document.getElementById('quiz');
+      if (!sel) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'select-wrap';
+      sel.parentNode.insertBefore(wrap, sel);
+      wrap.appendChild(sel);
+      sel.style.position = 'absolute';
+      sel.style.opacity = '0';
+      sel.style.pointerEvents = 'none';
+      sel.style.width = '0';
+      sel.style.height = '0';
+
+      const btn = document.createElement('div');
+      btn.className = 'custom-select';
+      btn.setAttribute('role', 'button');
+      btn.setAttribute('tabindex', '0');
+      btn.setAttribute('aria-haspopup', 'listbox');
+      btn.setAttribute('aria-expanded', 'false');
+      const labelEl = document.createElement('span');
+      labelEl.className = 'custom-select-label';
+      labelEl.textContent = '-- 選択してください --';
+      const icon = document.createElement('span');
+      icon.className = 'custom-select-icon';
+      btn.appendChild(labelEl);
+      btn.appendChild(icon);
+      wrap.appendChild(btn);
+
+      const menu = document.createElement('div');
+      menu.className = 'select-menu';
+      menu.setAttribute('role', 'listbox');
+      menu.hidden = true;
+      Array.from(sel.options).forEach((opt) => {
+        const item = document.createElement('div');
+        item.className = 'select-option';
+        item.setAttribute('role', 'option');
+        item.dataset.value = opt.value;
+        item.textContent = opt.textContent;
+        item.setAttribute('aria-selected', String(opt.selected));
+        item.addEventListener('click', () => choose(opt.value));
+        menu.appendChild(item);
+      });
+      wrap.appendChild(menu);
+
+      function open() { menu.hidden = false; btn.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
+      function close() { menu.hidden = true; btn.classList.remove('open'); btn.setAttribute('aria-expanded', 'false'); }
+      function toggle() { (menu.hidden ? open : close)(); }
+      function choose(value) {
+        const idx = Array.from(sel.options).findIndex(o => o.value === value);
+        if (idx < 0) return;
+        sel.selectedIndex = idx;
+        labelEl.textContent = sel.options[idx].text;
+        Array.from(menu.children).forEach(el => el.setAttribute('aria-selected', String(el.dataset.value === value)));
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        close();
+      }
+
+      btn.addEventListener('click', toggle);
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); }
+        else if (e.key === 'Escape') { close(); }
+        else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          const values = Array.from(sel.options).map(o => o.value);
+          let i = Math.max(0, values.indexOf(sel.value));
+          i = e.key === 'ArrowDown' ? Math.min(values.length - 1, i + 1) : Math.max(0, i - 1);
+          choose(values[i]);
+        }
+      });
+      document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) close(); });
+      window.addEventListener('resize', close);
+    })();
+
+    // ============================================================
+    // 規約の高さ調整（既存コードそのまま流用）
+    // ============================================================
+    (function adjustTermsBoxHeight() {
+      const el = document.getElementById('termsBox');
+      if (!el) return;
+      function setHeight() {
+        const vw = window.innerWidth || document.documentElement.clientWidth;
+        const vh = window.innerHeight || document.documentElement.clientHeight;
+        const ratio = vw >= 700 ? 0.48 : 0.52;
+        el.style.height = Math.max(240, Math.round(vh * ratio)) + 'px';
+      }
+      setHeight();
+      window.addEventListener('resize', setHeight);
+      window.addEventListener('orientationchange', setHeight);
+    })();
+
+    // ============================================================
+    // 同意ロジック（既存コードそのまま流用）
+    // ============================================================
+    (function() {
+      const termsBox = document.getElementById('termsBox');
+      const confirm6 = document.getElementById('confirm6');
+      const quiz = document.getElementById('quiz');
+      const agreeBtn = document.getElementById('agreeBtn');
+      const formCard = document.getElementById('formCard');
+
+      function atBottom(el) { return el.scrollHeight - el.scrollTop <= el.clientHeight + 2; }
+      function update() {
+        agreeBtn.disabled = !(atBottom(termsBox) && confirm6.checked && quiz.value === 'b');
+      }
+
+      termsBox.addEventListener('scroll', update, { passive: true });
+      confirm6.addEventListener('change', update);
+      quiz.addEventListener('change', update);
+      window.addEventListener('resize', update, { passive: true });
+
+      agreeBtn.addEventListener('click', function() {
+        if (agreeBtn.disabled) return;
+        formCard.classList.add('enabled');
+        agreeBtn.textContent = '同意済み — フォームを使用できます';
+        agreeBtn.disabled = true;
+        formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    })();
+
+    // ============================================================
+    // フォーム送信（google.script.run → fetchに変更）
+    // ============================================================
+    document.getElementById('submit').addEventListener('click', async function() {
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const selected = document.getElementById('date').value;
+      const submitBtn = document.getElementById('submit');
+      const msgEl = document.getElementById('msg');
+      msgEl.className = '';
+      msgEl.textContent = '';
+
+      if (!GAS_URL || GAS_URL.includes('YOUR_DEPLOYMENT_ID')) {
+        msgEl.className = 'error';
+        msgEl.textContent = 'GAS_URL が未設定です。デプロイURLに差し替えてください。';
+        return;
+      }
+
+      // バリデーション（既存コードそのまま）
+      if (!selected) { msgEl.className = 'error'; msgEl.textContent = '明け渡し日を選択してください。'; return; }
+      if (!name) { msgEl.className = 'error'; msgEl.textContent = '氏名は必須です。'; return; }
+      if (!email) { msgEl.className = 'error'; msgEl.textContent = 'メールアドレスは必須です。'; return; }
+      if (!email.toLowerCase().endsWith('@' + DOMAIN.toLowerCase())) {
+        msgEl.className = 'error';
+        msgEl.textContent = `学内のメールアドレスを使用してください（@${DOMAIN}）。`;
+        return;
+      }
+      if (selected < TODAY || selected > FISCAL_END) {
+        msgEl.className = 'error';
+        msgEl.textContent = `選択した日付は許可範囲外です（${TODAY}〜${FISCAL_END}）。`;
+        return;
+      }
+
+      const fileInput = document.getElementById('photoFile');
+      if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        msgEl.className = 'error';
+        msgEl.textContent = '写真の添付は必須です。';
+        return;
+      }
+
+      const originalText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.textContent = '送信中...';
+
+      try {
+        // 画像処理
+        const file = fileInput.files[0];
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'));
+          reader.readAsDataURL(file);
+        });
+        const compressed = await processImage(dataUrl);
+
+        // GASに送信（写真アップロード）
+        msgEl.textContent = '写真をアップロード中...';
+        const uploadResult = await callGAS('uploadPhoto', { dataUrl: compressed, filename: file.name });
+
+        const photoForSubmit = String((uploadResult && uploadResult.id) || '').trim();
+
+        if (!photoForSubmit) {
+          throw new Error('写真アップロード結果に ID がありません');
+        }
+
+        // GASに送信（フォームデータ）
+        msgEl.textContent = 'データを送信中...';
+        const submitResult = await callGAS('submitForm', {
+          name,
+          email,
+          organization: document.getElementById('organization').value.trim(),
+          date: selected,
+          photo: photoForSubmit
+        });
+
+        // 成功
+        msgEl.className = 'success';
+        msgEl.textContent = (submitResult && submitResult.message)
+          ? submitResult.message
+          : `送信完了しました。確認メールを ${email} に送信しました。届かない場合は迷惑メールフォルダをご確認ください。`;
+        document.getElementById('name').value = '';
+        document.getElementById('date').value = '';
+        document.getElementById('organization').value = '';
+        fileInput.value = '';
+        submitBtn.textContent = '送信完了';
+        submitBtn.disabled = true;
+
+      } catch (err) {
+        const detail = (err && err.message) ? err.message : String(err || '不明なエラー');
+        msgEl.className = 'error';
+        msgEl.textContent = `エラーが発生しました: ${detail}`;
+        console.error('送信処理エラー:', err);
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+      }
+    });
+  </script>
+</body>
+</html>
