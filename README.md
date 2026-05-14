@@ -21,6 +21,10 @@
 
     -   clasp を使った Google Apps Script のローカル開発・ビルド・デプロイ手順をまとめたドキュメントです。
 
+-   **[公開直前チェックリスト](./docs/PUBLIC_RELEASE_CHECKLIST.md)**
+
+    -   README / Secrets / GitHub Pages を公開前に確認する短いリストです。
+
 ## 主な機能
 
 -   **利用者向け機能**
