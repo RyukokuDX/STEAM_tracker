@@ -66,51 +66,156 @@ function isActiveStatus(status) {
   return String(status || '').trim().toLowerCase() === STATUS_ACTIVE;
 }
 
+const REMIND_DAYS = [3, 0];          // リマインド対象とする残り日数
+const REMIND_TRIGGER_HOUR = 9;      // 日次トリガーの実行時刻（9〜10時の間に実行される）
+const REMIND_FUNCTION_NAME = 'handoverDayRemind';
+
+// 明け渡し日（F列）から、今日を基準にした残り日数を算出する。
+// G列の計算式が壊れている・未入力の行でも判定できるよう、F列を正とする。
+// 算出できない場合は null を返す。
+function calcDaysUntilHandover(handoverOn, today) {
+  if (handoverOn === '' || handoverOn === null || handoverOn === undefined) return null;
+  const date = handoverOn instanceof Date ? handoverOn : new Date(String(handoverOn).replace(/-/g, '/'));
+  if (isNaN(date.getTime())) return null;
+
+  // シートの TODAY() と同じ基準にするため、スプレッドシートのタイムゾーンで日付を切り出す
+  const tz = SPREAD_SHEET.getSpreadsheetTimeZone();
+  const toDayNumber = (d) => {
+    const [y, m, day] = Utilities.formatDate(d, tz, 'yyyy-MM-dd').split('-').map(Number);
+    return Date.UTC(y, m - 1, day) / 86400000;
+  };
+  return toDayNumber(date) - toDayNumber(today);
+}
+
+// G列の値を残り日数として解釈する（F列から算出できない場合のフォールバック）。
+// 空欄を Number('') === 0 と誤判定して「当日」通知を出さないよう、空欄は null とする。
+function parseDaysColumn(value) {
+  if (value === '' || value === null || value === undefined) return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 // スプレッドシート上の日付を確認し、一致する日付であればメッセージ送信
 function handoverDayRemind() {
   const data = SHEET.getDataRange().getValues();
+  const today = new Date();
+  const summary = { rows: 0, sent: 0, skippedStatus: 0, skippedDays: 0, invalidDate: 0, mailFailed: 0, lineFailed: 0 };
 
   // 登録者全員のデータ確認
-  for  ( let  i  =  1 ;  i  < data.length;  i ++ )  {
+  for (let i = 1; i < data.length; i++) {
     // メッセージに使用する要素
     const email = data[i][EMAIL];
     const name = data[i][NAME];
     const organ = data[i][ORGANIZATION];
     const status = data[i][STATUS];
-    const handoverDay = Number(data[i][DAYS_UNTIL_HANDOVER]);
+    summary.rows++;
 
-    if (!isActiveStatus(status)) continue;
+    if (!isActiveStatus(status)) {
+      summary.skippedStatus++;
+      Logger.log(`[handoverDayRemind] status が active でないためスキップ: 行${i + 1} status="${status}"`);
+      continue;
+    }
 
-    let mailFailLog = null; // メール送信失敗時のログ
+    let handoverDay = calcDaysUntilHandover(data[i][HANDOVER_ON], today);
+    if (handoverDay === null) {
+      handoverDay = parseDaysColumn(data[i][DAYS_UNTIL_HANDOVER]);
+    }
+    if (handoverDay === null) {
+      summary.invalidDate++;
+      Logger.log(`[handoverDayRemind] 明け渡し日を判定できないためスキップ: 行${i + 1} handover_on="${data[i][HANDOVER_ON]}" days="${data[i][DAYS_UNTIL_HANDOVER]}"`);
+      continue;
+    }
 
     // 明け渡し日の判定
-    if (handoverDay !== 3 && handoverDay !== 0) continue;
-    else if (handoverDay === 3) 
-    {
-      const text = `[リマインド]${organ}の${name}さんの明け渡し日まであと3日です。`;
-      const subject = `STEAMコモンズ 明け渡し3日前リマインド通知`;
-      const body = `${name}さん。物品の明け渡し3日前となりました。\n3日以内に物品の撤去、又は以下のURLから延長申請を行ってください。\n${FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
-      
-      Logger.log(text);
-
-      mailFailLog = sendEmail(email, subject, body);
-      sendLineMessage(USER_ID, text, mailFailLog);
-    } 
-    else if (handoverDay === 0)
-    {
-      const text = `[リマインド]${organ}の${name}さんの明け渡し当日です。`;
-      const subject = `STEAMコモンズ 明け渡し当日リマインド通知`;
-      const body = `${name}さん。明け渡し当日となりました。\n本日中に物品の撤去、又は以下のURLから延長申請を行ってください。\n${FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
-      Logger.log(text);
-      mailFailLog = sendEmail(email, subject, body);
-      Logger.log(mailFailLog);
-      sendLineMessage(USER_ID, text, mailFailLog);
+    if (REMIND_DAYS.indexOf(handoverDay) === -1) {
+      summary.skippedDays++;
+      continue;
     }
+
+    let text, subject, body;
+    if (handoverDay === 3) {
+      text = `[リマインド]${organ}の${name}さんの明け渡し日まであと3日です。`;
+      subject = `STEAMコモンズ 明け渡し3日前リマインド通知`;
+      body = `${name}さん。物品の明け渡し3日前となりました。\n3日以内に物品の撤去、又は以下のURLから延長申請を行ってください。\n${FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
+    } else {
+      text = `[リマインド]${organ}の${name}さんの明け渡し当日です。`;
+      subject = `STEAMコモンズ 明け渡し当日リマインド通知`;
+      body = `${name}さん。明け渡し当日となりました。\n本日中に物品の撤去、又は以下のURLから延長申請を行ってください。\n${FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
+    }
+
+    Logger.log(text);
+    const mailFailLog = sendEmail(email, subject, body); // メール送信失敗時のログ
+    const lineResult = sendLineMessage(USER_ID, text, mailFailLog);
+    summary.sent++;
+    if (!mailFailLog.success) summary.mailFailed++;
+    if (!lineResult.success) summary.lineFailed++;
   }
+
+  Logger.log('[handoverDayRemind] summary=' + JSON.stringify(summary));
+  return summary;
+}
+
+// ============================================================
+// 運用セットアップ用（Apps Script エディタから手動実行）
+// ============================================================
+
+// handoverDayRemind の日次トリガーを作り直す。
+// トリガーは「作成したアカウント」に紐づくため、担当者の交代・卒業時にも
+// 新しい担当者のアカウントでこの関数を実行し直すこと。
+function setupReminderTrigger() {
+  ScriptApp.getProjectTriggers()
+    .filter(t => t.getHandlerFunction() === REMIND_FUNCTION_NAME)
+    .forEach(t => ScriptApp.deleteTrigger(t));
+
+  ScriptApp.newTrigger(REMIND_FUNCTION_NAME)
+    .timeBased()
+    .everyDays(1)
+    .atHour(REMIND_TRIGGER_HOUR)
+    .inTimezone('Asia/Tokyo')
+    .create();
+
+  Logger.log(`[setupReminderTrigger] ${REMIND_FUNCTION_NAME} の日次トリガー（${REMIND_TRIGGER_HOUR}時台）を作成しました。`);
+  return listReminderTriggers();
+}
+
+// 現在のプロジェクトに設定されているトリガーを確認する。
+// 注意: 他のアカウントが作成したトリガーはここには表示されない。
+function listReminderTriggers() {
+  const triggers = ScriptApp.getProjectTriggers().map(t => ({
+    handler: t.getHandlerFunction(),
+    type: String(t.getEventType()),
+    id: t.getUniqueId()
+  }));
+  Logger.log('[listReminderTriggers] ' + JSON.stringify(triggers));
+  return triggers;
+}
+
+// status 列（H列）が空欄の行を active に補完する（一度だけ手動実行）。
+// status 管理導入（PR #87）以前に登録された行は status が空欄のため、
+// リマインド通知・延長申請フォームの対象から外れてしまう。
+// items シートには撤去・破棄済みの行は残らない運用のため、空欄は active とみなしてよい。
+function backfillActiveStatus() {
+  const lastRow = SHEET.getLastRow();
+  if (lastRow < 2) return { updated: 0 };
+
+  const range = SHEET.getRange(2, STATUS + 1, lastRow - 1, 1);
+  const values = range.getValues();
+  let updated = 0;
+  const next = values.map(([v]) => {
+    if (String(v || '').trim() === '') {
+      updated++;
+      return [STATUS_ACTIVE];
+    }
+    return [v];
+  });
+  if (updated > 0) range.setValues(next);
+  Logger.log(`[backfillActiveStatus] ${updated} 行の status を active に補完しました。`);
+  return { updated };
 }
 
 // 新規登録時の通知
-// 呼び出し元から { name, organization, photoFileId } を受け取る
+// 呼び出し元から { name, organization, photoFileId, handoverOn } を受け取る
+// handoverOn は表示用の明け渡し日文字列（例: 2026/05/10）。未指定でも通知は送る。
 function registerNotify(registration) {
   if (!registration) {
     Logger.log('[line_bot registerNotify] registrationなし');
@@ -120,7 +225,8 @@ function registerNotify(registration) {
   const name = String(registration.name || '').trim();
   const organization = String(registration.organization || '').trim();
   const photoFileId = String(registration.photoFileId || registration.photo || '').trim();
-  Logger.log('[line_bot registerNotify] name=' + name + ' organization=' + organization + ' photo=' + photoFileId);
+  const handoverOn = String(registration.handoverOn || '').trim();
+  Logger.log('[line_bot registerNotify] name=' + name + ' organization=' + organization + ' photo=' + photoFileId + ' handoverOn=' + handoverOn);
 
   if (!name || !photoFileId) {
     Logger.log('[line_bot registerNotify] 必須項目不足');
@@ -147,7 +253,8 @@ function registerNotify(registration) {
             layout: 'vertical',
             contents: [
               { type: 'text', text: '物品登録', weight: 'bold', size: 'xl' },
-              { type: 'text', text: `${name}（${organization || '団体名未入力'}）`, size: 'md', wrap: true }
+              { type: 'text', text: `${name}（${organization || '団体名未入力'}）`, size: 'md', wrap: true },
+              { type: 'text', text: `明け渡し日：${handoverOn || '未取得'}`, size: 'md', wrap: true, margin: 'md' }
             ]
           }
         }

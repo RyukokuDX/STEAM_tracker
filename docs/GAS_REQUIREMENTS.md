@@ -64,7 +64,10 @@ status は active / archived / discarded を使用し、通知・延長処理の
 ## 4. トリガー設定
 
 - onFormSubmit: フォームの送信イベントに紐づける（プロジェクトのトリガーまたはスクリプト内で `ScriptApp.newTrigger('onFormSubmit')...` を設定）。
-- time-driven: 毎日 1 回の時間主導トリガーで `dailyReminderTrigger` を実行。
+- time-driven: line_bot プロジェクトで、毎日 1 回（9時台）の時間主導トリガーにより `handoverDayRemind` を実行する。
+  - トリガーは line_bot の Apps Script エディタで `setupReminderTrigger` を実行して作成する（既存の同名トリガーは作り直される）。
+  - トリガーは作成したアカウントに紐づくため、担当者の交代・卒業時は新担当者のアカウントで `setupReminderTrigger` を再実行する。
+  - 実行状況は Apps Script の「実行数」で確認できる。`handoverDayRemind` は終了時に `summary=`（対象行数・送信数・スキップ理由別の件数）をログに出力する。
 
 ---
 
