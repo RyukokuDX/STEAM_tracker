@@ -1,6 +1,6 @@
 # 管理画面データ仕様書
 
-> スキーマバージョン: v1.1 （2026-04-27）
+> スキーマバージョン: v1.2 （2026-11-05）
 >
 > 本ドキュメントは現行実装（GAS + ダッシュボード）のデータ仕様に準拠する。
 > スキーマの正規定義は docs/SPREAD_SHEET_REQUIREMENTS.md と一致させること。
@@ -26,7 +26,7 @@
 | D | organization | Text | 団体名 |
 | E | photo_file_id | Text | Drive ファイル ID |
 | F | handover_on | Date | 明け渡し日 |
-| G | days_until_handover | Number | 明け渡し日までの日数 |
+| G | days_until_handover | Number | 旧仕様の残り日数列（現行実装では未使用・空欄。docs/SPREAD_SHEET_REQUIREMENTS.md §5） |
 | H | status | Text | active / archived / discarded |
 | I | admin_note | Text | 管理者備考 |
 
@@ -68,7 +68,7 @@
 
 ## 4. 通知・延長申請の対象条件
 
-- リマインド通知対象: status=active のみ
+- リマインド通知対象: status=active のみ（残り日数は handover_on から算出）
 - 延長申請対象抽出: status=active のみ
 - 非対象: archived / discarded
 
@@ -86,4 +86,4 @@
 ---
 
 作成者: STEAM_tracker チーム
-更新日: 2026-04-27
+更新日: 2026-11-05
