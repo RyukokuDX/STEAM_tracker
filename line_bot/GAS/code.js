@@ -98,6 +98,12 @@ function parseDaysColumn(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+// 通知での氏名・団体名の表示形式を統一する（例: 山田太郎（○○サークル） / 山田太郎（団体名未入力））
+function formatPerson(name, organ) {
+  const org = String(organ || '').trim();
+  return `${name}（${org || '団体名未入力'}）`;
+}
+
 // 明け渡し日を表示用の文字列（yyyy/MM/dd）にする
 function formatHandoverOn(handoverOn) {
   const date = handoverOn instanceof Date ? handoverOn : new Date(String(handoverOn).replace(/-/g, '/'));
@@ -113,7 +119,7 @@ function buildOverdueSummaryText(overdueItems) {
     .slice(0, OVERDUE_LIST_LIMIT)
     .map(item => {
       const mailNote = item.mailFailed ? '（メール送信失敗）' : '';
-      return `・${item.organ || '団体名未入力'} ${item.name}（明け渡し日 ${item.handoverOn}、${item.overdueDays}日超過）${mailNote}`;
+      return `・${formatPerson(item.name, item.organ)} 明け渡し日 ${item.handoverOn}（${item.overdueDays}日超過）${mailNote}`;
     });
   const rest = overdueItems.length - lines.length;
   let text = `[期限超過]明け渡し日を過ぎている物品が${overdueItems.length}件あります。\n${lines.join('\n')}`;
@@ -177,14 +183,14 @@ function handoverDayRemind() {
       continue;
     }
 
-    const who = organ ? `${organ}の${name}` : name;
+    const who = formatPerson(name, organ);
     let text, subject, body;
     if (handoverDay === 3) {
-      text = `[リマインド]${who}さんの明け渡し日まであと3日です。`;
+      text = `[リマインド]${who}の明け渡し日まであと3日です。`;
       subject = `STEAMコモンズ 明け渡し3日前リマインド通知`;
       body = `${name}さん。物品の明け渡し3日前となりました。\n3日以内に物品の撤去、又は以下のURLから延長申請を行ってください。\n${EXTEND_FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
     } else {
-      text = `[リマインド]${who}さんの明け渡し当日です。`;
+      text = `[リマインド]${who}の明け渡し当日です。`;
       subject = `STEAMコモンズ 明け渡し当日リマインド通知`;
       body = `${name}さん。明け渡し当日となりました。\n本日中に物品の撤去、又は以下のURLから延長申請を行ってください。\n${EXTEND_FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
     }
@@ -276,7 +282,8 @@ function registerNotify(registration) {
   const name = String(registration.name || '').trim();
   const organization = String(registration.organization || '').trim();
   const photoFileId = String(registration.photoFileId || registration.photo || '').trim();
-  const handoverOn = String(registration.handoverOn || '').trim();
+  const handoverOnRaw = String(registration.handoverOn || '').trim();
+  const handoverOn = handoverOnRaw ? formatHandoverOn(handoverOnRaw) : '';
   Logger.log('[line_bot registerNotify] name=' + name + ' organization=' + organization + ' photo=' + photoFileId + ' handoverOn=' + handoverOn);
 
   if (!name || !photoFileId) {
@@ -304,7 +311,7 @@ function registerNotify(registration) {
             layout: 'vertical',
             contents: [
               { type: 'text', text: '物品登録', weight: 'bold', size: 'xl' },
-              { type: 'text', text: `${name}（${organization || '団体名未入力'}）`, size: 'md', wrap: true },
+              { type: 'text', text: formatPerson(name, organization), size: 'md', wrap: true },
               { type: 'text', text: `明け渡し日：${handoverOn || '未取得'}`, size: 'md', wrap: true, margin: 'md' }
             ]
           }

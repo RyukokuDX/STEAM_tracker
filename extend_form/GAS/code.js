@@ -37,6 +37,17 @@ const LINE_WEBHOOK_TOKEN = scriptProperties.getProperty('LINE_WEBHOOK_TOKEN');
 const STATUS_ACTIVE = 'active';
 const DATE_ISO_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
+// 通知での氏名・団体名の表示形式を統一する（例: 山田太郎（○○サークル） / 山田太郎（団体名未入力））
+function formatPerson(name, organ) {
+  const org = String(organ || '').trim();
+  return `${name}（${org || '団体名未入力'}）`;
+}
+
+// 表示用の日付形式（yyyy/MM/dd）に変換する。内部処理・postback では YYYY-MM-DD のまま扱う
+function toDisplayDate(isoDate) {
+  return String(isoDate || '').replace(/-/g, '/');
+}
+
 function isActiveStatus(status) {
   return String(status || '').trim().toLowerCase() === STATUS_ACTIVE;
 }
@@ -227,8 +238,8 @@ function notifyExtensionRequest(results) {
               layout: "vertical",
               contents: [
                 { type: "text", text: `延長申請 No.${id}`, weight: "bold", size: "xl" },
-                { type: "text", text: `${organ}（${name}）`, size: "md", wrap: true, margin: "md" },
-                { type: "text", text: `希望延長日：${newDate}`, size: "md", wrap: true, margin: "md" }
+                { type: "text", text: formatPerson(name, organ), size: "md", wrap: true, margin: "md" },
+                { type: "text", text: `希望延長日：${toDisplayDate(newDate)}`, size: "md", wrap: true, margin: "md" }
               ]
             },
             footer: {
@@ -292,9 +303,9 @@ function approveRequest(id, newDate) {
 
   sendEmail(email,
     'STEAMコモンズ 延長申請許可通知',
-    `${name}さん（${organ}）\n\n延長申請が許可されました。\n新しい明け渡し日: ${newDate}\n\nこのメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`
+    `${name}さん${organ ? `（${organ}）` : ''}\n\n延長申請が許可されました。\n新しい明け渡し日: ${toDisplayDate(newDate)}\n\nこのメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`
   );
-  sendLineMessage(USER_ID, `延長申請No.${id}を ${newDate} まで許可しました。`);
+  sendLineMessage(USER_ID, `延長申請No.${id}を ${toDisplayDate(newDate)} まで許可しました。`);
 }
 
 // ============================================================
@@ -317,7 +328,7 @@ function rejectRequest(id) {
 
   sendEmail(email,
     'STEAMコモンズ 延長申請却下通知',
-    `${name}さん（${organ}）\n\n延長申請が却下されました。\n\nこのメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`
+    `${name}さん${organ ? `（${organ}）` : ''}\n\n延長申請が却下されました。\n\nこのメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`
   );
   sendLineMessage(USER_ID, `延長申請No.${id}を却下しました。`);
 }
