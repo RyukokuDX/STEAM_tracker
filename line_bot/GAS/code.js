@@ -69,6 +69,7 @@ function isActiveStatus(status) {
 const REMIND_DAYS = [3, 0];          // リマインド対象とする残り日数
 const REMIND_TRIGGER_HOUR = 9;      // 日次トリガーの実行時刻（9〜10時の間に実行される）
 const REMIND_FUNCTION_NAME = 'handoverDayRemind';
+const REMIND_TIMEZONE = 'Asia/Tokyo';     // 残り日数の算出・トリガー実行時刻の基準
 
 // 明け渡し日（F列）から、今日を基準にした残り日数を算出する。
 // G列の計算式が壊れている・未入力の行でも判定できるよう、F列を正とする。
@@ -78,8 +79,9 @@ function calcDaysUntilHandover(handoverOn, today) {
   const date = handoverOn instanceof Date ? handoverOn : new Date(String(handoverOn).replace(/-/g, '/'));
   if (isNaN(date.getTime())) return null;
 
-  // シートの TODAY() と同じ基準にするため、スプレッドシートのタイムゾーンで日付を切り出す
-  const tz = SPREAD_SHEET.getSpreadsheetTimeZone();
+  // 日付は日本時間で切り出す。スプレッドシートやプロジェクトのタイムゾーン設定が
+  // 日本以外になっていると「今日」が前日扱いになり、通知日が1日ずれるため固定する。
+  const tz = REMIND_TIMEZONE;
   const toDayNumber = (d) => {
     const [y, m, day] = Utilities.formatDate(d, tz, 'yyyy-MM-dd').split('-').map(Number);
     return Date.UTC(y, m - 1, day) / 86400000;
@@ -171,7 +173,7 @@ function setupReminderTrigger() {
     .timeBased()
     .everyDays(1)
     .atHour(REMIND_TRIGGER_HOUR)
-    .inTimezone('Asia/Tokyo')
+    .inTimezone(REMIND_TIMEZONE)
     .create();
 
   Logger.log(`[setupReminderTrigger] ${REMIND_FUNCTION_NAME} の日次トリガー（${REMIND_TRIGGER_HOUR}時台）を作成しました。`);
