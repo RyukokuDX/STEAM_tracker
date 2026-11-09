@@ -10,7 +10,7 @@ LINE への送信は `line_bot`（リマインド・登録通知）と `extend_f
 
 | 機能 | 実装 | 内容 |
 |:---|:---|:---|
-| 明け渡しリマインド | `line_bot` / `handoverDayRemind` | 毎日 9 時台に実行。明け渡し 3 日前・当日の物品について、利用者へメール、管理者へ LINE を送る |
+| 明け渡しリマインド | `line_bot` / `handoverDayRemind` | 毎日 9 時台に実行。明け渡し 3 日前・当日の物品について、利用者へメール、管理者へ LINE を送る。期限超過の物品には利用者へ毎日メールを送り、管理者へ 1 日 1 通のまとめ LINE を送る |
 | 物品登録通知 | `line_bot` / `registerNotify` | `stuffForm` からの依頼（`doPost`）を受けて管理者へ送る |
 | 延長申請通知 | `extend_form` / `notifyExtensionRequest` | 延長申請を「許可」「却下」ボタン付きで管理者へ送る |
 | 延長申請の許可/却下 | `extend_form` / `approveRequest`・`rejectRequest` | LINE Webhook でボタン操作を受け取り、明け渡し日の更新と利用者へのメール通知を行う |
@@ -29,6 +29,8 @@ LINE への送信は `line_bot`（リマインド・登録通知）と `extend_f
 - 明け渡し日 3 日前：「[リマインド]{団体名}の{氏名}さんの明け渡し日まであと3日です。」
 - 明け渡し日当日：「[リマインド]{団体名}の{氏名}さんの明け渡し当日です。」
   - 利用者へのメール送信に失敗した場合は、本文に「（メール送信に失敗しました。{理由}）」を付記する。
+  - 団体名が空欄の場合は「{団体名}の」を省略する。
+- 期限超過（毎日 1 通）：「[期限超過]明け渡し日を過ぎている物品が{件数}件あります。」に続けて、超過日数の多い順に「・{団体名} {氏名}（明け渡し日 {日付}、{n}日超過）」を最大 30 件列挙する。メール送信に失敗した物品には「（メール送信失敗）」を付記する。
 - 延長申請時：「延長申請 No.{行番号}」（写真・団体名・氏名・希望延長日、「許可」「却下」ボタン）
 - 許可/却下後：「延長申請No.{行番号}を {日付} まで許可しました。」/「延長申請No.{行番号}を却下しました。」
 
@@ -52,8 +54,8 @@ LINE チャネルの Webhook URL には `extend_form` の Web アプリ URL を�
 - 対象：items シートで status が active の行。
 - 残り日数は F列（handover_on）と実行日から算出する。F列から算出できない場合のみ G列（days_until_handover）の数値を使う。G列の空欄は 0 日として扱わない。
 - 残り日数が 3 日・0 日の行について、登録者へ Gmail、管理者へ LINE を送信する（メール失敗時は LINE 本文に失敗理由を付記）。
-- 期限を過ぎた行には通知しない。
-- 終了時に `summary=` ログ（rows / sent / skippedStatus / skippedDays / invalidDate / mailFailed / lineFailed）を出力する。
+- 期限を過ぎた行には、登録者へ毎日「STEAMコモンズ 明け渡し期限超過のお知らせ」メールを送り、管理者へは全件を 1 日 1 通の LINE にまとめて送る。アーカイブされるか延長が許可されるまで続く。
+- 終了時に `summary=` ログ（rows / sent / overdueSent / skippedStatus / skippedDays / invalidDate / mailFailed / lineFailed）を出力する。
 - status が空欄の既存行（status 管理導入以前の登録分）は `backfillActiveStatus` を一度実行して active に補完する。
 - トリガーと運用上の注意は `docs/GAS_REQUIREMENTS.md` §4 を参照。
 
@@ -66,5 +68,4 @@ LINE チャネルの Webhook URL には `extend_form` の Web アプリ URL を�
 ## 9. 未実装
 
 - 年度末の一斉通知
-- 明け渡し日を過ぎた物品の通知
 - 再試行失敗時の管理者へのエスカレーション

@@ -66,7 +66,8 @@ function isActiveStatus(status) {
   return String(status || '').trim().toLowerCase() === STATUS_ACTIVE;
 }
 
-const REMIND_DAYS = [3, 0];          // リマインド対象とする残り日数
+const REMIND_DAYS = [3, 0];          // リマインド対象とする残り日数（期限前・当日）
+const OVERDUE_LIST_LIMIT = 30;       // 管理者向け期限超過まとめLINEに列挙する最大件数
 const REMIND_TRIGGER_HOUR = 9;      // 日次トリガーの実行時刻（9〜10時の間に実行される）
 const REMIND_FUNCTION_NAME = 'handoverDayRemind';
 const REMIND_TIMEZONE = 'Asia/Tokyo';     // 残り日数の算出・トリガー実行時刻の基準
@@ -97,11 +98,39 @@ function parseDaysColumn(value) {
   return Number.isFinite(n) ? n : null;
 }
 
-// スプレッドシート上の日付を確認し、一致する日付であればメッセージ送信
+// 明け渡し日を表示用の文字列（yyyy/MM/dd）にする
+function formatHandoverOn(handoverOn) {
+  const date = handoverOn instanceof Date ? handoverOn : new Date(String(handoverOn).replace(/-/g, '/'));
+  if (isNaN(date.getTime())) return String(handoverOn);
+  return Utilities.formatDate(date, REMIND_TIMEZONE, 'yyyy/MM/dd');
+}
+
+// 期限超過の物品を管理者向けに1通のテキストへまとめる
+function buildOverdueSummaryText(overdueItems) {
+  const lines = overdueItems
+    .slice()
+    .sort((a, b) => b.overdueDays - a.overdueDays)
+    .slice(0, OVERDUE_LIST_LIMIT)
+    .map(item => {
+      const mailNote = item.mailFailed ? '（メール送信失敗）' : '';
+      return `・${item.organ || '団体名未入力'} ${item.name}（明け渡し日 ${item.handoverOn}、${item.overdueDays}日超過）${mailNote}`;
+    });
+  const rest = overdueItems.length - lines.length;
+  let text = `[期限超過]明け渡し日を過ぎている物品が${overdueItems.length}件あります。\n${lines.join('\n')}`;
+  if (rest > 0) text += `\nほか${rest}件`;
+  text += '\n\n撤去済みの物品はダッシュボードでアーカイブしてください。';
+  return text;
+}
+
+// スプレッドシート上の日付を確認し、明け渡し3日前・当日・期限超過の物品に通知する
+// - 3日前・当日: 利用者へメール、管理者へ物品ごとにLINE
+// - 期限超過: 利用者へ毎日メール、管理者へ1日1通のまとめLINE
+//   （撤去済み/破棄済みとしてアーカイブされる、または延長が許可されるまで続く）
 function handoverDayRemind() {
   const data = SHEET.getDataRange().getValues();
   const today = new Date();
-  const summary = { rows: 0, sent: 0, skippedStatus: 0, skippedDays: 0, invalidDate: 0, mailFailed: 0, lineFailed: 0 };
+  const summary = { rows: 0, sent: 0, overdueSent: 0, skippedStatus: 0, skippedDays: 0, invalidDate: 0, mailFailed: 0, lineFailed: 0 };
+  const overdueItems = [];
 
   // 登録者全員のデータ確認
   for (let i = 1; i < data.length; i++) {
@@ -128,19 +157,34 @@ function handoverDayRemind() {
       continue;
     }
 
-    // 明け渡し日の判定
+    // 期限超過: 利用者へ毎日メール。管理者へはループ後にまとめて送る
+    if (handoverDay < 0) {
+      const overdueDays = -handoverDay;
+      const handoverOn = formatHandoverOn(data[i][HANDOVER_ON]);
+      const subject = `STEAMコモンズ 明け渡し期限超過のお知らせ`;
+      const body = `${name}さん。物品の明け渡し日（${handoverOn}）を${overdueDays}日過ぎています。\n至急物品を撤去してください。延長を希望する場合は、以下のURLから延長申請を行ってください。\n${EXTEND_FORM_URL}\n\n撤去済みの場合は、STEAMコモンズの管理者にお知らせください。\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
+      Logger.log(`[期限超過]${organ}の${name}さん 明け渡し日=${handoverOn} ${overdueDays}日超過`);
+      const mailResult = sendEmail(email, subject, body);
+      summary.overdueSent++;
+      if (!mailResult.success) summary.mailFailed++;
+      overdueItems.push({ name, organ, handoverOn, overdueDays, mailFailed: !mailResult.success });
+      continue;
+    }
+
+    // 明け渡し日の判定（3日前・当日）
     if (REMIND_DAYS.indexOf(handoverDay) === -1) {
       summary.skippedDays++;
       continue;
     }
 
+    const who = organ ? `${organ}の${name}` : name;
     let text, subject, body;
     if (handoverDay === 3) {
-      text = `[リマインド]${organ}の${name}さんの明け渡し日まであと3日です。`;
+      text = `[リマインド]${who}さんの明け渡し日まであと3日です。`;
       subject = `STEAMコモンズ 明け渡し3日前リマインド通知`;
       body = `${name}さん。物品の明け渡し3日前となりました。\n3日以内に物品の撤去、又は以下のURLから延長申請を行ってください。\n${EXTEND_FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
     } else {
-      text = `[リマインド]${organ}の${name}さんの明け渡し当日です。`;
+      text = `[リマインド]${who}さんの明け渡し当日です。`;
       subject = `STEAMコモンズ 明け渡し当日リマインド通知`;
       body = `${name}さん。明け渡し当日となりました。\n本日中に物品の撤去、又は以下のURLから延長申請を行ってください。\n${EXTEND_FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
     }
@@ -150,6 +194,11 @@ function handoverDayRemind() {
     const lineResult = sendLineMessage(USER_ID, text, mailFailLog);
     summary.sent++;
     if (!mailFailLog.success) summary.mailFailed++;
+    if (!lineResult.success) summary.lineFailed++;
+  }
+
+  if (overdueItems.length > 0) {
+    const lineResult = sendLineMessage(USER_ID, buildOverdueSummaryText(overdueItems));
     if (!lineResult.success) summary.lineFailed++;
   }
 

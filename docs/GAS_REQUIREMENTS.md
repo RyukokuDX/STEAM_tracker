@@ -33,7 +33,7 @@
 
 - `doPost(e)`: `notifyRegistration` を受けて `registerNotify` を呼ぶ。
 - `registerNotify(registration)`: 写真・氏名・団体名・明け渡し日を LINE（Flex Message）で管理者へ送る。
-- `handoverDayRemind()`: 日次リマインド。F 列（handover_on）から残り日数を算出し、3 日前・当日の active 行へ通知する。
+- `handoverDayRemind()`: 日次リマインド。F 列（handover_on）から残り日数を算出し、3 日前・当日・期限超過の active 行へ通知する（期限超過は管理者へ 1 日 1 通のまとめ LINE）。
 - `setupReminderTrigger()`: `handoverDayRemind` の日次トリガー（9 時台）を作り直す（手動実行）。
 - `listReminderTriggers()`: 実行者のアカウントが持つトリガーを一覧表示する（手動実行）。
 - `backfillActiveStatus()`: items の status 空欄を `active` で補完する（移行用・手動実行）。
