@@ -10,7 +10,7 @@ function getRequiredProperty(key) {
 
 const ACCESS_TOKEN = getRequiredProperty('ACCESS_TOKEN');
 const USER_ID = getRequiredProperty('USER_ID');
-const FORM_URL = getRequiredProperty('FORM_URL');
+const EXTEND_FORM_URL = getRequiredProperty('EXTEND_FORM_URL'); // 延長申請フォームのURL（stuffForm と同じキー名）
 const SPREAD_SHEET_ID = getRequiredProperty('SPREAD_SHEET_ID');
 const SHEET_NAME_MANAGE = getRequiredProperty('SHEET_NAME_MANAGE');
 
@@ -138,11 +138,11 @@ function handoverDayRemind() {
     if (handoverDay === 3) {
       text = `[リマインド]${organ}の${name}さんの明け渡し日まであと3日です。`;
       subject = `STEAMコモンズ 明け渡し3日前リマインド通知`;
-      body = `${name}さん。物品の明け渡し3日前となりました。\n3日以内に物品の撤去、又は以下のURLから延長申請を行ってください。\n${FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
+      body = `${name}さん。物品の明け渡し3日前となりました。\n3日以内に物品の撤去、又は以下のURLから延長申請を行ってください。\n${EXTEND_FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
     } else {
       text = `[リマインド]${organ}の${name}さんの明け渡し当日です。`;
       subject = `STEAMコモンズ 明け渡し当日リマインド通知`;
-      body = `${name}さん。明け渡し当日となりました。\n本日中に物品の撤去、又は以下のURLから延長申請を行ってください。\n${FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
+      body = `${name}さん。明け渡し当日となりました。\n本日中に物品の撤去、又は以下のURLから延長申請を行ってください。\n${EXTEND_FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
     }
 
     Logger.log(text);

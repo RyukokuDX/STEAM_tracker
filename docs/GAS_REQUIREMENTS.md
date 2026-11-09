@@ -65,7 +65,7 @@
 | stuffForm | `EXTEND_FORM_URL` | 推奨 | 延長申請フォーム（GitHub Pages の `extend_form/`）の URL。確認メールに記載する |
 | line_bot | `ACCESS_TOKEN` | ○ | LINE チャネルアクセストークン |
 | line_bot | `USER_ID` | ○ | 通知先（管理者）の LINE ユーザー ID |
-| line_bot | `FORM_URL` | ○ | 延長申請フォーム（GitHub Pages の `extend_form/`）の URL。リマインドメールに記載する |
+| line_bot | `EXTEND_FORM_URL` | ○ | 延長申請フォーム（GitHub Pages の `extend_form/`）の URL。リマインドメールに記載する |
 | line_bot | `SPREAD_SHEET_ID` | ○ | スプレッドシート ID |
 | line_bot | `SHEET_NAME_MANAGE` | ○ | `items` |
 | extend_form | `ACCESS_TOKEN` | ○ | LINE チャネルアクセストークン |

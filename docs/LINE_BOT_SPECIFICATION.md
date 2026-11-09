@@ -60,8 +60,8 @@ LINE チャネルの Webhook URL には `extend_form` の Web アプリ URL を�
 ## 8. 延長申請フォームへの導線
 
 - 登録完了の確認メール（stuffForm）に延長申請フォームの URL を記載する（stuffForm のスクリプトプロパティ `EXTEND_FORM_URL`）。
-- 明け渡し 3 日前・当日のリマインドメールにも同フォームの URL を記載する（line_bot のスクリプトプロパティ `FORM_URL`）。
-- 両プロパティには GitHub Pages で公開している `extend_form/` の URL を設定する。
+- 明け渡し 3 日前・当日のリマインドメールにも同フォームの URL を記載する（line_bot のスクリプトプロパティ `EXTEND_FORM_URL`）。
+- 両プロジェクトとも同じキー名 `EXTEND_FORM_URL` で、GitHub Pages で公開している `extend_form/` の URL を設定する。
 
 ## 9. 未実装
 
