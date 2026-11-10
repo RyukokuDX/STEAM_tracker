@@ -42,10 +42,11 @@
 ### extend_form
 
 - `doPost(e)`: `events` があれば LINE Webhook（`handleLineWebhook`）、`action` があれば静的 HTML からのリクエスト（`handleFetchRequest`）として処理する。
-- `getItemsByEmail(email)`: メールアドレスが一致し status が active の物品を返す。
-- `notifyExtensionRequest(results)`: 物品ごとに許可/却下ボタン付きの LINE を管理者へ送る。
-- `approveRequest(id, newDate)`: handover_on を更新し、利用者へ許可メールを送る。
-- `rejectRequest(id)`: 利用者へ却下メールを送る。
+- `getItemsByEmail(email)`: メールアドレスが一致し status が active の物品を返す（物品の識別子は登録日時の秒 `reg`）。
+- `notifyExtensionRequest(email, results)`: 申請された物品をメールアドレス＋登録日時で特定し、延長希望日を検証したうえで、許可/却下ボタン付きの LINE を管理者へ送る。
+- `findItemRow(data, email, reg)`: メールアドレス＋登録日時で対象行を探す。行番号は識別子に使わない。
+- `approveRequest(email, reg, newDate)`: 押した時点で対象行を探し直し、handover_on を更新して利用者へ許可メールを送る。
+- `rejectRequest(email, reg)`: 押した時点で対象行を探し直し、利用者へ却下メールを送る。
 - `requestGmailPermission()`: Gmail 権限の初回承認用（手動実行）。
 
 ### dashboard

@@ -95,8 +95,7 @@ function handleFetchRequest(payload) {
     result = { status: 'ok', items };
 
   } else if (action === 'notifyExtensionRequest') {
-    notifyExtensionRequest(payload.results);
-    result = { status: 'ok' };
+    result = notifyExtensionRequest(payload.email, payload.results);
 
   } else {
     result = { status: 'error', message: '不明なアクションです: ' + action };
@@ -125,17 +124,22 @@ function handleLineWebhook(json, e) {
 
     if (event.type === 'postback' && event.postback && event.postback.data) {
       const params = parsePostbackData(event.postback.data);
-      const id = Number(params.id);
-
-      if (!Number.isInteger(id) || id < 1) {
-        Logger.log('[line webhook] 無効な id: ' + params.id);
+      if (params.action !== 'approve' && params.action !== 'reject') {
+        Logger.log('[line webhook] 不明な postback: ' + event.postback.data);
         return;
       }
 
-      if (params.action === 'approve' && params.date) {
-        approveRequest(id, params.date);
-      } else if (params.action === 'reject') {
-        rejectRequest(id);
+      // 行番号(id)だけを含む旧形式のボタンは、行がずれて別の物品を更新する恐れがあるため処理しない
+      if (!params.email || !params.reg) {
+        Logger.log('[line webhook] 旧形式の postback のため処理しない: ' + event.postback.data);
+        sendLineMessage(USER_ID, '古い形式の延長申請のため処理できませんでした。お手数ですが、利用者に延長申請フォームから再申請してもらってください。');
+        return;
+      }
+
+      if (params.action === 'approve') {
+        approveRequest(params.email, params.reg, params.date);
+      } else {
+        rejectRequest(params.email, params.reg);
       }
     }
   });
@@ -164,14 +168,65 @@ function doGet() {
 }
 
 // ============================================================
-// 年度末の日付を取得
+// 物品の特定（メールアドレス + 登録日時）
+// 行番号は、ダッシュボードでのアーカイブ・削除で変わるため識別子に使わない。
+// 登録日時（A列）は秒単位で比較する。
 // ============================================================
-function GetFiscalYearEnd(dateStr) {
-  const date = new Date(dateStr);
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const fiscalYear = month >= 4 ? year + 1 : year;
-  return `${fiscalYear}-03-31`;
+function registeredAtKey(value) {
+  if (value instanceof Date) return String(Math.floor(value.getTime() / 1000));
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? '' : String(Math.floor(d.getTime() / 1000));
+}
+
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+// 該当行を探す。戻り値: { status: 'found', row } / { status: 'notFound' } / { status: 'multiple' }
+// row は getValues() の配列インデックス（シートの行番号 - 1）
+function findItemRow(data, email, reg) {
+  const targetEmail = normalizeEmail(email);
+  const targetReg = String(reg || '');
+  if (!targetEmail || !targetReg) return { status: 'notFound' };
+
+  const matches = [];
+  for (let i = 1; i < data.length; i++) {
+    if (normalizeEmail(data[i][EMAIL]) === targetEmail && registeredAtKey(data[i][RESISTERED_AT]) === targetReg) {
+      matches.push(i);
+    }
+  }
+  if (matches.length === 0) return { status: 'notFound' };
+  if (matches.length > 1) return { status: 'multiple' };
+  return { status: 'found', row: matches[0] };
+}
+
+// 日付（YYYY-MM-DD）関連のユーティリティ（日本時間基準）
+function toIsoDate(value) {
+  return Utilities.formatDate(new Date(value), 'Asia/Tokyo', 'yyyy-MM-dd');
+}
+
+// YYYY-MM-DD が属する年度の末日（3月31日）を YYYY-MM-DD で返す
+function fiscalYearEndIso(isoDate) {
+  const [y, m] = isoDate.split('-').map(Number);
+  return `${m >= 4 ? y + 1 : y}-03-31`;
+}
+
+function addDaysIso(isoDate, days) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + days));
+  const pad = n => (n < 10 ? '0' + n : String(n));
+  return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
+}
+
+// 延長希望日の検証。問題なければ null、問題があれば理由を返す
+function validateNewDate(newDate, currentHandoverIso) {
+  if (!DATE_ISO_REGEX.test(String(newDate || ''))) return '日付の形式が正しくありません';
+  if (newDate === currentHandoverIso) return '現在の明け渡し日から変更されていません';
+  const tomorrow = addDaysIso(toIsoDate(new Date()), 1);
+  if (newDate < tomorrow) return `明日（${toDisplayDate(tomorrow)}）以降の日付を選択してください`;
+  const maxDate = fiscalYearEndIso(currentHandoverIso);
+  if (newDate > maxDate) return `年度末（${toDisplayDate(maxDate)}）までの日付を選択してください`;
+  return null;
 }
 
 // ============================================================
@@ -182,13 +237,13 @@ function getItemsByEmail(email) {
   const results = [];
 
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][EMAIL]).toLowerCase() === String(email).toLowerCase() && isActiveStatus(data[i][STATUS])) {
+    if (normalizeEmail(data[i][EMAIL]) === normalizeEmail(email) && isActiveStatus(data[i][STATUS])) {
       results.push({
-        id: i,
+        reg: registeredAtKey(data[i][RESISTERED_AT]),
         name: data[i][NAME],
         organ: data[i][ORGANIZATION],
-        handover: Utilities.formatDate(new Date(data[i][HANDOVER_ON]), "Asia/Tokyo", "yyyy-MM-dd"),
-        maxDate: GetFiscalYearEnd(data[i][HANDOVER_ON]),
+        handover: toIsoDate(data[i][HANDOVER_ON]),
+        maxDate: fiscalYearEndIso(toIsoDate(data[i][HANDOVER_ON])),
         image: `https://lh3.googleusercontent.com/d/${data[i][PHOTO_FILE_ID]}`
       });
     }
@@ -199,25 +254,44 @@ function getItemsByEmail(email) {
 
 // ============================================================
 // 延長申請をLINEに送信
+// email: 申請者のメールアドレス, results: [{ reg, newDate }]
+// 戻り値: { status, message, sent, skipped: [{ name, reason }] }
 // ============================================================
-function notifyExtensionRequest(results) {
+function notifyExtensionRequest(email, results) {
+  if (!Array.isArray(results) || results.length === 0) {
+    return { status: 'error', message: '延長したい物品の日付を変更してください。' };
+  }
+
   const data = SHEET.getDataRange().getValues();
+  let sent = 0;
+  const skipped = [];
 
   results.forEach(item => {
-    const id = item.id;
-    if (!Number.isInteger(id) || id < 1 || id >= data.length) {
-      Logger.log(`[notifyExtensionRequest] 無効な id: ${id}`);
+    const found = findItemRow(data, email, item && item.reg);
+    if (found.status !== 'found') {
+      Logger.log(`[notifyExtensionRequest] 物品を特定できない: email=${email} reg=${item && item.reg} status=${found.status}`);
+      skipped.push({ name: '', reason: '対象の物品が見つかりませんでした。画面を開き直してください' });
       return;
     }
-    if (!isActiveStatus(data[id][STATUS])) {
-      Logger.log(`[notifyExtensionRequest] 非activeレコードのためスキップ: id=${id} status=${data[id][STATUS]}`);
+    const row = data[found.row];
+    const name = row[NAME];
+    const organ = row[ORGANIZATION];
+    if (!isActiveStatus(row[STATUS])) {
+      Logger.log(`[notifyExtensionRequest] 非activeレコードのためスキップ: row=${found.row + 1} status=${row[STATUS]}`);
+      skipped.push({ name, reason: '延長申請の対象外の物品です' });
       return;
     }
 
-    const newDate = item.newDate;
-    const name = data[id][NAME];
-    const organ = data[id][ORGANIZATION];
+    const newDate = String(item.newDate || '');
+    const error = validateNewDate(newDate, toIsoDate(row[HANDOVER_ON]));
+    if (error) {
+      Logger.log(`[notifyExtensionRequest] 日付が不正: row=${found.row + 1} newDate=${newDate} reason=${error}`);
+      skipped.push({ name, reason: error });
+      return;
+    }
 
+    const reg = registeredAtKey(row[RESISTERED_AT]);
+    const keyParams = `email=${encodeURIComponent(normalizeEmail(row[EMAIL]))}&reg=${reg}`;
     const payload = {
       to: USER_ID,
       messages: [
@@ -228,7 +302,7 @@ function notifyExtensionRequest(results) {
             type: "bubble",
             hero: {
               type: "image",
-              url: `https://lh3.googleusercontent.com/d/${data[id][PHOTO_FILE_ID]}`,
+              url: `https://lh3.googleusercontent.com/d/${row[PHOTO_FILE_ID]}`,
               size: "full",
               aspectRatio: "20:13",
               aspectMode: "cover"
@@ -237,9 +311,10 @@ function notifyExtensionRequest(results) {
               type: "box",
               layout: "vertical",
               contents: [
-                { type: "text", text: `延長申請 No.${id}`, weight: "bold", size: "xl" },
+                { type: "text", text: "延長申請", weight: "bold", size: "xl" },
                 { type: "text", text: formatPerson(name, organ), size: "md", wrap: true, margin: "md" },
-                { type: "text", text: `希望延長日：${toDisplayDate(newDate)}`, size: "md", wrap: true, margin: "md" }
+                { type: "text", text: `明け渡し日：${toDisplayDate(toIsoDate(row[HANDOVER_ON]))}`, size: "md", wrap: true, margin: "md" },
+                { type: "text", text: `希望延長日：${toDisplayDate(newDate)}`, size: "md", wrap: true, margin: "sm" }
               ]
             },
             footer: {
@@ -254,7 +329,7 @@ function notifyExtensionRequest(results) {
                   action: {
                     type: "postback",
                     label: "許可",
-                    data: `action=approve&id=${id}&date=${newDate}`
+                    data: `action=approve&${keyParams}&date=${newDate}`
                   }
                 },
                 {
@@ -264,7 +339,7 @@ function notifyExtensionRequest(results) {
                   action: {
                     type: "postback",
                     label: "却下",
-                    data: `action=reject&id=${id}`
+                    data: `action=reject&${keyParams}`
                   }
                 }
               ]
@@ -274,63 +349,94 @@ function notifyExtensionRequest(results) {
       ]
     };
 
-    sendLinePushObject(payload);
+    const lineResult = sendLinePushObject(payload);
+    if (lineResult.success) {
+      sent++;
+    } else {
+      skipped.push({ name, reason: '管理者への通知に失敗しました。時間をおいて再度お試しください' });
+    }
   });
+
+  if (sent === 0) {
+    const reasons = skipped.map(s => (s.name ? `${s.name}: ` : '') + s.reason).join('\n');
+    return { status: 'error', message: reasons || '申請できる物品がありませんでした。', sent, skipped };
+  }
+  return { status: 'ok', sent, skipped };
+}
+
+// ============================================================
+// 許可/却下の対象行を特定する（見つからない場合は管理者へLINEで知らせる）
+// ============================================================
+function resolveRowForDecision(email, reg, actionLabel) {
+  const data = SHEET.getDataRange().getValues();
+  const found = findItemRow(data, email, reg);
+  if (found.status === 'notFound') {
+    Logger.log(`[${actionLabel}] 対象の物品が見つからない: email=${email} reg=${reg}`);
+    sendLineMessage(USER_ID, `延長申請を${actionLabel}できませんでした。対象の物品が見つかりません（アーカイブ・削除済み、またはメールアドレス・登録日時が変更された可能性があります）。`);
+    return null;
+  }
+  if (found.status === 'multiple') {
+    Logger.log(`[${actionLabel}] 対象の物品が複数見つかった: email=${email} reg=${reg}`);
+    sendLineMessage(USER_ID, `延長申請を${actionLabel}できませんでした。同じメールアドレス・登録日時の物品が複数あります。スプレッドシートを確認してください。`);
+    return null;
+  }
+  const row = data[found.row];
+  if (!isActiveStatus(row[STATUS])) {
+    Logger.log(`[${actionLabel}] 非activeレコードのためスキップ: row=${found.row + 1} status=${row[STATUS]}`);
+    sendLineMessage(USER_ID, `${formatPerson(row[NAME], row[ORGANIZATION])}の延長申請を${actionLabel}できませんでした。この物品はすでにアーカイブされています。`);
+    return null;
+  }
+  return { rowIndex: found.row, row };
 }
 
 // ============================================================
 // 延長申請の許可
 // ============================================================
-function approveRequest(id, newDate) {
-  if (!DATE_ISO_REGEX.test(newDate)) {
+function approveRequest(email, reg, newDate) {
+  if (!DATE_ISO_REGEX.test(String(newDate || ''))) {
     Logger.log(`無効な日付形式: ${newDate}`);
     return;
   }
-  const data = SHEET.getDataRange().getValues();
-  if (!Number.isInteger(id) || id < 1 || id >= data.length) {
-    Logger.log(`無効な id: ${id}`);
-    return;
-  }
-  if (!isActiveStatus(data[id][STATUS])) {
-    Logger.log(`非activeレコードのため許可処理をスキップ: id=${id} status=${data[id][STATUS]}`);
+  const target = resolveRowForDecision(email, reg, '許可');
+  if (!target) return;
+
+  const { rowIndex, row } = target;
+  const name = row[NAME];
+  const organ = row[ORGANIZATION];
+  const person = formatPerson(name, organ);
+
+  // ボタンの二度押しなどで、すでに同じ日付になっている場合は再送しない
+  if (toIsoDate(row[HANDOVER_ON]) === newDate) {
+    sendLineMessage(USER_ID, `${person}の明け渡し日は、すでに ${toDisplayDate(newDate)} に更新済みです。`);
     return;
   }
 
-  SHEET.getRange(id + 1, HANDOVER_ON + 1).setValue(newDate);
-  const email = data[id][EMAIL];
-  const name = data[id][NAME];
-  const organ = data[id][ORGANIZATION];
-
-  sendEmail(email,
+  SHEET.getRange(rowIndex + 1, HANDOVER_ON + 1).setValue(newDate);
+  const mailResult = sendEmail(row[EMAIL],
     'STEAMコモンズ 延長申請許可通知',
     `${name}さん${organ ? `（${organ}）` : ''}\n\n延長申請が許可されました。\n新しい明け渡し日: ${toDisplayDate(newDate)}\n\nこのメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`
   );
-  sendLineMessage(USER_ID, `延長申請No.${id}を ${toDisplayDate(newDate)} まで許可しました。`);
+  const mailNote = mailResult.success ? '' : `\n（メール送信に失敗しました。${mailResult.message}）`;
+  sendLineMessage(USER_ID, `${person}の延長申請を ${toDisplayDate(newDate)} まで許可しました。${mailNote}`);
 }
 
 // ============================================================
 // 延長申請の却下
 // ============================================================
-function rejectRequest(id) {
-  const data = SHEET.getDataRange().getValues();
-  if (typeof id !== "number" || id < 1 || id >= data.length) {
-    Logger.log(`無効な id: ${id}`);
-    return;
-  }
-  if (!isActiveStatus(data[id][STATUS])) {
-    Logger.log(`非activeレコードのため却下処理をスキップ: id=${id} status=${data[id][STATUS]}`);
-    return;
-  }
+function rejectRequest(email, reg) {
+  const target = resolveRowForDecision(email, reg, '却下');
+  if (!target) return;
 
-  const email = data[id][EMAIL];
-  const name = data[id][NAME];
-  const organ = data[id][ORGANIZATION];
+  const { row } = target;
+  const name = row[NAME];
+  const organ = row[ORGANIZATION];
 
-  sendEmail(email,
+  const mailResult = sendEmail(row[EMAIL],
     'STEAMコモンズ 延長申請却下通知',
     `${name}さん${organ ? `（${organ}）` : ''}\n\n延長申請が却下されました。\n\nこのメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`
   );
-  sendLineMessage(USER_ID, `延長申請No.${id}を却下しました。`);
+  const mailNote = mailResult.success ? '' : `\n（メール送信に失敗しました。${mailResult.message}）`;
+  sendLineMessage(USER_ID, `${formatPerson(name, organ)}の延長申請を却下しました。${mailNote}`);
 }
 
 // ============================================================

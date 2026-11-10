@@ -36,6 +36,7 @@
 - 復元処理では status を active に戻して items へ移動する。
 - リマインド通知および延長申請対象抽出は status=active のみを対象とする。
 - 延長申請の許可時は handover_on を希望延長日に更新する。
+- 延長申請では registered_at（A 列）と email（B 列）の組み合わせで物品を特定する。申請中の物品の A 列・B 列を編集すると、許可/却下できなくなる（管理者に LINE で通知される）。
 
 ## 5. days_until_handover（G 列）について
 

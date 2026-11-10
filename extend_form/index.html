@@ -101,6 +101,12 @@
       background: #f8d7da;
     }
 
+    .note {
+      font-size: 0.9em;
+      color: #555;
+      margin-bottom: 12px;
+    }
+
     @media (max-width: 480px) {
       h1 { font-size: 30px; }
       label { font-size: 24px; }
@@ -123,8 +129,9 @@
   <!-- ステップ2: 延長申請フォーム -->
   <div class="container hidden" id="formView">
     <h1>延長申請フォーム</h1>
+    <p class="note">延長したい物品の日付だけを変更して「申請する」を押してください。日付を変更していない物品は申請されません。</p>
     <div id="itemList"></div>
-    <div id="errorMsg2" class="hidden" style="margin-top:12px;padding:10px;border-radius:8px;color:#721c24;background:#f8d7da;font-size:0.85em;"></div>
+    <div id="errorMsg2" class="hidden" style="margin-top:12px;padding:10px;border-radius:8px;color:#721c24;background:#f8d7da;font-size:0.85em;white-space:pre-line;"></div>
     <button id="submitBtn" onclick="submitForm()">申請する</button>
   </div>
 
@@ -132,6 +139,7 @@
   <div class="container hidden" id="doneView">
     <h1>申請を受け付けました</h1>
     <p>申請内容を確認後、メールにて通知いたします。</p>
+    <p id="doneNote" class="hidden" style="margin-top:12px;padding:10px;border-radius:8px;color:#721c24;background:#f8d7da;font-size:0.85em;white-space:pre-line;"></p>
   </div>
 
   <script>
@@ -157,6 +165,9 @@
       return await res.json();
     }
 
+    // ログイン時に入力された学籍番号から作ったメールアドレス（申請時に物品の特定に使う）
+    let currentEmail = '';
+
     // ============================================================
     // ステップ1: 学籍番号からメールアドレスを生成して物品を取得
     // ============================================================
@@ -173,6 +184,7 @@
       }
 
       const email = studentId + '@mail.ryukoku.ac.jp';
+      currentEmail = email;
       const loginBtn = document.getElementById('loginBtn');
       loginBtn.disabled = true;
       loginBtn.textContent = '取得中...';
@@ -215,7 +227,7 @@
       const listContainer = document.getElementById('itemList');
       listContainer.innerHTML = '';
 
-      items.forEach(item => {
+      items.forEach((item, index) => {
         const today = new Date();
         const tomorrow = new Date(today);
         tomorrow.setDate(today.getDate() + 1);
@@ -226,14 +238,18 @@
         itemBlock.className = 'item-block';
 
         const label = document.createElement('label');
-        label.textContent = `${item.organ} - ${item.name}`;
+        label.textContent = `${item.name}（${item.organ || '団体名未入力'}）　現在の明け渡し日：${item.handover.replace(/-/g, '/')}`;
 
         const input = document.createElement('input');
         input.type = 'date';
-        input.id = `date-${item.id}`;
+        input.id = `date-${index}`;
         input.max = item.maxDate;
         input.min = minDate;
         input.value = item.handover;
+        // 物品の特定には行番号ではなく登録日時（reg）を使う
+        input.dataset.reg = item.reg;
+        input.dataset.original = item.handover;
+        input.dataset.name = item.name;
 
         const img = document.createElement('img');
         img.src = item.image;
@@ -256,29 +272,49 @@
       errEl.classList.add('hidden');
       errEl.textContent = '';
 
-      const dateInputs = document.querySelectorAll('#itemList input[type="date"]');
-      const results = Array.from(dateInputs).map(input => ({
-        id: Number(input.id.replace('date-', '')),
-        newDate: input.value
-      }));
+      const dateInputs = Array.from(document.querySelectorAll('#itemList input[type="date"]'));
+      // 日付を変更した物品だけを申請対象にする
+      const changed = dateInputs.filter(input => input.value && input.value !== input.dataset.original);
 
-      if (results.some(r => !r.newDate)) {
+      if (changed.length === 0) {
         errEl.classList.remove('hidden');
-        errEl.textContent = 'すべての日付を入力してください。';
+        errEl.textContent = '延長したい物品の日付を変更してください。';
         return;
       }
+
+      const invalid = changed.filter(input => input.value < input.min || input.value > input.max);
+      if (invalid.length > 0) {
+        errEl.classList.remove('hidden');
+        errEl.textContent = invalid
+          .map(input => `${input.dataset.name}: ${input.min.replace(/-/g, '/')} から ${input.max.replace(/-/g, '/')} までの日付を選択してください。`)
+          .join('\n');
+        return;
+      }
+
+      const results = changed.map(input => ({
+        reg: input.dataset.reg,
+        newDate: input.value
+      }));
 
       submitButton.disabled = true;
       submitButton.textContent = '送信中...';
 
       try {
-        const result = await callGAS('notifyExtensionRequest', { results });
+        const result = await callGAS('notifyExtensionRequest', { email: currentEmail, results });
         if (result.status === 'error') {
           errEl.classList.remove('hidden');
           errEl.textContent = result.message || '申請送信に失敗しました。';
           submitButton.disabled = false;
           submitButton.textContent = '申請する';
           return;
+        }
+        // 一部の物品だけ申請できなかった場合は、完了画面に理由を表示する
+        const skipped = result.skipped || [];
+        if (skipped.length > 0) {
+          const noteEl = document.getElementById('doneNote');
+          noteEl.textContent = '次の物品は申請できませんでした。\n' +
+            skipped.map(s => (s.name ? `${s.name}: ` : '') + s.reason).join('\n');
+          noteEl.classList.remove('hidden');
         }
         document.getElementById('formView').classList.add('hidden');
         document.getElementById('doneView').classList.remove('hidden');
