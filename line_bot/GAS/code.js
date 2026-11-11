@@ -57,7 +57,7 @@ const NAME = 2;                 // 登録者氏名
 const ORGANIZATION = 3;         // 団体名
 const PHOTO_FILE_ID = 4;        // Drive ファイル ID
 const HANDOVER_ON = 5;          // 明け渡し日（YYYY-MM-DD）
-const DAYS_UNTIL_HANDOVER = 6;  // 明け渡し日までの日数（計算列） 
+const DAYS_UNTIL_HANDOVER = 6;  // 旧仕様の残り日数列（現在は未使用。残り日数は HANDOVER_ON から算出する）
 const STATUS = 7;               // active / archived / pending
 const ADMIN_NOTE = 8;           // 管理者備考
 const STATUS_ACTIVE = 'active';
@@ -71,31 +71,51 @@ const OVERDUE_LIST_LIMIT = 30;       // 管理者向け期限超過まとめLINE
 const REMIND_TRIGGER_HOUR = 9;      // 日次トリガーの実行時刻（9〜10時の間に実行される）
 const REMIND_FUNCTION_NAME = 'handoverDayRemind';
 const REMIND_TIMEZONE = 'Asia/Tokyo';     // 残り日数の算出・トリガー実行時刻の基準
+// Gmail の1日の送信上限に達したときのエラーメッセージ
+const MAIL_QUOTA_ERROR_REGEX = /too many times|quota|上限/i;
 
-// 明け渡し日（F列）から、今日を基準にした残り日数を算出する。
-// G列の計算式が壊れている・未入力の行でも判定できるよう、F列を正とする。
-// 算出できない場合は null を返す。
-function calcDaysUntilHandover(handoverOn, today) {
-  if (handoverOn === '' || handoverOn === null || handoverOn === undefined) return null;
-  const date = handoverOn instanceof Date ? handoverOn : new Date(String(handoverOn).replace(/-/g, '/'));
-  if (isNaN(date.getTime())) return null;
-
-  // 日付は日本時間で切り出す。スプレッドシートやプロジェクトのタイムゾーン設定が
-  // 日本以外になっていると「今日」が前日扱いになり、通知日が1日ずれるため固定する。
-  const tz = REMIND_TIMEZONE;
-  const toDayNumber = (d) => {
-    const [y, m, day] = Utilities.formatDate(d, tz, 'yyyy-MM-dd').split('-').map(Number);
-    return Date.UTC(y, m - 1, day) / 86400000;
-  };
-  return toDayNumber(date) - toDayNumber(today);
+// 明け渡し日（F列）の値を Date にする。読み取れない場合は null
+function parseHandoverDate(value) {
+  if (value === '' || value === null || value === undefined) return null;
+  const date = value instanceof Date ? value : new Date(String(value).replace(/-/g, '/'));
+  return isNaN(date.getTime()) ? null : date;
 }
 
-// G列の値を残り日数として解釈する（F列から算出できない場合のフォールバック）。
-// 空欄を Number('') === 0 と誤判定して「当日」通知を出さないよう、空欄は null とする。
-function parseDaysColumn(value) {
-  if (value === '' || value === null || value === undefined) return null;
-  const n = Number(value);
-  return Number.isFinite(n) ? n : null;
+// 日付を日本時間の YYYY-MM-DD にする。スプレッドシートやプロジェクトのタイムゾーン設定が
+// 日本以外になっていても、通知日や表示がずれないよう日本時間に固定する。
+function toIsoDate(date) {
+  return Utilities.formatDate(date, REMIND_TIMEZONE, 'yyyy-MM-dd');
+}
+
+function isoToDayNumber(isoDate) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  return Date.UTC(y, m - 1, d) / 86400000;
+}
+
+// 明け渡し日（F列）から、今日を基準にした残り日数を算出する。読み取れない場合は null
+function calcDaysUntilHandover(handoverOn, today) {
+  const date = parseHandoverDate(handoverOn);
+  if (!date) return null;
+  return isoToDayNumber(toIsoDate(date)) - isoToDayNumber(toIsoDate(today));
+}
+
+// 明け渡し日を表示用の文字列（yyyy/MM/dd）にする
+function formatHandoverOn(handoverOn) {
+  const date = parseHandoverDate(handoverOn);
+  return date ? toIsoDate(date).replace(/-/g, '/') : String(handoverOn);
+}
+
+// 延長申請できるかどうか（extend_form と同じ規則）。
+// 延長できるのは「明日以降かつ現在の明け渡し日より後」から「明け渡し日が属する年度の末日」まで。
+// 年度末を越える延長はできない（docs/REQUIREMENTS.md の設置期間の原則）。
+function canExtendHandover(handoverOn, today) {
+  const date = parseHandoverDate(handoverOn);
+  if (!date) return { canExtend: false, fiscalYearEnd: '' };
+  const handoverIso = toIsoDate(date);
+  const [y, m] = handoverIso.split('-').map(Number);
+  const fiscalYearEnd = `${m >= 4 ? y + 1 : y}-03-31`;
+  const minDay = Math.max(isoToDayNumber(toIsoDate(today)), isoToDayNumber(handoverIso)) + 1;
+  return { canExtend: minDay <= isoToDayNumber(fiscalYearEnd), fiscalYearEnd: fiscalYearEnd.replace(/-/g, '/') };
 }
 
 // 通知での氏名・団体名の表示形式を統一する（例: 山田太郎（○○サークル） / 山田太郎（団体名未入力））
@@ -104,26 +124,41 @@ function formatPerson(name, organ) {
   return `${name}（${org || '団体名未入力'}）`;
 }
 
-// 明け渡し日を表示用の文字列（yyyy/MM/dd）にする
-function formatHandoverOn(handoverOn) {
-  const date = handoverOn instanceof Date ? handoverOn : new Date(String(handoverOn).replace(/-/g, '/'));
-  if (isNaN(date.getTime())) return String(handoverOn);
-  return Utilities.formatDate(date, REMIND_TIMEZONE, 'yyyy/MM/dd');
+// 利用者向けリマインドメールの本文を作る（kind: 'before3' / 'today' / 'overdue'）
+function buildReminderMailBody(kind, name, handoverOn, daysDiff, today) {
+  const { canExtend, fiscalYearEnd } = canExtendHandover(handoverOn, today);
+  const footer = '\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。';
+  if (kind === 'before3') {
+    return `${name}さん。物品の明け渡し3日前となりました。\n` + (canExtend
+      ? `3日以内に物品の撤去、又は以下のURLから延長申請を行ってください。\n${EXTEND_FORM_URL}`
+      : `年度末（${fiscalYearEnd}）を過ぎる延長はできないため、3日以内に物品を撤去してください。`) + footer;
+  }
+  if (kind === 'today') {
+    return `${name}さん。明け渡し当日となりました。\n` + (canExtend
+      ? `本日中に物品の撤去、又は以下のURLから延長申請を行ってください。\n${EXTEND_FORM_URL}`
+      : `年度末（${fiscalYearEnd}）を過ぎる延長はできないため、本日中に物品を撤去してください。`) + footer;
+  }
+  return `${name}さん。物品の明け渡し日（${formatHandoverOn(handoverOn)}）を${-daysDiff}日過ぎています。\n` + (canExtend
+    ? `至急物品を撤去してください。延長を希望する場合は、以下のURLから延長申請を行ってください。\n${EXTEND_FORM_URL}`
+    : `年度末（${fiscalYearEnd}）を過ぎているため延長申請はできません。至急物品を撤去してください。`) +
+    '\n\n撤去済みの場合は、STEAMコモンズの管理者にお知らせください。' + footer.replace('\n\n', '\n');
 }
 
 // 期限超過の物品を管理者向けに1通のテキストへまとめる
-function buildOverdueSummaryText(overdueItems) {
+function buildOverdueSummaryText(overdueItems, quotaExceeded) {
   const lines = overdueItems
     .slice()
     .sort((a, b) => b.overdueDays - a.overdueDays)
     .slice(0, OVERDUE_LIST_LIMIT)
     .map(item => {
-      const mailNote = item.mailFailed ? '（メール送信失敗）' : '';
+      const mailNote = item.mailStatus === 'failed' ? '（メール送信失敗）'
+        : item.mailStatus === 'skipped' ? '（送信上限のため未送信）' : '';
       return `・${formatPerson(item.name, item.organ)} 明け渡し日 ${item.handoverOn}（${item.overdueDays}日超過）${mailNote}`;
     });
   const rest = overdueItems.length - lines.length;
   let text = `[期限超過]明け渡し日を過ぎている物品が${overdueItems.length}件あります。\n${lines.join('\n')}`;
   if (rest > 0) text += `\nほか${rest}件`;
+  if (quotaExceeded) text += '\n\n※Gmailの1日の送信上限に達したため、一部の利用者に期限超過メールを送れませんでした。';
   text += '\n\n撤去済みの物品はダッシュボードでアーカイブしてください。';
   return text;
 }
@@ -132,79 +167,81 @@ function buildOverdueSummaryText(overdueItems) {
 // - 3日前・当日: 利用者へメール、管理者へ物品ごとにLINE
 // - 期限超過: 利用者へ毎日メール、管理者へ1日1通のまとめLINE
 //   （撤去済み/破棄済みとしてアーカイブされる、または延長が許可されるまで続く）
+// Gmail の送信上限に備え、3日前・当日のメールを先に送り、期限超過のメールは後に送る。
 function handoverDayRemind() {
   const data = SHEET.getDataRange().getValues();
   const today = new Date();
-  const summary = { rows: 0, sent: 0, overdueSent: 0, skippedStatus: 0, skippedDays: 0, invalidDate: 0, mailFailed: 0, lineFailed: 0 };
+  const summary = { rows: 0, sent: 0, overdueSent: 0, mailSkipped: 0, skippedStatus: 0, skippedDays: 0, invalidDate: 0, mailFailed: 0, lineFailed: 0 };
+  const dueItems = [];
   const overdueItems = [];
 
-  // 登録者全員のデータ確認
+  // 1. 通知対象を振り分ける
   for (let i = 1; i < data.length; i++) {
-    // メッセージに使用する要素
-    const email = data[i][EMAIL];
-    const name = data[i][NAME];
-    const organ = data[i][ORGANIZATION];
-    const status = data[i][STATUS];
     summary.rows++;
-
-    if (!isActiveStatus(status)) {
+    const row = data[i];
+    if (!isActiveStatus(row[STATUS])) {
       summary.skippedStatus++;
-      Logger.log(`[handoverDayRemind] status が active でないためスキップ: 行${i + 1} status="${status}"`);
+      Logger.log(`[handoverDayRemind] status が active でないためスキップ: 行${i + 1} status="${row[STATUS]}"`);
       continue;
     }
 
-    let handoverDay = calcDaysUntilHandover(data[i][HANDOVER_ON], today);
-    if (handoverDay === null) {
-      handoverDay = parseDaysColumn(data[i][DAYS_UNTIL_HANDOVER]);
-    }
-    if (handoverDay === null) {
+    const daysDiff = calcDaysUntilHandover(row[HANDOVER_ON], today);
+    if (daysDiff === null) {
       summary.invalidDate++;
-      Logger.log(`[handoverDayRemind] 明け渡し日を判定できないためスキップ: 行${i + 1} handover_on="${data[i][HANDOVER_ON]}" days="${data[i][DAYS_UNTIL_HANDOVER]}"`);
+      Logger.log(`[handoverDayRemind] 明け渡し日を判定できないためスキップ: 行${i + 1} handover_on="${row[HANDOVER_ON]}"`);
       continue;
     }
 
-    // 期限超過: 利用者へ毎日メール。管理者へはループ後にまとめて送る
-    if (handoverDay < 0) {
-      const overdueDays = -handoverDay;
-      const handoverOn = formatHandoverOn(data[i][HANDOVER_ON]);
-      const subject = `STEAMコモンズ 明け渡し期限超過のお知らせ`;
-      const body = `${name}さん。物品の明け渡し日（${handoverOn}）を${overdueDays}日過ぎています。\n至急物品を撤去してください。延長を希望する場合は、以下のURLから延長申請を行ってください。\n${EXTEND_FORM_URL}\n\n撤去済みの場合は、STEAMコモンズの管理者にお知らせください。\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
-      Logger.log(`[期限超過]${organ}の${name}さん 明け渡し日=${handoverOn} ${overdueDays}日超過`);
-      const mailResult = sendEmail(email, subject, body);
-      summary.overdueSent++;
-      if (!mailResult.success) summary.mailFailed++;
-      overdueItems.push({ name, organ, handoverOn, overdueDays, mailFailed: !mailResult.success });
-      continue;
-    }
-
-    // 明け渡し日の判定（3日前・当日）
-    if (REMIND_DAYS.indexOf(handoverDay) === -1) {
-      summary.skippedDays++;
-      continue;
-    }
-
-    const who = formatPerson(name, organ);
-    let text, subject, body;
-    if (handoverDay === 3) {
-      text = `[リマインド]${who}の明け渡し日まであと3日です。`;
-      subject = `STEAMコモンズ 明け渡し3日前リマインド通知`;
-      body = `${name}さん。物品の明け渡し3日前となりました。\n3日以内に物品の撤去、又は以下のURLから延長申請を行ってください。\n${EXTEND_FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
+    const item = { email: row[EMAIL], name: row[NAME], organ: row[ORGANIZATION], handoverOnRaw: row[HANDOVER_ON], daysDiff };
+    if (daysDiff < 0) {
+      overdueItems.push(item);
+    } else if (REMIND_DAYS.indexOf(daysDiff) !== -1) {
+      dueItems.push(item);
     } else {
-      text = `[リマインド]${who}の明け渡し当日です。`;
-      subject = `STEAMコモンズ 明け渡し当日リマインド通知`;
-      body = `${name}さん。明け渡し当日となりました。\n本日中に物品の撤去、又は以下のURLから延長申請を行ってください。\n${EXTEND_FORM_URL}\n\nこのメッセージに心当たりが無い場合は、STEAMコモンズまでお越しください。`;
+      summary.skippedDays++;
     }
-
-    Logger.log(text);
-    const mailFailLog = sendEmail(email, subject, body); // メール送信失敗時のログ
-    const lineResult = sendLineMessage(USER_ID, text, mailFailLog);
-    summary.sent++;
-    if (!mailFailLog.success) summary.mailFailed++;
-    if (!lineResult.success) summary.lineFailed++;
   }
 
-  if (overdueItems.length > 0) {
-    const lineResult = sendLineMessage(USER_ID, buildOverdueSummaryText(overdueItems));
+  // 2. 3日前・当日（利用者へメール、管理者へ物品ごとにLINE）
+  dueItems.forEach(item => {
+    const who = formatPerson(item.name, item.organ);
+    const isBefore3 = item.daysDiff === 3;
+    const text = isBefore3 ? `[リマインド]${who}の明け渡し日まであと3日です。` : `[リマインド]${who}の明け渡し当日です。`;
+    const subject = isBefore3 ? 'STEAMコモンズ 明け渡し3日前リマインド通知' : 'STEAMコモンズ 明け渡し当日リマインド通知';
+    const body = buildReminderMailBody(isBefore3 ? 'before3' : 'today', item.name, item.handoverOnRaw, item.daysDiff, today);
+
+    Logger.log(text);
+    const mailResult = sendEmail(item.email, subject, body);
+    const lineResult = sendLineMessage(USER_ID, text, mailResult);
+    summary.sent++;
+    if (!mailResult.success) summary.mailFailed++;
+    if (!lineResult.success) summary.lineFailed++;
+  });
+
+  // 3. 期限超過（利用者へ毎日メール。送信上限に達したら残りは送らない）
+  let quotaExceeded = false;
+  const overdueSummaryItems = overdueItems.map(item => {
+    const handoverOn = formatHandoverOn(item.handoverOnRaw);
+    const result = { name: item.name, organ: item.organ, handoverOn, overdueDays: -item.daysDiff, mailStatus: 'sent' };
+    if (quotaExceeded) {
+      result.mailStatus = 'skipped';
+      summary.mailSkipped++;
+      return result;
+    }
+    Logger.log(`[期限超過]${formatPerson(item.name, item.organ)} 明け渡し日=${handoverOn} ${-item.daysDiff}日超過`);
+    const mailResult = sendEmail(item.email, 'STEAMコモンズ 明け渡し期限超過のお知らせ',
+      buildReminderMailBody('overdue', item.name, item.handoverOnRaw, item.daysDiff, today));
+    summary.overdueSent++;
+    if (!mailResult.success) {
+      summary.mailFailed++;
+      result.mailStatus = 'failed';
+      if (MAIL_QUOTA_ERROR_REGEX.test(mailResult.message)) quotaExceeded = true;
+    }
+    return result;
+  });
+
+  if (overdueSummaryItems.length > 0) {
+    const lineResult = sendLineMessage(USER_ID, buildOverdueSummaryText(overdueSummaryItems, quotaExceeded));
     if (!lineResult.success) summary.lineFailed++;
   }
 

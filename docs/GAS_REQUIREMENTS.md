@@ -45,8 +45,11 @@
 - `getItemsByEmail(email)`: メールアドレスが一致し status が active の物品を返す（物品の識別子は登録日時の秒 `reg`）。
 - `notifyExtensionRequest(email, results)`: 申請された物品をメールアドレス＋登録日時で特定し、延長希望日を検証したうえで、許可/却下ボタン付きの LINE を管理者へ送る。
 - `findItemRow(data, email, reg)`: メールアドレス＋登録日時で対象行を探す。行番号は識別子に使わない。
-- `approveRequest(email, reg, newDate)`: 押した時点で対象行を探し直し、handover_on を更新して利用者へ許可メールを送る。
-- `rejectRequest(email, reg)`: 押した時点で対象行を探し直し、利用者へ却下メールを送る。
+- `extensionRange(reg, handoverIso)`: 延長申請できるかと、選べる日付の範囲（明日以降かつ現在の明け渡し日より後〜年度末）を求める。
+- `handlePostback(rawData)`: LINE の許可/却下ボタンの署名を検証し、`approveRequest` / `rejectRequest` を呼ぶ。
+- `approveRequest(fields)`: 押した時点で対象行を探し直し、明け渡し日が申請時点から変わっていないこと・希望延長日が範囲内であることを確認してから、handover_on を更新して利用者へ許可メールを送る。
+- `rejectRequest(fields)`: 押した時点で対象行を探し直し、明け渡し日が申請時点から変わっていなければ利用者へ却下メールを送る。
+- `setupPostbackSecret()`: 許可/却下ボタンの署名に使う鍵（`POSTBACK_SIGNING_SECRET`）を作成する（初回のみ手動実行）。
 - `requestGmailPermission()`: Gmail 権限の初回承認用（手動実行）。
 
 ### dashboard
@@ -73,6 +76,7 @@
 | extend_form | `USER_ID` | ○ | 管理者の LINE ユーザー ID（Webhook はこのユーザーのイベントのみ処理） |
 | extend_form | `SPREAD_SHEET_ID` | ○ | スプレッドシート ID |
 | extend_form | `SHEET_NAME_MANAGE` | ○ | `items` |
+| extend_form | `POSTBACK_SIGNING_SECRET` | ○ | 許可/却下ボタンの署名用の鍵。`setupPostbackSecret` を一度実行して作成する（値は他人に共有しない）。未設定の間は延長申請を受け付けない |
 | dashboard | `SPREADSHEET_ID` | ○ | スプレッドシート ID |
 
 `line_bot` と `extend_form` は必須プロパティが無いと起動時に例外で停止する（`getRequiredProperty`）。

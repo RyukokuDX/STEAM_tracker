@@ -228,39 +228,48 @@
       listContainer.innerHTML = '';
 
       items.forEach((item, index) => {
-        const today = new Date();
-        const tomorrow = new Date(today);
-        tomorrow.setDate(today.getDate() + 1);
-        const pad = n => n < 10 ? '0' + n : n;
-        const minDate = tomorrow.getFullYear() + '-' + pad(tomorrow.getMonth() + 1) + '-' + pad(tomorrow.getDate());
-
         const itemBlock = document.createElement('div');
         itemBlock.className = 'item-block';
 
+        const handoverText = item.handover ? item.handover.replace(/-/g, '/') : '不明';
         const label = document.createElement('label');
-        label.textContent = `${item.name}（${item.organ || '団体名未入力'}）　現在の明け渡し日：${item.handover.replace(/-/g, '/')}`;
+        label.textContent = `${item.name}（${item.organ || '団体名未入力'}）　現在の明け渡し日：${handoverText}`;
 
+        // 日付の範囲（明日以降かつ現在の明け渡し日より後〜年度末）はサーバーが日本時間で計算する
         const input = document.createElement('input');
         input.type = 'date';
         input.id = `date-${index}`;
-        input.max = item.maxDate;
-        input.min = minDate;
-        input.value = item.handover;
+        input.max = item.maxDate || '';
+        input.min = item.minDate || '';
+        input.value = item.handover || '';
         // 物品の特定には行番号ではなく登録日時（reg）を使う
         input.dataset.reg = item.reg;
-        input.dataset.original = item.handover;
+        input.dataset.original = item.handover || '';
         input.dataset.name = item.name;
+
+        itemBlock.appendChild(label);
+        itemBlock.appendChild(input);
+
+        // 延長申請できない物品（年度末を過ぎる、登録情報の不備など）は入力不可にして理由を表示する
+        if (!item.canExtend) {
+          input.disabled = true;
+          const reason = document.createElement('p');
+          reason.className = 'note';
+          reason.textContent = item.reason || 'この物品は延長申請できません。';
+          itemBlock.appendChild(reason);
+        }
 
         const img = document.createElement('img');
         img.src = item.image;
         img.alt = '物品画像';
         img.className = 'item-image';
 
-        itemBlock.appendChild(label);
-        itemBlock.appendChild(input);
         itemBlock.appendChild(img);
         listContainer.appendChild(itemBlock);
       });
+
+      // 申請できる物品が1つもない場合は送信ボタンを押せないようにする
+      document.getElementById('submitBtn').disabled = items.every(item => !item.canExtend);
     }
 
     // ============================================================
@@ -274,7 +283,7 @@
 
       const dateInputs = Array.from(document.querySelectorAll('#itemList input[type="date"]'));
       // 日付を変更した物品だけを申請対象にする
-      const changed = dateInputs.filter(input => input.value && input.value !== input.dataset.original);
+      const changed = dateInputs.filter(input => !input.disabled && input.value && input.value !== input.dataset.original);
 
       if (changed.length === 0) {
         errEl.classList.remove('hidden');

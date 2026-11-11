@@ -33,7 +33,6 @@ const STATUS = 7;
 const ADMIN_NOTE = 8;
 
 const DOMAIN = 'mail.ryukoku.ac.jp';
-const LINE_WEBHOOK_TOKEN = scriptProperties.getProperty('LINE_WEBHOOK_TOKEN');
 const STATUS_ACTIVE = 'active';
 const DATE_ISO_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -123,24 +122,7 @@ function handleLineWebhook(json, e) {
     }
 
     if (event.type === 'postback' && event.postback && event.postback.data) {
-      const params = parsePostbackData(event.postback.data);
-      if (params.action !== 'approve' && params.action !== 'reject') {
-        Logger.log('[line webhook] 不明な postback: ' + event.postback.data);
-        return;
-      }
-
-      // 行番号(id)だけを含む旧形式のボタンは、行がずれて別の物品を更新する恐れがあるため処理しない
-      if (!params.email || !params.reg) {
-        Logger.log('[line webhook] 旧形式の postback のため処理しない: ' + event.postback.data);
-        sendLineMessage(USER_ID, '古い形式の延長申請のため処理できませんでした。お手数ですが、利用者に延長申請フォームから再申請してもらってください。');
-        return;
-      }
-
-      if (params.action === 'approve') {
-        approveRequest(params.email, params.reg, params.date);
-      } else {
-        rejectRequest(params.email, params.reg);
-      }
+      handlePostback(event.postback.data);
     }
   });
 
@@ -173,8 +155,8 @@ function doGet() {
 // 登録日時（A列）は秒単位で比較する。
 // ============================================================
 function registeredAtKey(value) {
-  if (value instanceof Date) return String(Math.floor(value.getTime() / 1000));
-  const d = new Date(value);
+  if (value === '' || value === null || value === undefined) return '';
+  const d = value instanceof Date ? value : new Date(value);
   return isNaN(d.getTime()) ? '' : String(Math.floor(d.getTime() / 1000));
 }
 
@@ -200,9 +182,15 @@ function findItemRow(data, email, reg) {
   return { status: 'found', row: matches[0] };
 }
 
-// 日付（YYYY-MM-DD）関連のユーティリティ（日本時間基準）
+// ============================================================
+// 日付（YYYY-MM-DD、日本時間基準）
+// ============================================================
+// 読み取れない値は '' を返す（1行の不備で一覧全体がエラーにならないようにする）
 function toIsoDate(value) {
-  return Utilities.formatDate(new Date(value), 'Asia/Tokyo', 'yyyy-MM-dd');
+  if (value === '' || value === null || value === undefined) return '';
+  const d = value instanceof Date ? value : new Date(String(value).replace(/-/g, '/'));
+  if (isNaN(d.getTime())) return '';
+  return Utilities.formatDate(d, 'Asia/Tokyo', 'yyyy-MM-dd');
 }
 
 // YYYY-MM-DD が属する年度の末日（3月31日）を YYYY-MM-DD で返す
@@ -218,15 +206,124 @@ function addDaysIso(isoDate, days) {
   return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
 }
 
+// 物品ごとに、延長申請できるか・選べる日付の範囲を求める。
+// 選べるのは「明日以降かつ現在の明け渡し日より後」から「明け渡し日が属する年度の末日」まで。
+// 年度末を越える延長はできない（docs/REQUIREMENTS.md の設置期間の原則）。
+function extensionRange(reg, handoverIso) {
+  if (!reg) {
+    return { canExtend: false, reason: '登録日時が不明なため申請できません。STEAMコモンズの管理者にお問い合わせください' };
+  }
+  if (!handoverIso) {
+    return { canExtend: false, reason: '明け渡し日が不明なため申請できません。STEAMコモンズの管理者にお問い合わせください' };
+  }
+  const tomorrow = addDaysIso(toIsoDate(new Date()), 1);
+  const dayAfterHandover = addDaysIso(handoverIso, 1);
+  const minDate = tomorrow > dayAfterHandover ? tomorrow : dayAfterHandover;
+  const maxDate = fiscalYearEndIso(handoverIso);
+  if (minDate > maxDate) {
+    return { canExtend: false, minDate, maxDate, reason: `年度末（${toDisplayDate(maxDate)}）を過ぎる延長はできません。期限までに撤去するか、STEAMコモンズの管理者にご相談ください` };
+  }
+  return { canExtend: true, minDate, maxDate };
+}
+
 // 延長希望日の検証。問題なければ null、問題があれば理由を返す
-function validateNewDate(newDate, currentHandoverIso) {
+function validateNewDate(newDate, reg, currentHandoverIso) {
   if (!DATE_ISO_REGEX.test(String(newDate || ''))) return '日付の形式が正しくありません';
   if (newDate === currentHandoverIso) return '現在の明け渡し日から変更されていません';
-  const tomorrow = addDaysIso(toIsoDate(new Date()), 1);
-  if (newDate < tomorrow) return `明日（${toDisplayDate(tomorrow)}）以降の日付を選択してください`;
-  const maxDate = fiscalYearEndIso(currentHandoverIso);
-  if (newDate > maxDate) return `年度末（${toDisplayDate(maxDate)}）までの日付を選択してください`;
+  const range = extensionRange(reg, currentHandoverIso);
+  if (!range.canExtend) return range.reason;
+  if (newDate < range.minDate || newDate > range.maxDate) {
+    return `${toDisplayDate(range.minDate)} から ${toDisplayDate(range.maxDate)} までの日付を選択してください`;
+  }
   return null;
+}
+
+// ============================================================
+// 許可/却下ボタンの署名
+// GAS の doPost ではリクエストヘッダーを読めず LINE 標準の署名検証ができないため、
+// ボタンの postback データに HMAC 署名を入れ、押されたときに検証する。
+// 鍵はスクリプトプロパティ POSTBACK_SIGNING_SECRET（setupPostbackSecret で作成）。
+// ============================================================
+const POSTBACK_SECRET_KEY = 'POSTBACK_SIGNING_SECRET';
+
+function getPostbackSecret() {
+  const secret = scriptProperties.getProperty(POSTBACK_SECRET_KEY);
+  if (!secret) {
+    throw new Error(`${POSTBACK_SECRET_KEY} script property is not set. Run setupPostbackSecret() in the Apps Script editor.`);
+  }
+  return secret;
+}
+
+// fields: { action, email, reg, cur, date }（cur は申請時点の明け渡し日、date は希望延長日）
+function signPostback(fields) {
+  const base = [fields.action, fields.email, fields.reg, fields.cur, fields.date || ''].join('|');
+  const bytes = Utilities.computeHmacSha256Signature(base, getPostbackSecret());
+  return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/, '');
+}
+
+function buildPostbackData(fields) {
+  const parts = [
+    `action=${fields.action}`,
+    `email=${encodeURIComponent(fields.email)}`,
+    `reg=${fields.reg}`,
+    `cur=${fields.cur}`
+  ];
+  if (fields.date) parts.push(`date=${fields.date}`);
+  parts.push(`sig=${signPostback(fields)}`);
+  return parts.join('&');
+}
+
+// 署名用の鍵を作成する（初回のみ Apps Script エディタから手動実行。既にあれば何もしない）
+function setupPostbackSecret() {
+  if (scriptProperties.getProperty(POSTBACK_SECRET_KEY)) {
+    Logger.log(`[setupPostbackSecret] ${POSTBACK_SECRET_KEY} は設定済みです。`);
+    return;
+  }
+  const secret = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
+  scriptProperties.setProperty(POSTBACK_SECRET_KEY, secret);
+  Logger.log(`[setupPostbackSecret] ${POSTBACK_SECRET_KEY} を作成しました。`);
+}
+
+// LINE の postback（許可/却下ボタン）を処理する
+function handlePostback(rawData) {
+  const params = parsePostbackData(rawData);
+  if (params.action !== 'approve' && params.action !== 'reject') {
+    Logger.log('[postback] 不明な postback: ' + rawData);
+    return;
+  }
+
+  // 署名の無いボタン（行番号だけの旧形式、または署名導入前の形式）は処理しない
+  if (!params.sig) {
+    Logger.log('[postback] 旧形式の postback のため処理しない: ' + rawData);
+    sendLineMessage(USER_ID, '古い形式の延長申請のため処理できませんでした。お手数ですが、利用者に延長申請フォームから再申請してもらってください。');
+    return;
+  }
+
+  const fields = {
+    action: params.action,
+    email: normalizeEmail(params.email),
+    reg: String(params.reg || ''),
+    cur: String(params.cur || ''),
+    date: params.action === 'approve' ? String(params.date || '') : ''
+  };
+  let expected;
+  try {
+    expected = signPostback(fields);
+  } catch (err) {
+    Logger.log('[postback] 署名を検証できない: ' + err);
+    return;
+  }
+  if (expected !== params.sig) {
+    // 偽装された可能性があるため、何もせずログだけ残す
+    Logger.log('[postback] 署名が一致しないため処理しない: ' + rawData);
+    return;
+  }
+
+  if (fields.action === 'approve') {
+    approveRequest(fields);
+  } else {
+    rejectRequest(fields);
+  }
 }
 
 // ============================================================
@@ -238,12 +335,18 @@ function getItemsByEmail(email) {
 
   for (let i = 1; i < data.length; i++) {
     if (normalizeEmail(data[i][EMAIL]) === normalizeEmail(email) && isActiveStatus(data[i][STATUS])) {
+      const reg = registeredAtKey(data[i][RESISTERED_AT]);
+      const handover = toIsoDate(data[i][HANDOVER_ON]);
+      const range = extensionRange(reg, handover);
       results.push({
-        reg: registeredAtKey(data[i][RESISTERED_AT]),
+        reg,
         name: data[i][NAME],
         organ: data[i][ORGANIZATION],
-        handover: toIsoDate(data[i][HANDOVER_ON]),
-        maxDate: fiscalYearEndIso(toIsoDate(data[i][HANDOVER_ON])),
+        handover,
+        canExtend: range.canExtend,
+        reason: range.reason || '',
+        minDate: range.minDate || '',
+        maxDate: range.maxDate || '',
         image: `https://lh3.googleusercontent.com/d/${data[i][PHOTO_FILE_ID]}`
       });
     }
@@ -260,6 +363,12 @@ function getItemsByEmail(email) {
 function notifyExtensionRequest(email, results) {
   if (!Array.isArray(results) || results.length === 0) {
     return { status: 'error', message: '延長したい物品の日付を変更してください。' };
+  }
+  try {
+    getPostbackSecret();
+  } catch (err) {
+    Logger.log('[notifyExtensionRequest] ' + err);
+    return { status: 'error', message: '現在、延長申請を受け付けられません。STEAMコモンズの管理者にお問い合わせください。' };
   }
 
   const data = SHEET.getDataRange().getValues();
@@ -282,16 +391,17 @@ function notifyExtensionRequest(email, results) {
       return;
     }
 
+    const reg = registeredAtKey(row[RESISTERED_AT]);
+    const cur = toIsoDate(row[HANDOVER_ON]);
     const newDate = String(item.newDate || '');
-    const error = validateNewDate(newDate, toIsoDate(row[HANDOVER_ON]));
+    const error = validateNewDate(newDate, reg, cur);
     if (error) {
       Logger.log(`[notifyExtensionRequest] 日付が不正: row=${found.row + 1} newDate=${newDate} reason=${error}`);
       skipped.push({ name, reason: error });
       return;
     }
 
-    const reg = registeredAtKey(row[RESISTERED_AT]);
-    const keyParams = `email=${encodeURIComponent(normalizeEmail(row[EMAIL]))}&reg=${reg}`;
+    const keyFields = { email: normalizeEmail(row[EMAIL]), reg, cur };
     const payload = {
       to: USER_ID,
       messages: [
@@ -313,7 +423,7 @@ function notifyExtensionRequest(email, results) {
               contents: [
                 { type: "text", text: "延長申請", weight: "bold", size: "xl" },
                 { type: "text", text: formatPerson(name, organ), size: "md", wrap: true, margin: "md" },
-                { type: "text", text: `明け渡し日：${toDisplayDate(toIsoDate(row[HANDOVER_ON]))}`, size: "md", wrap: true, margin: "md" },
+                { type: "text", text: `明け渡し日：${toDisplayDate(cur)}`, size: "md", wrap: true, margin: "md" },
                 { type: "text", text: `希望延長日：${toDisplayDate(newDate)}`, size: "md", wrap: true, margin: "sm" }
               ]
             },
@@ -329,7 +439,7 @@ function notifyExtensionRequest(email, results) {
                   action: {
                     type: "postback",
                     label: "許可",
-                    data: `action=approve&${keyParams}&date=${newDate}`
+                    data: buildPostbackData(Object.assign({ action: 'approve', date: newDate }, keyFields))
                   }
                 },
                 {
@@ -339,7 +449,7 @@ function notifyExtensionRequest(email, results) {
                   action: {
                     type: "postback",
                     label: "却下",
-                    data: `action=reject&${keyParams}`
+                    data: buildPostbackData(Object.assign({ action: 'reject' }, keyFields))
                   }
                 }
               ]
@@ -391,23 +501,37 @@ function resolveRowForDecision(email, reg, actionLabel) {
 
 // ============================================================
 // 延長申請の許可
+// fields: { email, reg, cur（申請時点の明け渡し日）, date（希望延長日） }
 // ============================================================
-function approveRequest(email, reg, newDate) {
+function approveRequest(fields) {
+  const newDate = fields.date;
   if (!DATE_ISO_REGEX.test(String(newDate || ''))) {
     Logger.log(`無効な日付形式: ${newDate}`);
     return;
   }
-  const target = resolveRowForDecision(email, reg, '許可');
+  const target = resolveRowForDecision(fields.email, fields.reg, '許可');
   if (!target) return;
 
   const { rowIndex, row } = target;
   const name = row[NAME];
   const organ = row[ORGANIZATION];
   const person = formatPerson(name, organ);
+  const currentIso = toIsoDate(row[HANDOVER_ON]);
 
   // ボタンの二度押しなどで、すでに同じ日付になっている場合は再送しない
-  if (toIsoDate(row[HANDOVER_ON]) === newDate) {
+  if (currentIso === newDate) {
     sendLineMessage(USER_ID, `${person}の明け渡し日は、すでに ${toDisplayDate(newDate)} に更新済みです。`);
+    return;
+  }
+  // 申請後に明け渡し日が変わっている（別の申請を許可済みなど）場合は処理しない
+  if (currentIso !== fields.cur) {
+    sendLineMessage(USER_ID, `${person}の延長申請を許可できませんでした。申請後に明け渡し日が変更されています（現在 ${toDisplayDate(currentIso) || '不明'}）。`);
+    return;
+  }
+  // 許可の時点でも日付の範囲を確認する（許可が遅れて希望日が過ぎた場合など）
+  const error = validateNewDate(newDate, fields.reg, currentIso);
+  if (error) {
+    sendLineMessage(USER_ID, `${person}の延長申請（希望延長日 ${toDisplayDate(newDate)}）を許可できませんでした。${error}。お手数ですが、利用者に再申請してもらってください。`);
     return;
   }
 
@@ -422,21 +546,30 @@ function approveRequest(email, reg, newDate) {
 
 // ============================================================
 // 延長申請の却下
+// fields: { email, reg, cur（申請時点の明け渡し日） }
 // ============================================================
-function rejectRequest(email, reg) {
-  const target = resolveRowForDecision(email, reg, '却下');
+function rejectRequest(fields) {
+  const target = resolveRowForDecision(fields.email, fields.reg, '却下');
   if (!target) return;
 
   const { row } = target;
   const name = row[NAME];
   const organ = row[ORGANIZATION];
+  const person = formatPerson(name, organ);
+  const currentIso = toIsoDate(row[HANDOVER_ON]);
+
+  // 申請後に明け渡し日が変わっている（許可済みなど）場合は、矛盾したメールを送らない
+  if (currentIso !== fields.cur) {
+    sendLineMessage(USER_ID, `${person}の延長申請を却下しませんでした。申請後に明け渡し日が変更されています（現在 ${toDisplayDate(currentIso) || '不明'}）。すでに許可済みの可能性があります。`);
+    return;
+  }
 
   const mailResult = sendEmail(row[EMAIL],
     'STEAMコモンズ 延長申請却下通知',
     `${name}さん${organ ? `（${organ}）` : ''}\n\n延長申請が却下されました。\n\nこのメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`
   );
   const mailNote = mailResult.success ? '' : `\n（メール送信に失敗しました。${mailResult.message}）`;
-  sendLineMessage(USER_ID, `${formatPerson(name, organ)}の延長申請を却下しました。${mailNote}`);
+  sendLineMessage(USER_ID, `${person}の延長申請を却下しました。${mailNote}`);
 }
 
 // ============================================================
