@@ -115,7 +115,45 @@ function parsePostbackData(rawData) {
   return params;
 }
 
+// ============================================================
+// Webhook の送信元確認
+// LINE Developers に登録する Webhook URL の末尾に ?token=... を付け、
+// スクリプトプロパティ LINE_WEBHOOK_TOKEN と一致するリクエストだけを LINE からのものとして扱う。
+// （GAS の doPost ではリクエストヘッダーを読めず、LINE 標準の署名検証ができないため）
+// ============================================================
+const WEBHOOK_TOKEN_KEY = 'LINE_WEBHOOK_TOKEN';
+
+function isValidWebhookToken(e) {
+  const expected = scriptProperties.getProperty(WEBHOOK_TOKEN_KEY);
+  if (!expected) {
+    Logger.log(`[line webhook] ${WEBHOOK_TOKEN_KEY} が未設定のため Webhook を受け付けない。setupWebhookToken() を実行してください。`);
+    return false;
+  }
+  const token = String((e && e.parameter && e.parameter.token) || '');
+  return token === expected;
+}
+
+// Webhook 用のトークンを作成し、LINE Developers に設定する URL の末尾をログに出す
+// （初回のみ Apps Script エディタから手動実行。既にあれば作り直さずに表示だけする）
+function setupWebhookToken() {
+  let token = scriptProperties.getProperty(WEBHOOK_TOKEN_KEY);
+  if (!token) {
+    token = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
+    scriptProperties.setProperty(WEBHOOK_TOKEN_KEY, token);
+    Logger.log(`[setupWebhookToken] ${WEBHOOK_TOKEN_KEY} を作成しました。`);
+  } else {
+    Logger.log(`[setupWebhookToken] ${WEBHOOK_TOKEN_KEY} は設定済みです。`);
+  }
+  Logger.log(`LINE Developers の Webhook URL を「（このWebアプリの /exec で終わるURL）?token=${token}」に変更してください。`);
+}
+
 function handleLineWebhook(json, e) {
+  if (!isValidWebhookToken(e)) {
+    Logger.log('[line webhook] トークンが一致しないため処理しない');
+    // LINE に再送させないよう 200 を返す
+    return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);
+  }
+
   json.events.forEach(event => {
     if (!event || !event.source || event.source.userId !== USER_ID) {
       return;
@@ -226,9 +264,18 @@ function extensionRange(reg, handoverIso) {
   return { canExtend: true, minDate, maxDate };
 }
 
+// YYYY-MM-DD の形式で、かつ実在する日付か（2027-02-30 などを除外する）
+function isRealIsoDate(value) {
+  const text = String(value || '');
+  if (!DATE_ISO_REGEX.test(text)) return false;
+  const [y, m, d] = text.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+}
+
 // 延長希望日の検証。問題なければ null、問題があれば理由を返す
 function validateNewDate(newDate, reg, currentHandoverIso) {
-  if (!DATE_ISO_REGEX.test(String(newDate || ''))) return '日付の形式が正しくありません';
+  if (!isRealIsoDate(newDate)) return '日付が正しくありません';
   if (newDate === currentHandoverIso) return '現在の明け渡し日から変更されていません';
   const range = extensionRange(reg, currentHandoverIso);
   if (!range.canExtend) return range.reason;
@@ -256,7 +303,7 @@ function getPostbackSecret() {
 
 // fields: { action, email, reg, cur, date }（cur は申請時点の明け渡し日、date は希望延長日）
 function signPostback(fields) {
-  const base = [fields.action, fields.email, fields.reg, fields.cur, fields.date || ''].join('|');
+  const base = [fields.action, fields.email, fields.reg, fields.cur, fields.date].join('|');
   const bytes = Utilities.computeHmacSha256Signature(base, getPostbackSecret());
   return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/, '');
 }
@@ -266,10 +313,10 @@ function buildPostbackData(fields) {
     `action=${fields.action}`,
     `email=${encodeURIComponent(fields.email)}`,
     `reg=${fields.reg}`,
-    `cur=${fields.cur}`
+    `cur=${fields.cur}`,
+    `date=${fields.date}`,
+    `sig=${signPostback(fields)}`
   ];
-  if (fields.date) parts.push(`date=${fields.date}`);
-  parts.push(`sig=${signPostback(fields)}`);
   return parts.join('&');
 }
 
@@ -282,6 +329,56 @@ function setupPostbackSecret() {
   const secret = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
   scriptProperties.setProperty(POSTBACK_SECRET_KEY, secret);
   Logger.log(`[setupPostbackSecret] ${POSTBACK_SECRET_KEY} を作成しました。`);
+}
+
+// ============================================================
+// 処理済みの申請の記録（ボタンの二度押し対策）
+// スクリプトプロパティ EXTENSION_DECISIONS に { 申請キー: { a: 'approve'|'reject', d: 希望延長日 } } を
+// JSON で保存する（最初の記録時に自動で作成される）。
+// 希望延長日を過ぎた申請はボタンが効かなくなるため、その記録は自動で削除する。
+// ============================================================
+const DECISIONS_KEY = 'EXTENSION_DECISIONS';
+
+// 申請キー: 物品（メールアドレス+登録日時）+ 申請時点の明け渡し日 + 希望延長日 のハッシュ
+function decisionKey(fields) {
+  const bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,
+    [fields.email, fields.reg, fields.cur, fields.date].join('|'), Utilities.Charset.UTF_8);
+  return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/, '').slice(0, 22);
+}
+
+function loadDecisions() {
+  try {
+    return JSON.parse(scriptProperties.getProperty(DECISIONS_KEY) || '{}');
+  } catch (err) {
+    Logger.log(`[decisions] ${DECISIONS_KEY} を読み取れないため空として扱う: ${err}`);
+    return {};
+  }
+}
+
+function recordDecision(fields) {
+  const today = toIsoDate(new Date());
+  const all = loadDecisions();
+  Object.keys(all).forEach(key => {
+    if (!all[key] || !all[key].d || all[key].d <= today) delete all[key];
+  });
+  all[decisionKey(fields)] = { a: fields.action, d: fields.date };
+  scriptProperties.setProperty(DECISIONS_KEY, JSON.stringify(all));
+}
+
+// 許可/却下の前に、申請が期限切れでないか・処理済みでないかを確認する。
+// 処理してよければ true。そうでなければ管理者へ LINE で知らせて false
+function checkRequestState(fields, person) {
+  const today = toIsoDate(new Date());
+  if (fields.date <= today) {
+    sendLineMessage(USER_ID, `${person}の延長申請（希望延長日 ${toDisplayDate(fields.date)}）は、希望延長日を過ぎているため処理できません。必要であれば、利用者に再申請してもらってください。`);
+    return false;
+  }
+  const decided = loadDecisions()[decisionKey(fields)];
+  if (decided) {
+    sendLineMessage(USER_ID, `${person}の延長申請（希望延長日 ${toDisplayDate(fields.date)}）は、すでに${decided.a === 'approve' ? '許可' : '却下'}済みです。`);
+    return false;
+  }
+  return true;
 }
 
 // LINE の postback（許可/却下ボタン）を処理する
@@ -304,7 +401,7 @@ function handlePostback(rawData) {
     email: normalizeEmail(params.email),
     reg: String(params.reg || ''),
     cur: String(params.cur || ''),
-    date: params.action === 'approve' ? String(params.date || '') : ''
+    date: String(params.date || '')
   };
   let expected;
   try {
@@ -318,11 +415,25 @@ function handlePostback(rawData) {
     Logger.log('[postback] 署名が一致しないため処理しない: ' + rawData);
     return;
   }
+  if (!isRealIsoDate(fields.date)) {
+    Logger.log('[postback] 希望延長日が不正なため処理しない: ' + rawData);
+    return;
+  }
 
-  if (fields.action === 'approve') {
-    approveRequest(fields);
-  } else {
-    rejectRequest(fields);
+  // 二度押しなどで同時に処理されないよう排他制御する
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) {
+    sendLineMessage(USER_ID, '処理が混み合っているため、延長申請を処理できませんでした。少し待ってから、もう一度ボタンを押してください。');
+    return;
+  }
+  try {
+    if (fields.action === 'approve') {
+      approveRequest(fields);
+    } else {
+      rejectRequest(fields);
+    }
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -449,7 +560,7 @@ function notifyExtensionRequest(email, results) {
                   action: {
                     type: "postback",
                     label: "却下",
-                    data: buildPostbackData(Object.assign({ action: 'reject' }, keyFields))
+                    data: buildPostbackData(Object.assign({ action: 'reject', date: newDate }, keyFields))
                   }
                 }
               ]
@@ -505,10 +616,6 @@ function resolveRowForDecision(email, reg, actionLabel) {
 // ============================================================
 function approveRequest(fields) {
   const newDate = fields.date;
-  if (!DATE_ISO_REGEX.test(String(newDate || ''))) {
-    Logger.log(`無効な日付形式: ${newDate}`);
-    return;
-  }
   const target = resolveRowForDecision(fields.email, fields.reg, '許可');
   if (!target) return;
 
@@ -516,9 +623,10 @@ function approveRequest(fields) {
   const name = row[NAME];
   const organ = row[ORGANIZATION];
   const person = formatPerson(name, organ);
-  const currentIso = toIsoDate(row[HANDOVER_ON]);
+  if (!checkRequestState(fields, person)) return;
 
-  // ボタンの二度押しなどで、すでに同じ日付になっている場合は再送しない
+  const currentIso = toIsoDate(row[HANDOVER_ON]);
+  // 記録が無くても、すでに同じ日付になっている場合は再送しない
   if (currentIso === newDate) {
     sendLineMessage(USER_ID, `${person}の明け渡し日は、すでに ${toDisplayDate(newDate)} に更新済みです。`);
     return;
@@ -528,7 +636,7 @@ function approveRequest(fields) {
     sendLineMessage(USER_ID, `${person}の延長申請を許可できませんでした。申請後に明け渡し日が変更されています（現在 ${toDisplayDate(currentIso) || '不明'}）。`);
     return;
   }
-  // 許可の時点でも日付の範囲を確認する（許可が遅れて希望日が過ぎた場合など）
+  // 許可の時点でも日付の範囲を確認する
   const error = validateNewDate(newDate, fields.reg, currentIso);
   if (error) {
     sendLineMessage(USER_ID, `${person}の延長申請（希望延長日 ${toDisplayDate(newDate)}）を許可できませんでした。${error}。お手数ですが、利用者に再申請してもらってください。`);
@@ -536,6 +644,7 @@ function approveRequest(fields) {
   }
 
   SHEET.getRange(rowIndex + 1, HANDOVER_ON + 1).setValue(newDate);
+  recordDecision(fields);
   const mailResult = sendEmail(row[EMAIL],
     'STEAMコモンズ 延長申請許可通知',
     `${name}さん${organ ? `（${organ}）` : ''}\n\n延長申請が許可されました。\n新しい明け渡し日: ${toDisplayDate(newDate)}\n\nこのメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`
@@ -546,7 +655,7 @@ function approveRequest(fields) {
 
 // ============================================================
 // 延長申請の却下
-// fields: { email, reg, cur（申請時点の明け渡し日） }
+// fields: { email, reg, cur（申請時点の明け渡し日）, date（希望延長日） }
 // ============================================================
 function rejectRequest(fields) {
   const target = resolveRowForDecision(fields.email, fields.reg, '却下');
@@ -556,14 +665,16 @@ function rejectRequest(fields) {
   const name = row[NAME];
   const organ = row[ORGANIZATION];
   const person = formatPerson(name, organ);
-  const currentIso = toIsoDate(row[HANDOVER_ON]);
+  if (!checkRequestState(fields, person)) return;
 
+  const currentIso = toIsoDate(row[HANDOVER_ON]);
   // 申請後に明け渡し日が変わっている（許可済みなど）場合は、矛盾したメールを送らない
   if (currentIso !== fields.cur) {
     sendLineMessage(USER_ID, `${person}の延長申請を却下しませんでした。申請後に明け渡し日が変更されています（現在 ${toDisplayDate(currentIso) || '不明'}）。すでに許可済みの可能性があります。`);
     return;
   }
 
+  recordDecision(fields);
   const mailResult = sendEmail(row[EMAIL],
     'STEAMコモンズ 延長申請却下通知',
     `${name}さん${organ ? `（${organ}）` : ''}\n\n延長申請が却下されました。\n\nこのメッセージに心当たりがない場合は、STEAMコモンズまでお越しください。`

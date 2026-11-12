@@ -50,6 +50,8 @@
 - `approveRequest(fields)`: 押した時点で対象行を探し直し、明け渡し日が申請時点から変わっていないこと・希望延長日が範囲内であることを確認してから、handover_on を更新して利用者へ許可メールを送る。
 - `rejectRequest(fields)`: 押した時点で対象行を探し直し、明け渡し日が申請時点から変わっていなければ利用者へ却下メールを送る。
 - `setupPostbackSecret()`: 許可/却下ボタンの署名に使う鍵（`POSTBACK_SIGNING_SECRET`）を作成する（初回のみ手動実行）。
+- `setupWebhookToken()`: Webhook の送信元確認に使うトークン（`LINE_WEBHOOK_TOKEN`）を作成し、LINE Developers に設定する URL をログに出す（初回のみ手動実行）。
+- `checkRequestState(fields, person)` / `recordDecision(fields)`: 許可/却下済みの申請と、希望延長日を過ぎた申請を処理しないための確認と記録（`EXTENSION_DECISIONS`）。
 - `requestGmailPermission()`: Gmail 権限の初回承認用（手動実行）。
 
 ### dashboard
@@ -76,6 +78,8 @@
 | extend_form | `USER_ID` | ○ | 管理者の LINE ユーザー ID（Webhook はこのユーザーのイベントのみ処理） |
 | extend_form | `SPREAD_SHEET_ID` | ○ | スプレッドシート ID |
 | extend_form | `SHEET_NAME_MANAGE` | ○ | `items` |
+| extend_form | `LINE_WEBHOOK_TOKEN` | ○ | Webhook の送信元確認用のトークン。`setupWebhookToken` を一度実行して作成し、LINE Developers の Webhook URL の末尾に `?token=...` として付ける。未設定の間は LINE の Webhook（許可/却下ボタン）を受け付けない |
+| extend_form | `EXTENSION_DECISIONS` | 自動 | 許可/却下を処理した申請の記録（JSON）。最初の許可/却下時に自動で作成される。手で編集・削除しない |
 | extend_form | `POSTBACK_SIGNING_SECRET` | ○ | 許可/却下ボタンの署名用の鍵。`setupPostbackSecret` を一度実行して作成する（値は他人に共有しない）。未設定の間は延長申請を受け付けない |
 | dashboard | `SPREADSHEET_ID` | ○ | スプレッドシート ID |
 
@@ -87,7 +91,7 @@ GitHub Actions の Secrets には `STUFF_GAS_URL` / `EXTEND_GAS_URL`（各 Web �
 ## 4. トリガー設定
 
 - 物品登録・延長申請・登録通知は Web アプリの `doPost` で受け付けるため、インストール型トリガーは不要。
-- LINE チャネルの Webhook URL には `extend_form` の Web アプリ URL を設定する。
+- LINE チャネルの Webhook URL には `extend_form` の Web アプリ URL の末尾に `?token={LINE_WEBHOOK_TOKEN}` を付けたものを設定する。
 - 時間主導トリガー: `line_bot` で毎日 1 回（9 時台）`handoverDayRemind` を実行する。
   - トリガーは line_bot の Apps Script エディタで `setupReminderTrigger` を実行して作成する（実行者が持つ既存の同名トリガーは作り直される）。
   - トリガーは作成したアカウントに紐づく。リマインドメールの送信元もそのアカウントになるため、運用担当（管理者）のアカウントで作成する。担当者の交代・卒業時は新担当者のアカウントで作り直す。
