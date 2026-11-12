@@ -21,22 +21,35 @@
 
     -   clasp を使った Google Apps Script のローカル開発・ビルド・デプロイ手順をまとめたドキュメントです。
 
+-   **[要件仕様書](./docs/SPECIFICATIONS.md)**
+
+    -   現行実装の各機能（登録・リマインド・延長申請・アーカイブ）の動作仕様です。
+
+-   **[GAS 要件・実装仕様書](./docs/GAS_REQUIREMENTS.md)**
+
+    -   GAS プロジェクトの構成、スクリプトプロパティ、トリガー設定などの運用情報です。
+
+-   **[公開直前チェックリスト](./docs/PUBLIC_RELEASE_CHECKLIST.md)**
+
+    -   README / Secrets / GitHub Pages を公開前に確認する短いリストです。
+
 ## 主な機能
 
 -   **利用者向け機能**
-    -   QRコード経由での物品登録（所有者情報、物品情報、写真、明け渡し日）
-    -   明け渡し日前のリマインダーメール受信
+    -   QRコード経由での物品登録（氏名、団体名、写真、メールアドレス、明け渡し日）と登録完了メールの受信
+    -   明け渡し日の3日前・当日のリマインダーメール受信（期限を過ぎた場合は対応されるまで毎日）
+    -   延長申請フォームからの明け渡し日の延長申請（URLは登録完了メール・リマインダーメールに記載）
 -   **管理者向け機能**
-    -   LINE Botによる期限切れ物品の自動通知
-    -   LINE Botのボタン操作による撤去完了（アーカイブ）処理
-    -   （AppSheet）管理ダッシュボードによる登録物品の一覧・検索
+    -   LINE Botによる物品登録通知（明け渡し日を含む）、明け渡し日3日前・当日のリマインド通知、期限超過物品の毎日のまとめ通知
+    -   LINE Botのボタン操作による延長申請の許可/却下
+    -   管理ダッシュボード（GAS Webアプリ）による登録物品の一覧確認、撤去済み/破棄済み処理（アーカイブ）、復元、備考編集
 
 ## アーキテクチャ（使用技術）
 
 -   **Backend / Automation**: Google Apps Script (GAS)
 -   **Database**: Google Sheets
 -   **利用者UI**: Webアプリ（`stuffForm` / `extend_form` ほか）とブラウザフォーム
--   **管理者UI**: LINE Messaging API、GAS Webアプリ（`dashboard`）、AppSheet
+-   **管理者UI**: LINE Messaging API、GAS Webアプリ（`dashboard`）
 -   **Development Tool**: clasp, Git, GitHub
 
 ## プロジェクト構造
@@ -53,12 +66,14 @@ STEAM_tracker/
 │   ├── PULL_REQUESTS_COMMENT_SPECIFICATION.md # プルリクエストの仕様
 │   ├── PULLREQUESTS_COMMENT_SPECIFICATION.md
 │   ├── REQUIREMENTS.md                       # 要件定義書
-│   ├── APP_SHEET.md                          # AppSheet 仕様
+│   ├── APP_SHEET.md                          # 管理画面データ仕様
+│   ├── EXTEND_FORM_SPECIFICATION.md          # 延長申請フォーム仕様書
+│   ├── LINE_BOT_SPECIFICATION.md             # LINE Bot 仕様書
 │   ├── SPECIFICATIONS.md                     # 要件仕様書
 │   └── SPREAD_SHEET_REQUIREMENTS.md          # スプレッドシート仕様書
-├── stuffForm/                                # 物品登録 Web アプリ（GAS）
+├── stuffForm/                                # 物品登録（静的HTML + GAS）
 │   └── GAS/
-├── extend_form/                              # 延長申請（GAS）
+├── extend_form/                              # 延長申請（静的HTML + GAS）
 │   └── GAS/
 ├── line_bot/                                 # LINE 通知・リマインド（GAS）
 │   └── GAS/

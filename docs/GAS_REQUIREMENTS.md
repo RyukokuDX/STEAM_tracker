@@ -1,112 +1,124 @@
-# TODO
-
-このドキュメントは、以下の3つの独立したGAS仕様書に分割されます。
-
-Spreadsheet GAS
-
-Form GAS
-
-View GAS
-
-分割が完了するまで、このドキュメントを各仕様書のテンプレートとして参照してください。
 # GAS 要件・実装仕様書
 
-このドキュメントは本プロジェクトで使用する Google Apps Script (GAS) の実装仕様をまとめたものです。実装者・運用者が参照することを想定しています。
+> 本書は現行実装に準拠する。最終更新: 2026-11-05
+
+このドキュメントは本プロジェクトの Google Apps Script（GAS）プロジェクトの構成・設定・運用をまとめたものです。実装者・運用者が参照することを想定しています。
+各機能の動作仕様は `docs/SPECIFICATIONS.md` を参照してください。
 
 ---
 
-## 1. 目的
+## 1. GAS プロジェクト一覧
 
-GAS 側は主に次を担います。
-
-- Forms / Google Spread Sheets との連携（申請データの受信・記録）
-- 画像ファイルの Drive への保存・リンク管理
-- 明け渡し日（撤去）のリマインダー送信（メール / LINE 連携）
-
----
-
-## 2. 主要モジュールと関数一覧（推奨）
-
-以下は実装例の関数一覧です。ファイル分割や命名はプロジェクト規約に合わせてください。
-
-- Code.gs (エントリポイント)
-	- onFormSubmit(e): フォーム送信イベントハンドラ。受信データを検証→Drive保存→スプレッドシート追記→確認メール送信。
-	- dailyReminderTrigger(): 毎日実行。明け渡し日までの残日数を評価し、リマインド/管理者通知を行う。
-
-- drive-utils.gs
-	- saveFileToDrive(fileBlob, folderId): Drive にファイルを保存し、fileId を返す。
-
-- sheet-utils.gs
-	- appendFormData(rowObject): スプレッドシートに行を追加する。返り値: 行番号。内部で日付フォーマットやID付与を行う。
-	- calcDaysUntil(dateString): 明け渡し日までの日数を計算して返す（GAS 内での利用向け）。
-
-- notify-utils.gs
-	- sendConfirmationEmail(email, params): 申請者への確認メール送信。
-	- sendReminderEmail(email, params): 申請者へのリマインド送信。
-	- sendAdminNotification(adminIds, params): 管理者向けの通知（LINE / メール）を送る。
-
-- admin-actions.gs
-	- markAsArchived(rowId, user): 撤去完了処理。アーカイブ対象としてフラグを立てる／別シートへ移動する。
-	- approveExtension(rowId, newDate, adminUser): 延長申請を承認する処理。
+| ディレクトリ | 役割 | 公開形態 |
+| --- | --- | --- |
+| `stuffForm/GAS/` | 物品登録の受付（写真保存・items への記録・確認メール・登録通知の依頼） | Web アプリ（静的 HTML `stuffForm/index.html` から POST） |
+| `line_bot/GAS/` | 明け渡しリマインド、登録通知の LINE 送信 | Web アプリ + 時間主導トリガー |
+| `extend_form/GAS/` | 延長申請の受付、LINE Webhook による許可/却下 | Web アプリ（静的 HTML `extend_form/index.html` から POST、LINE Webhook の送信先） |
+| `dashboard/` | 管理画面 | Web アプリ（GET） |
+| `GAS/` | レガシー試作（本番では使用しない） | ― |
 
 ---
 
-## 3. データスキーマ（スプレッドシート）
+## 2. 主要関数
 
-スプレッドシートの列定義は `docs/SPREAD_SHEET_REQUIREMENTS.md` を唯一の正規仕様として参照してください。
+### stuffForm
 
-現行運用では、items と archives で共通スキーマ（registered_at, email, name, organization, photo_file_id, handover_on, days_until_handover, status, admin_note）を使用します。
+- `doPost(e)`: `action` で `uploadPhoto` / `submitForm` を振り分ける。
+- `uploadPhoto(dataUrl, filename)`: JPEG/PNG/WebP のみ受け付け、Drive（`driveFolder_ID`）に保存してファイル ID を返す。
+- `submitForm(payload)`: 入力検証 → items へ追記（`status=active`）→ 確認メール → `notifyLineBotNewRegistration`。
+- `notifyLineBotNewRegistration(registration)`: `line_bot` の Web アプリへ `notifyRegistration` を POST する。
+- `testLineBotNotify()`: 登録通知の疎通確認（手動実行）。
 
-status は active / archived / discarded を使用し、通知・延長処理の抽出対象は active のみとします。
+### line_bot
+
+- `doPost(e)`: `notifyRegistration` を受けて `registerNotify` を呼ぶ。
+- `registerNotify(registration)`: 写真・氏名・団体名・明け渡し日を LINE（Flex Message）で管理者へ送る。
+- `handoverDayRemind()`: 日次リマインド。F 列（handover_on）から残り日数を算出し、3 日前・当日・期限超過の active 行へ通知する（期限超過は管理者へ 1 日 1 通のまとめ LINE）。
+- `setupReminderTrigger()`: `handoverDayRemind` の日次トリガー（9 時台）を作り直す（手動実行）。
+- `listReminderTriggers()`: 実行者のアカウントが持つトリガーを一覧表示する（手動実行）。
+- `backfillActiveStatus()`: items の status 空欄を `active` で補完する（移行用・手動実行）。
+- `sendEmail` / `sendLineMessage` / `sendLinePushObject`: 送信ユーティリティ（LINE は最大 3 回再試行、4xx は再試行しない）。
+
+### extend_form
+
+- `doPost(e)`: `events` があれば LINE Webhook（`handleLineWebhook`）、`action` があれば静的 HTML からのリクエスト（`handleFetchRequest`）として処理する。
+- `getItemsByEmail(email)`: メールアドレスが一致し status が active の物品を返す（物品の識別子は登録日時の秒 `reg`）。
+- `notifyExtensionRequest(email, results)`: 申請された物品をメールアドレス＋登録日時で特定し、延長希望日を検証したうえで、許可/却下ボタン付きの LINE を管理者へ送る。
+- `findItemRow(data, email, reg)`: メールアドレス＋登録日時で対象行を探す。行番号は識別子に使わない。
+- `extensionRange(reg, handoverIso)`: 延長申請できるかと、選べる日付の範囲（明日以降かつ現在の明け渡し日より後〜年度末）を求める。
+- `handlePostback(rawData)`: LINE の許可/却下ボタンの署名を検証し、`approveRequest` / `rejectRequest` を呼ぶ。
+- `approveRequest(fields)`: 押した時点で対象行を探し直し、明け渡し日が申請時点から変わっていないこと・希望延長日が範囲内であることを確認してから、handover_on を更新して利用者へ許可メールを送る。
+- `rejectRequest(fields)`: 押した時点で対象行を探し直し、明け渡し日が申請時点から変わっていなければ利用者へ却下メールを送る。
+- `setupPostbackSecret()`: 許可/却下ボタンの署名に使う鍵（`POSTBACK_SIGNING_SECRET`）を作成する（初回のみ手動実行）。
+- `setupWebhookToken()`: Webhook の送信元確認に使うトークン（`LINE_WEBHOOK_TOKEN`）を作成し、LINE Developers に設定する URL をログに出す（初回のみ手動実行）。
+- `checkRequestState(fields, person)` / `recordDecision(fields)`: 許可/却下済みの申請と、希望延長日を過ぎた申請を処理しないための確認と記録（`EXTENSION_DECISIONS`）。
+- `requestGmailPermission()`: Gmail 権限の初回承認用（手動実行）。
+
+### dashboard
+
+- `doGet(e)`: 管理画面を表示する。
+- `completeRows` / `discardRows` / `restoreRows` / `deleteRows` / `deleteArchiveRows` / `updateAdminNote` / `updateArchiveAdminNote`: 管理画面の各操作（`docs/SPECIFICATIONS.md` §3(4)）。
+
+---
+
+## 3. スクリプトプロパティ
+
+| プロジェクト | キー | 必須 | 内容 |
+| --- | --- | :---: | --- |
+| stuffForm | `SPREADSHEET_ID` | ○ | スプレッドシート ID |
+| stuffForm | `driveFolder_ID` | ○ | 写真を保存する Drive フォルダ ID |
+| stuffForm | `LINE_BOT_NOTIFY_URL` | ○ | line_bot Web アプリの URL（未設定だと登録通知が送られない） |
+| stuffForm | `EXTEND_FORM_URL` | 推奨 | 延長申請フォーム（GitHub Pages の `extend_form/`）の URL。確認メールに記載する |
+| line_bot | `ACCESS_TOKEN` | ○ | LINE チャネルアクセストークン |
+| line_bot | `USER_ID` | ○ | 通知先（管理者）の LINE ユーザー ID |
+| line_bot | `EXTEND_FORM_URL` | ○ | 延長申請フォーム（GitHub Pages の `extend_form/`）の URL。リマインドメールに記載する |
+| line_bot | `SPREAD_SHEET_ID` | ○ | スプレッドシート ID |
+| line_bot | `SHEET_NAME_MANAGE` | ○ | `items` |
+| extend_form | `ACCESS_TOKEN` | ○ | LINE チャネルアクセストークン |
+| extend_form | `USER_ID` | ○ | 管理者の LINE ユーザー ID（Webhook はこのユーザーのイベントのみ処理） |
+| extend_form | `SPREAD_SHEET_ID` | ○ | スプレッドシート ID |
+| extend_form | `SHEET_NAME_MANAGE` | ○ | `items` |
+| extend_form | `LINE_WEBHOOK_TOKEN` | ○ | Webhook の送信元確認用のトークン。`setupWebhookToken` を一度実行して作成し、LINE Developers の Webhook URL の末尾に `?token=...` として付ける。未設定の間は LINE の Webhook（許可/却下ボタン）を受け付けない |
+| extend_form | `EXTENSION_DECISIONS` | 自動 | 許可/却下を処理した申請の記録（JSON）。最初の許可/却下時に自動で作成される。手で編集・削除しない |
+| extend_form | `POSTBACK_SIGNING_SECRET` | ○ | 許可/却下ボタンの署名用の鍵。`setupPostbackSecret` を一度実行して作成する（値は他人に共有しない）。未設定の間は延長申請を受け付けない |
+| dashboard | `SPREADSHEET_ID` | ○ | スプレッドシート ID |
+
+`line_bot` と `extend_form` は必須プロパティが無いと起動時に例外で停止する（`getRequiredProperty`）。
+GitHub Actions の Secrets には `STUFF_GAS_URL` / `EXTEND_GAS_URL`（各 Web アプリの URL）を設定する。
 
 ---
 
 ## 4. トリガー設定
 
-- onFormSubmit: フォームの送信イベントに紐づける（プロジェクトのトリガーまたはスクリプト内で `ScriptApp.newTrigger('onFormSubmit')...` を設定）。
-- time-driven: 毎日 1 回の時間主導トリガーで `dailyReminderTrigger` を実行。
+- 物品登録・延長申請・登録通知は Web アプリの `doPost` で受け付けるため、インストール型トリガーは不要。
+- LINE チャネルの Webhook URL には `extend_form` の Web アプリ URL の末尾に `?token={LINE_WEBHOOK_TOKEN}` を付けたものを設定する。
+- 時間主導トリガー: `line_bot` で毎日 1 回（9 時台）`handoverDayRemind` を実行する。
+  - トリガーは line_bot の Apps Script エディタで `setupReminderTrigger` を実行して作成する（実行者が持つ既存の同名トリガーは作り直される）。
+  - トリガーは作成したアカウントに紐づく。リマインドメールの送信元もそのアカウントになるため、運用担当（管理者）のアカウントで作成する。担当者の交代・卒業時は新担当者のアカウントで作り直す。
+  - 他のアカウントが作成したトリガーは、トリガー画面や `listReminderTriggers` に表示されない。トリガーを二重に作るとリマインドが二重に送られるため注意する。
+  - 実行状況は Apps Script の「実行数」で確認できる。`handoverDayRemind` は終了時に `summary=` をログに出力する。
+- Web アプリとして公開しているプロジェクトは、コード変更後に新しいバージョンでデプロイし直さないと反映されない。時間主導トリガーは保存済みの最新コードで実行される。
 
 ---
 
 ## 5. 外部 API / スコープ
 
-GAS が必要とする OAuth スコープの例（実際のコードで使用するサービスに応じて調整してください）:
-
-- https://www.googleapis.com/auth/spreadsheets (スプレッドシートの読み書き)
-- https://www.googleapis.com/auth/drive.file (Drive へのファイル保存)
-- https://www.googleapis.com/auth/script.external_request (外部 API 呼び出し、LINE など)
-- https://www.googleapis.com/auth/gmail.send (Gmail でのメール送信を使う場合)
-
-注意: Apps Script プロジェクトのマニフェストで必要な OAuth スコープを明示し、GCP コンソールで Apps Script API を有効化してください。
+- Google スプレッドシート（読み書き）
+- Google Drive（写真の保存: stuffForm）
+- Gmail（メール送信: stuffForm / line_bot / extend_form）
+- 外部リクエスト（LINE Messaging API、stuffForm → line_bot の通知）
+- スクリプトトリガーの管理（line_bot の `setupReminderTrigger`）
 
 ---
 
-## 6. エラーハンドリングと監査
+## 6. エラーハンドリングとロギング
 
-- 各外部操作（Drive 保存、スプレッドシート書込、外部 API 呼び出し）で try/catch を行い、失敗時は管理者へ通知し、エラー情報を `errors` シートやログに保存する。
-- 再試行戦略: Drive 保存失敗など一時的エラーは最大 3 回程度のバックオフ付き再試行を行う。
-
----
-
-## 7. ロギング
-
-- `Logger.log()` を適切に使う。重要イベント（送信成功、メール送信失敗、外部 API レスポンス）をログに残す。
-- 運用上、Stackdriver（Cloud Logging）等に連携する場合は別途設定を検討する。
+- 送信処理（メール・LINE）は try/catch で `{ success, message }` を返し、失敗理由を `Logger.log()` に残す。
+- LINE Push は最大 3 回まで再試行する（4xx は再試行しない）。
+- エラー記録用のシートは設けていない。障害調査は Apps Script の「実行数」とログで行う。
 
 ---
 
-## 8. デプロイ手順（簡易）
+## 7. デプロイ手順
 
-**[clasp ガイド](CLASP_GUIDE.md)**
----
-
-## 9. 監視と運用
-
-- 定期的に `errors` シートを確認し、メール通知が失敗していないかを確認する。
-- 重要な変更（スコープの追加、外部 API キーの更新など）はドキュメント化して運用手順に追加する。
-
----
-
-作成者: STEAM_tracker チーム
-更新日: 2025-11-10
-
+**[clasp ガイド](CLASP_GUIDE.md)** を参照。静的 HTML は main への push で GitHub Pages に公開される（`.github/workflows/deploy.yml`）。

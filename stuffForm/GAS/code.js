@@ -10,6 +10,9 @@ const DOMAIN = 'mail.ryukoku.ac.jp';
 const LOCK_TIMEOUT_MS = 30000;
 const MAX_NAME_LENGTH = 50;
 const LINE_BOT_NOTIFY_URL = PropertiesService.getScriptProperties().getProperty('LINE_BOT_NOTIFY_URL');
+// 延長申請フォーム（GitHub Pages の extend_form/）の URL。確認メールに記載する。
+// 未設定でも登録処理は止めない（メールに記載しないだけ）。
+const EXTEND_FORM_URL = PropertiesService.getScriptProperties().getProperty('EXTEND_FORM_URL');
 const STATUS_ACTIVE = 'active';
 const ITEMS_HEADERS = [
   'registered_at',
@@ -105,7 +108,8 @@ function testLineBotNotify() {
   const result = notifyLineBotNewRegistration({
     name: '疎通テスト',
     organization: 'テスト団体',
-    photoFileId: 'TEST_FILE_ID'
+    photoFileId: 'TEST_FILE_ID',
+    handoverOn: '2026/03/31'
   });
   Logger.log('[LINE連携テスト] ' + JSON.stringify(result));
   return result;
@@ -227,19 +231,26 @@ function submitForm(payload) {
     }
 
     const tz = Session.getScriptTimeZone();
+    const handoverOnText = Utilities.formatDate(dateResult.date, tz, "yyyy/MM/dd");
     sh.appendRow([
       new Date(),
       email,
       name,
       payload.organization || "",
       payload.photo || "",
-      Utilities.formatDate(dateResult.date, tz, "yyyy/MM/dd"),
+      handoverOnText,
       "",
       STATUS_ACTIVE,
       ""
     ]);
 
     const emailSubject = "【STEAMコモンズ】物品登録完了のお知らせ";
+    const extendFormGuide = EXTEND_FORM_URL
+      ? `\n明け渡し日の延長を希望する場合は、明け渡し日までに以下の延長申請フォームから申請してください。\n${EXTEND_FORM_URL}\n`
+      : "";
+    if (!EXTEND_FORM_URL) {
+      Logger.log('[submitForm] EXTEND_FORM_URL が未設定のため、確認メールに延長申請フォームのURLを記載しません');
+    }
     const emailBody = `${name} 様
 
 物品登録フォームからの登録を受け付けました。
@@ -253,7 +264,7 @@ function submitForm(payload) {
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 明け渡し日までに物品の撤去をお願いいたします。
-
+${extendFormGuide}
 ※このメールは自動送信されています。
 ※心当たりのない場合は、お手数ですがSTEAMコモンズまでお越しください。
 
@@ -273,7 +284,8 @@ STEAMコモンズ
     const lineResult = notifyLineBotNewRegistration({
       name,
       organization: payload.organization || '',
-      photoFileId: payload.photo || ''
+      photoFileId: payload.photo || '',
+      handoverOn: handoverOnText
     });
     Logger.log('[submitForm] lineResult=' + JSON.stringify(lineResult));
 
