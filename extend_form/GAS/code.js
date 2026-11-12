@@ -301,9 +301,10 @@ function getPostbackSecret() {
   return secret;
 }
 
-// fields: { action, email, reg, cur, date }（cur は申請時点の明け渡し日、date は希望延長日）
+// fields: { action, email, reg, cur, date, req }
+//   cur: 申請時点の明け渡し日 / date: 希望延長日 / req: 申請番号（GAS が申請を受け付けた時刻のミリ秒）
 function signPostback(fields) {
-  const base = [fields.action, fields.email, fields.reg, fields.cur, fields.date].join('|');
+  const base = [fields.action, fields.email, fields.reg, fields.cur, fields.date, fields.req].join('|');
   const bytes = Utilities.computeHmacSha256Signature(base, getPostbackSecret());
   return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/, '');
 }
@@ -315,6 +316,7 @@ function buildPostbackData(fields) {
     `reg=${fields.reg}`,
     `cur=${fields.cur}`,
     `date=${fields.date}`,
+    `req=${fields.req}`,
     `sig=${signPostback(fields)}`
   ];
   return parts.join('&');
@@ -339,10 +341,11 @@ function setupPostbackSecret() {
 // ============================================================
 const DECISIONS_KEY = 'EXTENSION_DECISIONS';
 
-// 申請キー: 物品（メールアドレス+登録日時）+ 申請時点の明け渡し日 + 希望延長日 のハッシュ
+// 申請キー: 物品（メールアドレス+登録日時）+ 申請時点の明け渡し日 + 希望延長日 + 申請番号 のハッシュ。
+// 申請番号を含めるため、却下後に同じ日付で再申請しても別の申請として扱われる。
 function decisionKey(fields) {
   const bytes = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,
-    [fields.email, fields.reg, fields.cur, fields.date].join('|'), Utilities.Charset.UTF_8);
+    [fields.email, fields.reg, fields.cur, fields.date, fields.req].join('|'), Utilities.Charset.UTF_8);
   return Utilities.base64EncodeWebSafe(bytes).replace(/=+$/, '').slice(0, 22);
 }
 
@@ -389,8 +392,8 @@ function handlePostback(rawData) {
     return;
   }
 
-  // 署名の無いボタン（行番号だけの旧形式、または署名導入前の形式）は処理しない
-  if (!params.sig) {
+  // 署名・申請番号の無いボタン（本仕様への変更前に送られた申請）は処理しない
+  if (!params.sig || !params.req) {
     Logger.log('[postback] 旧形式の postback のため処理しない: ' + rawData);
     sendLineMessage(USER_ID, '古い形式の延長申請のため処理できませんでした。お手数ですが、利用者に延長申請フォームから再申請してもらってください。');
     return;
@@ -401,7 +404,8 @@ function handlePostback(rawData) {
     email: normalizeEmail(params.email),
     reg: String(params.reg || ''),
     cur: String(params.cur || ''),
-    date: String(params.date || '')
+    date: String(params.date || ''),
+    req: String(params.req || '')
   };
   let expected;
   try {
@@ -485,6 +489,8 @@ function notifyExtensionRequest(email, results) {
   const data = SHEET.getDataRange().getValues();
   let sent = 0;
   const skipped = [];
+  // 申請番号: この申請を受け付けた時刻（ミリ秒）。管理者へのボタンに入れ、申請ごとに区別する
+  const req = String(new Date().getTime());
 
   results.forEach(item => {
     const found = findItemRow(data, email, item && item.reg);
@@ -512,7 +518,7 @@ function notifyExtensionRequest(email, results) {
       return;
     }
 
-    const keyFields = { email: normalizeEmail(row[EMAIL]), reg, cur };
+    const keyFields = { email: normalizeEmail(row[EMAIL]), reg, cur, req };
     const payload = {
       to: USER_ID,
       messages: [
